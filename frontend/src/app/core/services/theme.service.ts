@@ -9,7 +9,7 @@ export type ResolvedTheme = 'light' | 'dark';
 export class ThemeService {
   private readonly store = inject(LocalStoreService);
   private readonly mode = signal<ThemeMode>(
-    this.store.get<ThemeMode>(STORAGE_KEYS.theme, 'system'),
+    this.store.get<ThemeMode>(STORAGE_KEYS.theme, 'dark'),
   );
 
   readonly themeMode = this.mode.asReadonly();

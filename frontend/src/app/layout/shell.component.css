@@ -49,10 +49,20 @@
   box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
+.brand-eyebrow {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  line-height: 1.2;
+}
+
 .brand-name {
   display: block;
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   letter-spacing: -0.03em;
   line-height: 1.1;
 }

@@ -53,7 +53,7 @@ export class RegisterPageComponent {
       next: () => {
         this.submitting.set(false);
         this.toast.success('Account created');
-        void this.router.navigateByUrl('/dashboard');
+        void this.router.navigateByUrl('/home');
       },
       error: (err: Error) => {
         this.submitting.set(false);

@@ -1,0 +1,21 @@
+<section class="hub">
+  <header class="hub__header">
+    <p class="eyebrow">My tracker</p>
+    <h1>All sections</h1>
+    <p class="lede">
+      Pick any area to dive in. You can jump between sections anytime from the sidebar.
+    </p>
+  </header>
+
+  <div class="hub__grid">
+    @for (s of sections; track s.path) {
+      <a class="hub-card" [routerLink]="s.path">
+        <span class="hub-card__icon" aria-hidden="true">{{ s.icon }}</span>
+        <span class="hub-card__label">{{ s.label }}</span>
+        <h2>{{ s.title }}</h2>
+        <p>{{ s.body }}</p>
+        <span class="hub-card__cta">Open →</span>
+      </a>
+    }
+  </div>
+</section>

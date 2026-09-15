@@ -1,0 +1,27 @@
+<div class="lz-landing">
+  <button type="button" class="lz-landing__theme btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
+    {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
+  </button>
+
+  <section class="lz-hero">
+    <p class="eyebrow">Pulse</p>
+    <h1>Your productivity day, built exactly your way</h1>
+    <p class="lz-hero__lede">
+      Track activities, goals, habits, and sleep in one calm workspace — then open any section whenever you need it.
+    </p>
+    <div class="lz-hero__actions">
+      <a class="btn btn--primary" routerLink="/register">Get started →</a>
+      <a class="btn btn--ghost lz-btn-outline" routerLink="/login">Open my tracker</a>
+    </div>
+  </section>
+
+  <ul class="lz-features">
+    @for (f of features; track f.title) {
+      <li class="lz-feature">
+        <span class="lz-feature__icon" aria-hidden="true">{{ f.icon }}</span>
+        <h2>{{ f.title }}</h2>
+        <p>{{ f.body }}</p>
+      </li>
+    }
+  </ul>
+</div>

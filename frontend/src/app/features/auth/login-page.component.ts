@@ -42,7 +42,7 @@ export class LoginPageComponent {
       next: () => {
         this.submitting.set(false);
         this.toast.success('Welcome back');
-        void this.router.navigateByUrl('/dashboard');
+        void this.router.navigateByUrl('/home');
       },
       error: (err: Error) => {
         this.submitting.set(false);

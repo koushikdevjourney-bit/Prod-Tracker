@@ -39,10 +39,11 @@ export class ShellComponent {
   readonly accountHint = computed(() => this.auth.user()?.email || 'Signed in');
 
   readonly nav: NavItem[] = [
+    { path: '/home', label: 'My Tracker', icon: '◈' },
     { path: '/dashboard', label: 'Dashboard', icon: '▦' },
     { path: '/timeline', label: 'Timeline', icon: '☰' },
     { path: '/activities', label: 'Activities', icon: '◎' },
-    { path: '/goals', label: 'Goals', icon: '◎' },
+    { path: '/goals', label: 'Goals', icon: '★' },
     { path: '/habits', label: 'Habits', icon: '↻' },
     { path: '/analytics', label: 'Analytics', icon: '◔' },
     { path: '/settings', label: 'Settings', icon: '⚙' },

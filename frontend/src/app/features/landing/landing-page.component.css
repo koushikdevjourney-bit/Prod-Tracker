@@ -1,0 +1,120 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.lz-landing {
+  position: relative;
+  min-height: 100dvh;
+  padding: clamp(2rem, 6vw, 4.5rem) clamp(1.25rem, 4vw, 2.5rem) 3rem;
+  background: var(--bg-accent);
+  background-attachment: fixed;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(2.5rem, 6vh, 4rem);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.lz-landing__theme {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.lz-hero {
+  max-width: 40rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.lz-hero h1 {
+  margin: 0;
+  font-size: clamp(2.1rem, 5vw, 3.35rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  color: var(--text);
+}
+
+.lz-hero__lede {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 34rem;
+}
+
+.lz-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.lz-btn-outline {
+  border: 1px solid var(--border) !important;
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+.lz-btn-outline:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border)) !important;
+}
+
+.lz-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.lz-feature {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.15rem 1.35rem;
+  display: grid;
+  gap: 0.55rem;
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.lz-feature:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  transform: translateY(-2px);
+}
+
+.lz-feature__icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.lz-feature h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.lz-feature p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 860px) {
+  .lz-features {
+    grid-template-columns: 1fr;
+  }
+}

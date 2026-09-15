@@ -1,0 +1,84 @@
+.hub {
+  display: grid;
+  gap: 1.75rem;
+}
+
+.hub__header {
+  display: grid;
+  gap: 0.55rem;
+  max-width: 36rem;
+}
+
+.hub__header h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  letter-spacing: -0.03em;
+}
+
+.hub__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.hub-card {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+  padding: 1.2rem 1.15rem 1.15rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  min-height: 11.5rem;
+}
+
+.hub-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.hub-card__icon {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  margin-bottom: 0.25rem;
+}
+
+.hub-card__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hub-card h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.hub-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  flex: 1;
+}
+
+.hub-card__cta {
+  margin-top: 0.55rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
