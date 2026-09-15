@@ -2,7 +2,7 @@
 
 Express + MongoDB API for Pulse Productivity Tracker.
 
-## Setup
+## Setup (local)
 
 1. Copy `.env.example` to `.env` and fill in `MONGODB_URI` and `JWT_SECRET`.
 2. Install deps: `npm install`
@@ -19,4 +19,21 @@ API defaults to `http://localhost:5000`.
 | GET | `/api/auth/me` | Bearer JWT | — |
 | GET | `/api/health` | — | — |
 
-CORS allows `http://localhost:4200`.
+## Deploy on Render
+
+1. Create a **Web Service** from this repo.
+2. Set **Root Directory** to `backend`.
+3. Build: `npm install` · Start: `npm start`.
+4. Add **Environment** variables (Dashboard → Environment):
+
+| Key | Example |
+|-----|---------|
+| `MONGODB_URI` | your Atlas connection string |
+| `JWT_SECRET` | long random string (required) |
+| `JWT_EXPIRES_IN` | `7d` |
+| `NODE_ENV` | `production` |
+| `CLIENT_ORIGIN` | your frontend URL(s), comma-separated |
+
+Do **not** rely on a committed `.env` — Render does not ship one. Set vars in the dashboard.
+
+CORS allows `http://localhost:4200` plus any origins in `CLIENT_ORIGIN`.

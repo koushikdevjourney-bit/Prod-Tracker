@@ -7,10 +7,17 @@ const { notFound, errorHandler } = require('./middleware/error.middleware');
 
 const app = express();
 
+const defaultOrigins = ['http://localhost:4200', 'http://127.0.0.1:4200'];
+const envOrigins = (process.env.CLIENT_ORIGIN || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+const corsOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
+
 app.use(helmet());
 app.use(
   cors({
-    origin: ['http://localhost:4200', 'http://127.0.0.1:4200'],
+    origin: corsOrigins,
     credentials: true,
   })
 );
