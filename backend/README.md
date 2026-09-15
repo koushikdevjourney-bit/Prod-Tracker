@@ -39,4 +39,7 @@ Do **not** rely on a committed `.env` — Render does not ship one. Set vars in 
 After the Angular app is on Vercel, set e.g.:
 `CLIENT_ORIGIN=https://your-app.vercel.app`
 
-CORS allows `http://localhost:4200` plus any origins in `CLIENT_ORIGIN`.
+CORS allows:
+- `http://localhost:4200`
+- any origins in `CLIENT_ORIGIN` (comma-separated, no trailing slash)
+- any `https://*.vercel.app` host (production + preview)

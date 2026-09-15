@@ -115,7 +115,9 @@ export class AuthService {
     let message = 'Something went wrong. Please try again.';
     if (typeof body === 'string' && body.trim()) message = body;
     else if (body && typeof body === 'object' && body.message) message = body.message;
-    else if (err.status === 0) message = 'Cannot reach the API. Is the backend running on port 5000?';
+    else if (err.status === 0)
+      message =
+        'Cannot reach the API (network/CORS). If the backend is on Render free tier, wait ~30s for it to wake, then try again.';
     else if (err.status === 401) message = 'Invalid email or password';
     return throwError(() => new Error(message));
   }
