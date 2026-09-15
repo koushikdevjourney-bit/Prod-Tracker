@@ -32,8 +32,11 @@ API defaults to `http://localhost:5000`.
 | `JWT_SECRET` | long random string (required) |
 | `JWT_EXPIRES_IN` | `7d` |
 | `NODE_ENV` | `production` |
-| `CLIENT_ORIGIN` | your frontend URL(s), comma-separated |
+| `CLIENT_ORIGIN` | your Vercel frontend URL(s), comma-separated |
 
 Do **not** rely on a committed `.env` — Render does not ship one. Set vars in the dashboard.
+
+After the Angular app is on Vercel, set e.g.:
+`CLIENT_ORIGIN=https://your-app.vercel.app`
 
 CORS allows `http://localhost:4200` plus any origins in `CLIENT_ORIGIN`.
