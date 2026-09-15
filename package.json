@@ -1,0 +1,11 @@
+﻿{
+  "name": "productivity-tracker",
+  "private": true,
+  "description": "MEAN Productivity Tracker — root convenience scripts",
+  "scripts": {
+    "start:frontend": "npm --prefix frontend start",
+    "build:frontend": "npm --prefix frontend run build",
+    "test:frontend": "npm --prefix frontend test",
+    "install:all": "npm --prefix frontend install && npm --prefix backend install"
+  }
+}

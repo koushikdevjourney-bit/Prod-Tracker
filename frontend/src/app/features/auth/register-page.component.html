@@ -1,0 +1,96 @@
+<div class="auth-page">
+  <button type="button" class="auth-theme btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
+    {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
+  </button>
+
+  <div class="auth-stage">
+    <aside class="auth-brand" aria-hidden="false">
+      <div class="auth-brand__glow" aria-hidden="true"></div>
+      <div class="auth-brand__inner">
+        <img class="auth-logo" src="/logo.png" width="56" height="56" alt="Pulse" />
+        <p class="eyebrow">Pulse</p>
+        <h1 class="auth-brand__title">Start tracking with clarity.</h1>
+        <p class="auth-brand__lede">
+          Create an account to secure your session. Productivity data remains local until API sync lands.
+        </p>
+      </div>
+    </aside>
+
+    <section class="auth-card" aria-labelledby="register-heading">
+      <header class="auth-card__head">
+        <p class="eyebrow">Account</p>
+        <h2 id="register-heading">Create account</h2>
+        <p class="muted">A few details and you’re in.</p>
+      </header>
+
+      <form class="form-grid" (ngSubmit)="submit()" novalidate>
+        @if (formError()) {
+          <p class="auth-error" role="alert">{{ formError() }}</p>
+        }
+
+        <label class="field">
+          <span>Name</span>
+          <input
+            class="input"
+            type="text"
+            name="name"
+            autocomplete="name"
+            [(ngModel)]="name"
+            required
+            [disabled]="submitting()"
+          />
+        </label>
+
+        <label class="field">
+          <span>Email</span>
+          <input
+            class="input"
+            type="email"
+            name="email"
+            autocomplete="email"
+            [(ngModel)]="email"
+            required
+            [disabled]="submitting()"
+          />
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Password</span>
+            <input
+              class="input"
+              type="password"
+              name="password"
+              autocomplete="new-password"
+              [(ngModel)]="password"
+              required
+              minlength="6"
+              [disabled]="submitting()"
+            />
+          </label>
+          <label class="field">
+            <span>Confirm</span>
+            <input
+              class="input"
+              type="password"
+              name="confirmPassword"
+              autocomplete="new-password"
+              [(ngModel)]="confirmPassword"
+              required
+              [disabled]="submitting()"
+            />
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--block auth-submit" [disabled]="submitting()">
+          {{ submitting() ? 'Creating…' : 'Create account' }}
+        </button>
+      </form>
+
+      <p class="auth-switch muted">
+        Already have an account?
+        <a routerLink="/login">Sign in</a>
+      </p>
+    </section>
+  </div>
+</div>

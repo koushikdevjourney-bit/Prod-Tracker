@@ -1,0 +1,62 @@
+<section class="page">
+  <header class="page-header page-header--row">
+    <div>
+      <p class="eyebrow">Analytics</p>
+      <h1>Trends & breakdowns</h1>
+    </div>
+    <app-date-nav />
+  </header>
+
+  <div class="tabs">
+    <button type="button" class="tab" [class.tab--on]="tab() === 'daily'" (click)="setTab('daily')">Daily</button>
+    <button type="button" class="tab" [class.tab--on]="tab() === 'weekly'" (click)="setTab('weekly')">Weekly</button>
+    <button type="button" class="tab" [class.tab--on]="tab() === 'monthly'" (click)="setTab('monthly')">Monthly</button>
+  </div>
+
+  @if (isEmpty()) {
+    <app-empty-state
+      title="No data in this range"
+      message="Analytics stay blank until you log activities — no placeholder charts."
+    />
+  } @else {
+    <div class="metric-grid">
+      <app-metric-card label="Tracked" [value]="activeStats().totalTrackedMinutes" kind="duration" />
+      <app-metric-card label="Productive" [value]="activeStats().productiveMinutes" kind="duration" />
+      <app-metric-card label="Sleep" [value]="activeStats().sleepMinutes" kind="duration" />
+      <app-metric-card
+        label="Avg productivity"
+        [value]="activeStats().avgProductivityPercent ?? activeStats().productivityPercent"
+        kind="percent"
+        [accent]="true"
+      />
+    </div>
+
+    <div class="analytics-grid">
+      <section class="panel">
+        <div class="panel-block__head"><h3>Productive time</h3></div>
+        <div class="bars" role="img" aria-label="Productive minutes by day">
+          @for (d of dayBars(); track d.date) {
+            <div class="bars__col" [title]="tip(d.date, d.productiveMinutes)">
+              <div class="bars__fill" [style.height.%]="barHeight(d.productiveMinutes)"></div>
+              <span class="bars__label">{{ label(d.date) }}</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-block__head"><h3>Type mix</h3></div>
+        <app-time-breakdown [breakdown]="activeStats().typeBreakdown" />
+      </section>
+
+      <section class="panel panel--wide">
+        <div class="panel-block__head"><h3>Categories</h3></div>
+        <app-productivity-chart
+          [categories]="activeStats().categoryBreakdown"
+          [typeBreakdown]="activeStats().typeBreakdown"
+          [productivityPercent]="activeStats().avgProductivityPercent ?? activeStats().productivityPercent"
+        />
+      </section>
+    </div>
+  }
+</section>

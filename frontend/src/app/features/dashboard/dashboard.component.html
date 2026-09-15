@@ -1,0 +1,136 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">{{ greeting }}</p>
+      <h1>{{ displayName() }}</h1>
+      <p class="lede">Your day at a glance — only real logged time, never padded stats.</p>
+    </div>
+    <div class="page-header__actions">
+      <app-date-nav />
+      <button type="button" class="btn btn--primary" (click)="addActivity()">+ Add Activity</button>
+    </div>
+  </header>
+
+  @if (isEmpty()) {
+    <app-empty-state
+      title="No activity logged"
+      message="Your metrics stay empty until you track something. Quick-add a block to begin."
+      actionLabel="+ Add Activity"
+      (action)="addActivity()"
+    />
+  } @else {
+    <div class="metric-grid">
+      <app-metric-card label="Total tracked" [value]="stats().totalTrackedMinutes" kind="duration" />
+      <app-metric-card label="Productive" [value]="stats().productiveMinutes" kind="duration" />
+      <app-metric-card label="Sleep" [value]="stats().sleepMinutes" kind="duration" />
+      <app-metric-card
+        label="Productivity"
+        [value]="stats().productivityPercent"
+        kind="percent"
+        hint="Productive ÷ waking time"
+        [accent]="true"
+      />
+    </div>
+
+    @if (stats().hasOverlaps) {
+      <div class="alert alert--warning">
+        Overlap detected between
+        @for (o of stats().overlaps; track o.aId + o.bId; let last = $last) {
+          <strong>{{ o.aName }}</strong> &amp; <strong>{{ o.bName }}</strong>@if (!last) {; }
+        }
+        . Totals merge overlapping minutes.
+      </div>
+    }
+  }
+
+  <div class="quick-add">
+    <span class="quick-add__label">Quick add</span>
+    <div class="quick-add__row">
+      @for (p of presets; track p.label) {
+        <button type="button" class="chip" (click)="quickAdd(p.category, p.type)">+ {{ p.label }}</button>
+      }
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <section class="panel">
+      <div class="panel-block__head">
+        <h3>Today's timeline</h3>
+      </div>
+      <app-timeline-view [activities]="dayActivities()" (select)="editActivity($event)" />
+    </section>
+
+    <section class="panel">
+      <div class="panel-block__head">
+        <h3>24-hour breakdown</h3>
+      </div>
+      @if (isEmpty()) {
+        <p class="muted">Log activities to see productive, neutral, sleep, and untracked time.</p>
+      } @else {
+        <app-time-breakdown [breakdown]="stats().typeBreakdown" />
+      }
+    </section>
+
+    <section class="panel panel--wide">
+      <div class="panel-block__head">
+        <h3>Focus & categories</h3>
+      </div>
+      @if (isEmpty()) {
+        <p class="muted">Charts appear when you have logged time.</p>
+      } @else {
+        <app-productivity-chart
+          [categories]="stats().categoryBreakdown"
+          [typeBreakdown]="stats().typeBreakdown"
+          [productivityPercent]="stats().productivityPercent"
+        />
+      }
+    </section>
+
+    <section class="panel">
+      <div class="panel-block__head">
+        <h3>Daily goals</h3>
+      </div>
+      @if (goalRows().length === 0) {
+        <p class="muted">No goals yet. Add some on the Goals page.</p>
+      } @else {
+        @for (g of goalRows(); track g.goal._id) {
+          <app-goal-progress
+            [name]="g.goal.name"
+            [category]="g.goal.category || ''"
+            [targetMinutes]="g.goal.targetMinutes"
+            [loggedMinutes]="g.loggedMinutes"
+            [progressPercent]="g.progressPercent"
+          />
+        }
+      }
+    </section>
+
+    <app-sleep-card [summary]="sleepSummary()" />
+
+    <section class="panel">
+      <div class="panel-block__head">
+        <h3>Habits</h3>
+      </div>
+      @if (habitRows().length === 0) {
+        <p class="muted">No habits yet. Create them under Habits.</p>
+      } @else {
+        <app-habit-list [rows]="habitRows()" (toggle)="toggleHabit($event)" />
+      }
+    </section>
+
+    <section class="panel panel--wide">
+      <div class="panel-block__head">
+        <h3>Insights</h3>
+      </div>
+      @if (insights().length === 0) {
+        <p class="muted">Insights appear from your real data once you log activities.</p>
+      } @else {
+        <ul class="insight-list">
+          @for (tip of insights(); track tip) {
+            <li>{{ tip }}</li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+</section>

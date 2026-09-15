@@ -1,0 +1,82 @@
+<section class="page">
+  <header class="page-header page-header--row">
+    <div>
+      <p class="eyebrow">Activities</p>
+      <h1>Activity log</h1>
+    </div>
+    <button type="button" class="btn btn--primary" (click)="add()">+ Add Activity</button>
+  </header>
+
+  <div class="toolbar panel">
+    <input
+      class="input"
+      type="search"
+      placeholder="Search name, category, notes…"
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event); page.set(1)"
+    />
+    <select class="input" [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event); page.set(1)">
+      <option value="">All categories</option>
+      @for (c of categories; track c.name) {
+        <option [value]="c.name">{{ c.name }}</option>
+      }
+    </select>
+    <select class="input" [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event); page.set(1)">
+      <option value="">All types</option>
+      <option value="productive">Productive</option>
+      <option value="neutral">Neutral</option>
+      <option value="unproductive">Unproductive</option>
+      <option value="sleep">Sleep</option>
+    </select>
+  </div>
+
+  @if (filtered().length === 0) {
+    <app-empty-state
+      title="No activities"
+      message="Add your first block of time, or clear filters if you're filtering too tightly."
+      actionLabel="+ Add Activity"
+      (action)="add()"
+    />
+  } @else {
+    <div class="table-wrap panel">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th><button type="button" class="th-btn" (click)="setSort('date')">Date</button></th>
+            <th><button type="button" class="th-btn" (click)="setSort('name')">Name</button></th>
+            <th><button type="button" class="th-btn" (click)="setSort('category')">Category</button></th>
+            <th>Time</th>
+            <th><button type="button" class="th-btn" (click)="setSort('duration')">Duration</button></th>
+            <th>Type</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of pageItems(); track a._id) {
+            <tr>
+              <td>{{ a.date }}</td>
+              <td>
+                <button type="button" class="linkish" (click)="edit(a)">{{ a.name }}</button>
+              </td>
+              <td>{{ a.category }}</td>
+              <td>{{ a.startTime }}–{{ a.endTime }}</td>
+              <td>{{ a.durationMinutes | duration }}</td>
+              <td><span class="badge" [attr.data-type]="a.type">{{ a.type }}</span></td>
+              <td class="actions">
+                <button type="button" class="btn btn--ghost btn--sm" (click)="edit(a)">Edit</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="duplicate(a)">Duplicate</button>
+                <button type="button" class="btn btn--ghost btn--sm btn--danger" (click)="remove(a)">Delete</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <button type="button" class="btn btn--ghost" [disabled]="page() <= 1" (click)="prevPage()">Prev</button>
+      <span class="muted">Page {{ page() }} / {{ totalPages() }} · {{ filtered().length }} items</span>
+      <button type="button" class="btn btn--ghost" [disabled]="page() >= totalPages()" (click)="nextPage()">Next</button>
+    </div>
+  }
+</section>

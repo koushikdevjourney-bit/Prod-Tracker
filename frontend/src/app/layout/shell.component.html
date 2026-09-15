@@ -1,0 +1,75 @@
+<div class="shell" [class.shell--nav-open]="sidebarOpen()">
+  <aside class="sidebar" [attr.aria-hidden]="false">
+    <div class="sidebar__brand">
+      <img class="brand-logo" src="/logo.png" width="32" height="32" alt="Pulse" />
+      <div>
+        <strong class="brand-name">Pulse</strong>
+        <span class="brand-sub">Productivity</span>
+      </div>
+    </div>
+
+    <nav class="sidebar__nav" aria-label="Primary">
+      @for (item of nav; track item.path) {
+        <a
+          class="nav-link"
+          [routerLink]="item.path"
+          routerLinkActive="nav-link--active"
+          (click)="closeSidebar()"
+        >
+          <span class="nav-link__icon" aria-hidden="true">{{ item.icon }}</span>
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="user-chip">
+        <span class="avatar">{{ avatarLetter() }}</span>
+        <div>
+          <strong>{{ displayName() }}</strong>
+          <span class="muted">{{ accountHint() }}</span>
+        </div>
+      </div>
+      <button type="button" class="btn btn--ghost btn--block" (click)="toggleTheme()">
+        {{ theme.resolved() === 'dark' ? 'Light mode' : 'Dark mode' }}
+      </button>
+      <button type="button" class="btn btn--ghost btn--block" (click)="logout()">Log out</button>
+    </div>
+  </aside>
+
+  @if (sidebarOpen()) {
+    <div class="shell__scrim" (click)="closeSidebar()" aria-hidden="true"></div>
+  }
+
+  <div class="shell__main">
+    <header class="topbar">
+      <button type="button" class="btn btn--ghost btn--icon topbar__menu" (click)="toggleSidebar()" aria-label="Menu">
+        ☰
+      </button>
+      <div class="topbar__title">
+        <span class="brand-name brand-name--sm">Pulse</span>
+      </div>
+      <button type="button" class="btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
+        {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
+      </button>
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+
+    <footer class="app-footer">
+      <span>Pulse · track waking hours with intention</span>
+    </footer>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile">
+    <a routerLink="/dashboard" routerLinkActive="mobile-nav--active">Home</a>
+    <a routerLink="/timeline" routerLinkActive="mobile-nav--active">Timeline</a>
+    <a routerLink="/activities" routerLinkActive="mobile-nav--active">Log</a>
+    <a routerLink="/analytics" routerLinkActive="mobile-nav--active">Stats</a>
+    <a routerLink="/settings" routerLinkActive="mobile-nav--active">More</a>
+  </nav>
+
+  <app-activity-modal />
+</div>

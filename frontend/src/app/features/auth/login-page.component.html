@@ -1,0 +1,68 @@
+<div class="auth-page">
+  <button type="button" class="auth-theme btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
+    {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
+  </button>
+
+  <div class="auth-stage">
+    <aside class="auth-brand" aria-hidden="false">
+      <div class="auth-brand__glow" aria-hidden="true"></div>
+      <div class="auth-brand__inner">
+        <img class="auth-logo" src="/logo.png" width="56" height="56" alt="Pulse" />
+        <p class="eyebrow">Pulse</p>
+        <h1 class="auth-brand__title">Pick up where intention left off.</h1>
+        <p class="auth-brand__lede">
+          Sign in to keep your waking hours honest — activities stay on this device for now.
+        </p>
+      </div>
+    </aside>
+
+    <section class="auth-card" aria-labelledby="login-heading">
+      <header class="auth-card__head">
+        <p class="eyebrow">Account</p>
+        <h2 id="login-heading">Welcome back</h2>
+        <p class="muted">Log in with your Pulse credentials.</p>
+      </header>
+
+      <form class="form-grid" (ngSubmit)="submit()" novalidate>
+        @if (formError()) {
+          <p class="auth-error" role="alert">{{ formError() }}</p>
+        }
+
+        <label class="field">
+          <span>Email</span>
+          <input
+            class="input"
+            type="email"
+            name="email"
+            autocomplete="email"
+            [(ngModel)]="email"
+            required
+            [disabled]="submitting()"
+          />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input
+            class="input"
+            type="password"
+            name="password"
+            autocomplete="current-password"
+            [(ngModel)]="password"
+            required
+            [disabled]="submitting()"
+          />
+        </label>
+
+        <button type="submit" class="btn btn--primary btn--block auth-submit" [disabled]="submitting()">
+          {{ submitting() ? 'Signing in…' : 'Sign in' }}
+        </button>
+      </form>
+
+      <p class="auth-switch muted">
+        New here?
+        <a routerLink="/register">Create an account</a>
+      </p>
+    </section>
+  </div>
+</div>
