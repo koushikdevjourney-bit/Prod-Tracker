@@ -505,3 +505,19 @@ export function createId(): string {
   }
   return `id_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
+
+/** 24-char hex id compatible with MongoDB ObjectId. */
+export function createObjectId(): string {
+  const bytes = new Uint8Array(12);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < 12; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  const time = Math.floor(Date.now() / 1000);
+  bytes[0] = (time >> 24) & 0xff;
+  bytes[1] = (time >> 16) & 0xff;
+  bytes[2] = (time >> 8) & 0xff;
+  bytes[3] = time & 0xff;
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}

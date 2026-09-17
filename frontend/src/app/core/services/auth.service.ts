@@ -7,6 +7,7 @@ import { STORAGE_KEYS } from '../constants/categories';
 import { AuthResponse, AuthUser, ApiErrorBody } from '../models/auth.models';
 import { SettingsService } from './settings.service';
 import { ToastService } from './toast.service';
+import { DataSyncService } from './data-sync.service';
 
 interface StoredSession {
   token: string;
@@ -19,6 +20,7 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly settings = inject(SettingsService);
   private readonly toast = inject(ToastService);
+  private readonly dataSync = inject(DataSyncService);
 
   private readonly _token = signal<string | null>(null);
   private readonly _user = signal<AuthUser | null>(null);
@@ -29,6 +31,7 @@ export class AuthService {
 
   constructor() {
     this.restoreSession();
+    if (this._token()) this.dataSync.hydrate().subscribe();
   }
 
   register(payload: { name: string; email: string; password: string }): Observable<AuthResponse> {
@@ -65,9 +68,10 @@ export class AuthService {
 
   logout(options: { navigate?: boolean; toast?: boolean } = {}): void {
     const { navigate = true, toast = true } = options;
+    this.dataSync.resetLocal();
     this.clearSession();
     if (toast) this.toast.info('Signed out');
-    if (navigate) void this.router.navigateByUrl('/login');
+    if (navigate) void this.router.navigateByUrl('/');
   }
 
   getToken(): string | null {
@@ -94,6 +98,7 @@ export class AuthService {
     this._user.set(res.user);
     this.writeStorage({ token: res.token, user: res.user });
     this.syncDisplayName(res.user.name);
+    this.dataSync.hydrate().subscribe();
   }
 
   private writeStorage(session: StoredSession): void {
@@ -107,18 +112,31 @@ export class AuthService {
   }
 
   private syncDisplayName(name: string): void {
-    if (name) this.settings.update({ displayName: name });
+    if (name) this.settings.update({ displayName: name }, { persist: false });
   }
 
   private handleError(err: HttpErrorResponse): Observable<never> {
     const body = err.error as ApiErrorBody | string | null;
     let message = 'Something went wrong. Please try again.';
-    if (typeof body === 'string' && body.trim()) message = body;
-    else if (body && typeof body === 'object' && body.message) message = body.message;
-    else if (err.status === 0)
+    const raw =
+      (typeof body === 'string' && body.trim()) ||
+      (body && typeof body === 'object' && body.message) ||
+      err.message ||
+      '';
+    const unreachable =
+      err.status === 0 ||
+      /failed to fetch|unknown error|network/i.test(String(raw));
+
+    if (unreachable) {
       message =
-        'Cannot reach the API (network/CORS). If the backend is on Render free tier, wait ~30s for it to wake, then try again.';
-    else if (err.status === 401) message = 'Invalid email or password';
+        'Cannot reach the API. Start the backend (backend folder: npm run dev) or wait if Render is waking up.';
+    } else if (typeof body === 'string' && body.trim()) {
+      message = body;
+    } else if (body && typeof body === 'object' && body.message) {
+      message = body.message;
+    } else if (err.status === 401) {
+      message = 'Invalid email or password';
+    }
     return throwError(() => new Error(message));
   }
 }

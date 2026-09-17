@@ -1,0 +1,266 @@
+<div class="grit">
+  <header class="grit-top">
+    <a class="grit-back" routerLink="/home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m12 19-7-7 7-7" />
+        <path d="M19 12H5" />
+      </svg>
+      My tracker
+    </a>
+    <p class="grit-top__title">Grit</p>
+    <button type="button" class="btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
+      {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
+    </button>
+  </header>
+
+  <div class="grit-body">
+    <section class="grit-hero">
+      <div class="grit-hero__copy">
+        <p class="eyebrow">NIAT · Miles climb</p>
+        <h1>Grit tracker</h1>
+        <p class="lede">
+          Log Gold, Silver or Try again to earn miles. Queue the order you’ll take each level,
+          then tap a band to mark it. Progress saves to your account.
+        </p>
+      </div>
+      <div class="grit-hero__save" title="Saved to your account in the cloud">
+        <span class="grit-hero__dot" aria-hidden="true"></span>
+        Saved to your account
+      </div>
+    </section>
+
+    <section class="grit-dash" aria-label="Overall progress">
+      <div class="grit-dash__ring">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <circle class="ring-bg" cx="24" cy="24" r="18" />
+          <circle
+            class="ring-fg"
+            cx="24"
+            cy="24"
+            r="18"
+            [attr.stroke-dasharray]="ringC"
+            [attr.stroke-dashoffset]="ringOffset()"
+          />
+        </svg>
+        <div>
+          <p class="grit-dash__value">{{ grit.totals().miles }}</p>
+          <p class="grit-dash__label">Miles earned</p>
+        </div>
+      </div>
+      <div class="grit-dash__metrics">
+        <article class="metric">
+          <p class="metric__value">{{ grit.totals().cleared }}<span>/{{ grit.totals().subjectCount }}</span></p>
+          <p class="metric__label">Levels cleared</p>
+        </article>
+        <article class="metric">
+          <p class="metric__value">{{ grit.totals().gold }}</p>
+          <p class="metric__label">Gold finishes</p>
+        </article>
+        <article class="metric">
+          <p class="metric__value">{{ remainingMiles() }}</p>
+          <p class="metric__label">Miles left</p>
+        </article>
+      </div>
+      <div class="grit-dash__bar">
+        <div class="grit-dash__bar-top">
+          <span>Progress toward {{ grit.totals().maxMiles }} max miles</span>
+          <strong>{{ grit.totals().percent }}%</strong>
+        </div>
+        <span class="grit-stats__track">
+          <span class="grit-stats__fill" [style.width.%]="grit.totals().percent"></span>
+        </span>
+      </div>
+    </section>
+
+    @if (nextClimb(current().level); as next) {
+      <section class="next" aria-label="Up next">
+        <div class="next__kicker">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="m8 17 4-13 4 13" />
+            <path d="M3 21h18" />
+          </svg>
+          Up next · Level {{ current().level }}
+        </div>
+        <div class="next__row">
+          <div>
+            <h2>{{ next.subject }}</h2>
+            <p>Aiming for {{ next.target }} · {{ targetMiles(next) }} miles</p>
+          </div>
+          <div class="next__actions">
+            @for (r of markResults; track r) {
+              <button type="button" class="next__mark" [attr.data-result]="r" (click)="mark(current().level, next.subject, r)">
+                {{ labels[r] }}
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    <nav class="level-tabs" aria-label="Grit levels">
+      @for (level of levels; track level.level) {
+        <button
+          type="button"
+          class="level-tab"
+          [class.level-tab--on]="activeLevel() === level.level"
+          (click)="activeLevel.set(level.level)"
+        >
+          <span class="level-tab__name">Level {{ level.level }}</span>
+          <span class="level-tab__meta">{{ stats(level).cleared }}/{{ stats(level).total }} cleared · {{ stats(level).miles }} mi</span>
+          <span class="level-tab__bar" aria-hidden="true">
+            <span [style.width.%]="levelPercent(level)"></span>
+          </span>
+        </button>
+      }
+    </nav>
+
+    @let level = current();
+
+    <section class="climb" [attr.aria-label]="'Climb order for level ' + level.level">
+      <div class="climb__head">
+        <div>
+          <p class="climb__title">Climb order</p>
+          <p class="climb__hint">Queue the path for this level. Drag, or use the arrows. Top = do it first.</p>
+        </div>
+        <span class="grit-pill">{{ climb(level.level).length }} queued</span>
+      </div>
+
+      <div class="climb__add">
+        <select
+          class="grit-select"
+          [(ngModel)]="pick[level.level]"
+          [name]="'pick-' + level.level"
+          (keydown.enter)="addClimb(level.level)"
+        >
+          <option value="">Select a subject to queue…</option>
+          @for (s of available(level); track s.subject) {
+            <option [value]="s.subject">{{ s.subject }}</option>
+          }
+        </select>
+        <button type="button" class="btn btn--primary climb__add-btn" (click)="addClimb(level.level)" [disabled]="!pick[level.level]">
+          Add to climb
+        </button>
+      </div>
+
+      @if (climb(level.level).length === 0) {
+        <div class="climb__empty">
+          <strong>Nothing queued yet</strong>
+          <span>Add a subject above to plan this level. You can still mark any card below.</span>
+        </div>
+      } @else {
+        <ol class="climb__list">
+          @for (row of climb(level.level); track row.id; let i = $index; let first = $first; let last = $last) {
+            <li
+              class="climb__item"
+              [class.climb__item--dragging]="draggingId() === row.id"
+              [class.climb__item--done]="row.result !== 'none'"
+              draggable="true"
+              (dragstart)="onDragStart(row.id)"
+              (dragover)="onDragOver(level.level, row.id, $event)"
+              (dragend)="onDragEnd()"
+            >
+              <span class="climb__grip" aria-hidden="true"></span>
+              <span class="climb__num">{{ i + 1 }}</span>
+              <div class="climb__copy">
+                <strong>{{ row.subject }}</strong>
+                <span>{{ targetMiles(row) }} miles if you hit {{ row.target }}</span>
+              </div>
+              <div class="climb__target" role="group" [attr.aria-label]="'Target for ' + row.subject">
+                <button type="button" [class.on]="row.target === 'gold'" (click)="setTarget(row, 'gold')">Gold</button>
+                <button type="button" [class.on]="row.target === 'silver'" (click)="setTarget(row, 'silver')">Silver</button>
+              </div>
+              <div class="climb__move">
+                <button type="button" (click)="moveClimb(level.level, row, -1)" [disabled]="first" aria-label="Move up">↑</button>
+                <button type="button" (click)="moveClimb(level.level, row, 1)" [disabled]="last" aria-label="Move down">↓</button>
+              </div>
+              <button
+                type="button"
+                class="climb__remove"
+                [attr.aria-label]="'Remove ' + row.subject + ' from climb order'"
+                (click)="grit.removeFromClimb(level.level, row.subject)"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
+            </li>
+          }
+        </ol>
+      }
+    </section>
+
+    <div class="grit-toolbar">
+      <label class="grit-search">
+        <span class="sr-only">Search subjects</span>
+        <input type="search" [(ngModel)]="query" name="grit-query" placeholder="Search subjects…" />
+        @if (query) {
+          <button type="button" class="grit-search__clear" (click)="query = ''" aria-label="Clear search">×</button>
+        }
+      </label>
+      <div class="view-tabs" role="tablist" aria-label="Subject filter">
+        @for (v of views; track v.id) {
+          <button type="button" role="tab" [class.on]="view() === v.id" (click)="view.set(v.id)">{{ v.label }}</button>
+        }
+      </div>
+    </div>
+
+    @if (view() === 'open' && done(level).length) {
+      <div class="grit-chips" aria-label="Undo cleared subjects">
+        @for (s of done(level); track s.subject) {
+          <button type="button" class="grit-chip" [attr.data-result]="s.result" (click)="reset(level.level, s.subject)" title="Undo to show this subject again">
+            ↺ {{ s.subject }} · {{ labels[s.result] }}
+          </button>
+        }
+      </div>
+    }
+
+    @if (shown(level).length === 0) {
+      <p class="grit-empty">
+        @if (query) {
+          No subjects match “{{ query }}”.
+        } @else if (view() === 'cleared') {
+          Nothing cleared on this level yet. Mark Gold or Silver on a subject to finish it.
+        } @else {
+          Every subject on this level is cleared. Switch to Cleared to undo one.
+        }
+      </p>
+    } @else {
+      <ul class="subject-list">
+        @for (s of shown(level); track s.subject) {
+          <li class="subject-card" [attr.data-result]="result(level.level, s.subject)">
+            <div class="subject-card__top">
+              <div>
+                <p class="subject-card__name">{{ s.subject }}</p>
+                <p class="subject-card__meta">
+                  <span>{{ s.format }}</span>
+                  <span>{{ s.minutes }} min</span>
+                </p>
+              </div>
+              <span class="status" [attr.data-result]="result(level.level, s.subject)">
+                {{ labels[result(level.level, s.subject)] }}
+              </span>
+            </div>
+            <div class="bands">
+              @for (r of markResults; track r) {
+                <button
+                  type="button"
+                  class="band"
+                  [attr.data-result]="r"
+                  [class.band--on]="result(level.level, s.subject) === r"
+                  (click)="mark(level.level, s.subject, r)"
+                >
+                  <span class="band__title">{{ labels[r] }}</span>
+                  <span class="band__range">{{ bandOf(s, r).band }}</span>
+                  <span class="band__miles">{{ bandOf(s, r).miles }} miles</span>
+                  <span class="band__cta">Mark {{ labels[r] }}</span>
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>

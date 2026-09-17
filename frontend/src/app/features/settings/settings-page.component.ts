@@ -16,7 +16,7 @@ import { DEFAULT_SLEEP_TARGET_MINUTES } from '../../core/constants/categories';
       <header class="page-header">
         <p class="eyebrow">Settings</p>
         <h1>Preferences</h1>
-        <p class="lede">Account is authenticated via the API; productivity data stays local for now.</p>
+        <p class="lede">Theme, sleep target, sample data, and account controls.</p>
       </header>
 
       <div class="settings-grid">
@@ -111,9 +111,8 @@ export class SettingsPageComponent {
   }
 
   clearData(): void {
-    if (!confirm('Clear all activities, goals, and habits?')) return;
+    if (!confirm('Clear all activities, goals, habits, and grit progress from your account?')) return;
     this.sample.clearAllData();
-    this.toast.success('All local data cleared');
   }
 
   logout(): void {

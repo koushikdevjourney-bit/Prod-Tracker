@@ -41,6 +41,8 @@ export const STORAGE_KEYS = {
   settings: 'pt.settings',
   theme: 'pt.theme',
   auth: 'pt.auth',
+  cloudMigrated: 'pt.cloudMigrated',
+  grit: 'pt.grit',
 } as const;
 
 export const DEFAULT_SLEEP_TARGET_MINUTES = 8 * 60;

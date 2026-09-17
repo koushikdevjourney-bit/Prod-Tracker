@@ -23,16 +23,22 @@ export const routes: Routes = [
       import('./features/auth/register-page.component').then((m) => m.RegisterPageComponent),
   },
   {
+    path: 'home',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/hub/hub-page.component').then((m) => m.HubPageComponent),
+  },
+  {
+    path: 'grit',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/grit/grit-page.component').then((m) => m.GritPageComponent),
+  },
+  {
     path: '',
     component: ShellComponent,
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'home' },
-      {
-        path: 'home',
-        loadComponent: () =>
-          import('./features/hub/hub-page.component').then((m) => m.HubPageComponent),
-      },
       {
         path: 'dashboard',
         loadComponent: () =>

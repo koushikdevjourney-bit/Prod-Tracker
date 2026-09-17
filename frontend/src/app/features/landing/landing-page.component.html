@@ -1,24 +1,56 @@
 <div class="lz-landing">
-  <button type="button" class="lz-landing__theme btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
+  <button type="button" class="lz-theme btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
     {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
   </button>
 
   <section class="lz-hero">
-    <p class="eyebrow">Pulse</p>
-    <h1>Your productivity day, built exactly your way</h1>
+    <p class="eyebrow">Landing Zone</p>
+    <h1>Your prep roadmap, built exactly your way</h1>
     <p class="lz-hero__lede">
-      Track activities, goals, habits, and sleep in one calm workspace — then open any section whenever you need it.
+      Pick the roles you're aiming for, pull in predefined topics or add your own, and keep every skill moving with sub-trackers.
     </p>
     <div class="lz-hero__actions">
-      <a class="btn btn--primary" routerLink="/register">Get started →</a>
-      <a class="btn btn--ghost lz-btn-outline" routerLink="/login">Open my tracker</a>
+      <a class="btn btn--primary lz-btn-start" routerLink="/register">Get started →</a>
+      <a class="btn lz-btn-outline" routerLink="/home">Open my tracker</a>
     </div>
   </section>
 
   <ul class="lz-features">
     @for (f of features; track f.title) {
       <li class="lz-feature">
-        <span class="lz-feature__icon" aria-hidden="true">{{ f.icon }}</span>
+        <span class="lz-feature__icon" [attr.data-icon]="f.icon" aria-hidden="true">
+          @switch (f.icon) {
+            @case ('roles') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="8" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            }
+            @case ('topics') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="8" cy="12" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="12" cy="8" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="12" cy="16" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="16" cy="12" r="1.2" fill="currentColor" stroke="none" />
+                <circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none" />
+              </svg>
+            }
+            @default {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="20" y2="6" />
+                <line x1="8" y1="12" x2="20" y2="12" />
+                <line x1="8" y1="18" x2="20" y2="18" />
+                <circle cx="5" cy="6" r="1" fill="currentColor" stroke="none" />
+                <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" />
+                <circle cx="5" cy="18" r="1" fill="currentColor" stroke="none" />
+              </svg>
+            }
+          }
+        </span>
         <h2>{{ f.title }}</h2>
         <p>{{ f.body }}</p>
       </li>

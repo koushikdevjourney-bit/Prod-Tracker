@@ -2,10 +2,13 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Activity, ActivityType } from '../models';
 import { STORAGE_KEYS } from '../constants/categories';
 import { LocalStoreService } from './local-store.service';
+import { ToastService } from './toast.service';
+import { TrackerApiService } from './tracker-api.service';
+import { apiErrorMessage } from '../utils/api-error';
 import {
   addDays,
   calculateDuration,
-  createId,
+  createObjectId,
   detectOverlappingActivities,
   getCategoryDefaultType,
   parseTimeToMinutes,
@@ -23,12 +26,13 @@ export interface ActivityInput {
 }
 
 /**
- * Activity CRUD — localStorage persistence.
- * Future swap: replace LocalStoreService calls with HttpClient → Express API.
+ * Activity CRUD — persisted per signed-in user via the API.
  */
 @Injectable({ providedIn: 'root' })
 export class ActivityService {
   private readonly store = inject(LocalStoreService);
+  private readonly api = inject(TrackerApiService);
+  private readonly toast = inject(ToastService);
   private readonly _activities = signal<Activity[]>(
     this.store.get<Activity[]>(STORAGE_KEYS.activities, []),
   );
@@ -41,6 +45,11 @@ export class ActivityService {
       return parseTimeToMinutes(a.startTime) - parseTimeToMinutes(b.startTime);
     }),
   );
+
+  hydrate(activities: Activity[]): void {
+    this._activities.set(activities ?? []);
+    this.persistLocal();
+  }
 
   getByDate(date: string): Activity[] {
     return this.sorted().filter((a) => a.date === date);
@@ -69,7 +78,7 @@ export class ActivityService {
       endDate,
     );
     const activity: Activity = {
-      _id: createId(),
+      _id: createObjectId(),
       name: input.name.trim(),
       category: input.category,
       date: input.date,
@@ -83,7 +92,16 @@ export class ActivityService {
       updatedAt: now,
     };
     this._activities.update((list) => [...list, activity]);
-    this.persist();
+    this.persistLocal();
+    this.api.createActivity({ ...input, _id: activity._id, endDate, notes: activity.notes }).subscribe({
+      next: (saved) => {
+        this.replaceOne(activity._id, saved);
+        this.persistLocal();
+      },
+      error: (err) => {
+        if (this.shouldWarn(err)) this.toast.error(apiErrorMessage(err, 'Could not sync activity'));
+      },
+    });
     return activity;
   }
 
@@ -111,15 +129,30 @@ export class ActivityService {
       updatedAt: new Date().toISOString(),
     };
     this._activities.update((list) => list.map((a) => (a._id === id ? updated : a)));
-    this.persist();
+    this.persistLocal();
+    this.api.updateActivity(id, { ...input, endDate, notes: updated.notes }).subscribe({
+      next: (saved) => {
+        this.replaceOne(id, saved);
+        this.persistLocal();
+      },
+      error: (err) => {
+        if (this.shouldWarn(err)) this.toast.error(apiErrorMessage(err, 'Could not sync activity'));
+      },
+    });
     return updated;
   }
 
   delete(id: string): boolean {
-    const before = this._activities().length;
+    const existing = this.getById(id);
+    if (!existing) return false;
     this._activities.update((list) => list.filter((a) => a._id !== id));
-    this.persist();
-    return this._activities().length < before;
+    this.persistLocal();
+    this.api.deleteActivity(id).subscribe({
+      error: (err) => {
+        if (this.shouldWarn(err)) this.toast.error(apiErrorMessage(err, 'Could not sync delete'));
+      },
+    });
+    return true;
   }
 
   duplicate(id: string): Activity | null {
@@ -137,14 +170,16 @@ export class ActivityService {
     });
   }
 
-  replaceAll(activities: Activity[]): void {
-    this._activities.set(activities);
-    this.persist();
+  private persistLocal(): void {
+    this.store.set(STORAGE_KEYS.activities, this._activities());
   }
 
-  clearAll(): void {
-    this._activities.set([]);
-    this.persist();
+  private shouldWarn(err: unknown): boolean {
+    return typeof err === 'object' && err !== null && 'status' in err && (err as { status: number }).status !== 404;
+  }
+
+  private replaceOne(id: string, saved: Activity): void {
+    this._activities.update((list) => list.map((a) => (a._id === id ? saved : a)));
   }
 
   private resolveEndDate(input: ActivityInput): string | undefined {
@@ -153,10 +188,5 @@ export class ActivityService {
       return addDays(input.date, 1);
     }
     return undefined;
-  }
-
-  private persist(): void {
-    // API swap: POST/PUT/DELETE /api/activities
-    this.store.set(STORAGE_KEYS.activities, this._activities());
   }
 }

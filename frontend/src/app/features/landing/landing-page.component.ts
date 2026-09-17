@@ -14,19 +14,19 @@ export class LandingPageComponent {
 
   readonly features = [
     {
-      title: 'Track your day',
-      body: 'Log activities with auto duration, overnight support, and a clean timeline of where hours go.',
-      icon: '◎',
+      title: 'Choose your roles',
+      body: 'Start from SDE, AI/ML, Data Analyst or DevOps packs — or create a role of your own.',
+      icon: 'roles',
     },
     {
-      title: 'Hit your goals',
-      body: 'Set daily targets for DSA, coding, exercise, and more — progress updates from real logs.',
-      icon: '★',
+      title: 'Drag in topics',
+      body: 'Drag predefined topics into a role, then reorder skills and sub-trackers however you like.',
+      icon: 'topics',
     },
     {
-      title: 'See the pattern',
-      body: 'Habits, sleep, productivity score, and weekly analytics so every week compounds.',
-      icon: '☰',
+      title: 'Track the details',
+      body: 'Every skill gets priority stars and its own checklist of sub-trackers.',
+      icon: 'details',
     },
   ];
 

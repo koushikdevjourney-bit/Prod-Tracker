@@ -7,7 +7,7 @@ export const authGuard: CanActivateFn = () => {
   const router = inject(Router);
 
   if (auth.isAuthenticated()) return true;
-  return router.createUrlTree(['/']);
+  return router.createUrlTree(['/login']);
 };
 
 /** Redirect authenticated users away from landing/login/register. */
