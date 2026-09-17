@@ -9,6 +9,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     if (raw) {
       const parsed = JSON.parse(raw) as { token?: string };
       token = parsed?.token ?? null;
+      if (token && token.split('.').length !== 3) token = null;
     }
   } catch {
     token = null;

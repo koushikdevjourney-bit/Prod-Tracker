@@ -168,6 +168,23 @@ async function saveGrit(req, res, next) {
   }
 }
 
+async function getAcademics(req, res, next) {
+  try {
+    res.json({ tracks: await data.getAcademics(userId(req)) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function saveAcademics(req, res, next) {
+  try {
+    const tracks = Array.isArray(req.body) ? req.body : req.body?.tracks;
+    res.json({ tracks: await data.saveAcademics(userId(req), tracks) });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   snapshot,
   clearAll,
@@ -189,4 +206,6 @@ module.exports = {
   updateSettings,
   getGrit,
   saveGrit,
+  getAcademics,
+  saveAcademics,
 };

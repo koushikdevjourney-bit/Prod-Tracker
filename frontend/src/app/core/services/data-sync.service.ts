@@ -4,7 +4,9 @@ import { catchError, finalize, switchMap, tap } from 'rxjs/operators';
 import { STORAGE_KEYS } from '../constants/categories';
 import { Activity, AppSettings, Goal, Habit } from '../models';
 import { GritProgress } from '../data/grit-catalog';
+import { AcademicTrack } from '../data/academic-catalog';
 import { ActivityService } from './activity.service';
+import { AcademicService } from './academic.service';
 import { GoalService } from './goal.service';
 import { GritService } from './grit.service';
 import { HabitService } from './habit.service';
@@ -23,6 +25,7 @@ export class DataSyncService {
   private readonly goals = inject(GoalService);
   private readonly habits = inject(HabitService);
   private readonly grit = inject(GritService);
+  private readonly academics = inject(AcademicService);
   private readonly settings = inject(SettingsService);
   private readonly theme = inject(ThemeService);
   private readonly toast = inject(ToastService);
@@ -48,6 +51,7 @@ export class DataSyncService {
     this.goals.hydrate([]);
     this.habits.hydrate([]);
     this.grit.resetLocal();
+    this.academics.resetLocal();
     this.settings.resetLocal();
   }
 
@@ -73,6 +77,7 @@ export class DataSyncService {
     this.goals.hydrate(snap.goals ?? []);
     this.habits.hydrate(snap.habits ?? []);
     if (Array.isArray(snap.grit)) this.grit.hydrate(snap.grit);
+    if (Array.isArray(snap.academics)) this.academics.hydrate(snap.academics);
     this.settings.hydrate(snap.settings);
     const theme = snap.settings?.theme;
     if (theme) this.theme.setMode(theme);
@@ -83,7 +88,8 @@ export class DataSyncService {
       (snap.activities?.length ?? 0) === 0 &&
       (snap.goals?.length ?? 0) === 0 &&
       (snap.habits?.length ?? 0) === 0 &&
-      (snap.grit?.length ?? 0) === 0;
+      (snap.grit?.length ?? 0) === 0 &&
+      (snap.academics?.length ?? 0) === 0;
     if (!cloudEmpty || this.store.get(this.migratedKey(), false)) {
       return this.maybeMigrateGrit(snap);
     }
@@ -93,7 +99,8 @@ export class DataSyncService {
       (local.activities?.length ?? 0) > 0 ||
       (local.goals?.length ?? 0) > 0 ||
       (local.habits?.length ?? 0) > 0 ||
-      (local.grit?.length ?? 0) > 0;
+      (local.grit?.length ?? 0) > 0 ||
+      (local.academics?.length ?? 0) > 0;
     if (!hasLegacy) {
       this.store.set(this.migratedKey(), true);
       return of(snap);
@@ -113,10 +120,14 @@ export class DataSyncService {
   }
 
   private maybeMigrateGrit(snap: TrackerSnapshot): Observable<TrackerSnapshot> {
-    if ((snap.grit?.length ?? 0) > 0) return of(snap);
-    const grit = this.store.get<GritProgress[]>(STORAGE_KEYS.grit, []);
-    if (!grit.length) return of(snap);
-    return this.api.importSnapshot({ grit }).pipe(
+    if ((snap.grit?.length ?? 0) > 0 && (snap.academics?.length ?? 0) > 0) return of(snap);
+    const grit = (snap.grit?.length ?? 0) > 0 ? undefined : this.store.get<GritProgress[]>(STORAGE_KEYS.grit, []);
+    const academics =
+      (snap.academics?.length ?? 0) > 0
+        ? undefined
+        : this.store.get<AcademicTrack[]>(STORAGE_KEYS.academics, []);
+    if (!grit?.length && !academics?.length) return of(snap);
+    return this.api.importSnapshot({ grit, academics }).pipe(
       switchMap(() => this.api.getSnapshot()),
       catchError(() => of(snap)),
     );
@@ -138,12 +149,14 @@ export class DataSyncService {
     const habits = this.store.get<Habit[]>(STORAGE_KEYS.habits, []);
     const settings = this.store.get<Partial<AppSettings>>(STORAGE_KEYS.settings, {});
     const grit = this.store.get<GritProgress[]>(STORAGE_KEYS.grit, []);
+    const academics = this.store.get<AcademicTrack[]>(STORAGE_KEYS.academics, []);
     return {
       activities: activities.map(({ _id: _unused, createdAt: _c, updatedAt: _u, ...rest }) => rest),
       goals: goals.map(({ _id: _unused, createdAt: _c, updatedAt: _u, ...rest }) => rest),
       habits: habits.map(({ _id: _unused, createdAt: _c, updatedAt: _u, ...rest }) => rest),
       settings,
       grit,
+      academics,
     };
   }
 
@@ -152,5 +165,6 @@ export class DataSyncService {
     this.store.remove(STORAGE_KEYS.goals);
     this.store.remove(STORAGE_KEYS.habits);
     this.store.remove(STORAGE_KEYS.grit);
+    this.store.remove(STORAGE_KEYS.academics);
   }
 }

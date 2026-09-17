@@ -52,9 +52,9 @@ export class HubPageComponent {
       icon: 'roles',
     },
     {
-      path: '/activities',
+      path: '/academics',
       title: 'Academic trackers',
-      body: '1 semester tracker · subjects and units.',
+      body: 'Primary vs others · subjects, stars and nested units.',
       icon: 'academic',
     },
     {

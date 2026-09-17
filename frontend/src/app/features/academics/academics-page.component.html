@@ -1,0 +1,296 @@
+<div class="acad">
+  <header class="acad-top">
+    <a class="acad-back" routerLink="/home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m12 19-7-7 7-7" />
+        <path d="M19 12H5" />
+      </svg>
+      My tracker
+    </a>
+    <p class="acad-top__title">Academics</p>
+    <button type="button" class="btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
+      {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
+    </button>
+  </header>
+
+  <div class="acad-body">
+    <section class="acad-hero">
+      <div>
+        <p class="eyebrow">Semester · Subjects · Units</p>
+        <h1>Academic tracker</h1>
+        <p class="lede">
+          Rate subjects with stars. Primary is 4–5 stars, Others is everything else.
+          Nested units save to your account in MongoDB.
+        </p>
+      </div>
+      <div class="acad-hero__save" title="Saved to your account in the cloud">
+        <span class="acad-hero__dot" aria-hidden="true"></span>
+        Saved to your account
+      </div>
+    </section>
+
+    <section class="acad-dash" aria-label="Semester progress">
+      <div class="acad-dash__ring">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <circle class="ring-bg" cx="24" cy="24" r="18" />
+          <circle
+            class="ring-fg"
+            cx="24"
+            cy="24"
+            r="18"
+            [attr.stroke-dasharray]="ringC"
+            [attr.stroke-dashoffset]="ringOffset()"
+          />
+        </svg>
+        <div>
+          <p class="acad-dash__value">{{ academics.totals().percent }}%</p>
+          <p class="acad-dash__label">Units done</p>
+        </div>
+      </div>
+      <div class="acad-dash__metrics">
+        <article class="metric">
+          <p class="metric__value">{{ academics.totals().subjects }}</p>
+          <p class="metric__label">Subjects</p>
+        </article>
+        <article class="metric">
+          <p class="metric__value">{{ academics.totals().primary }}</p>
+          <p class="metric__label">Primary</p>
+        </article>
+        <article class="metric">
+          <p class="metric__value">{{ academics.totals().done }}<span>/{{ academics.totals().total || 0 }}</span></p>
+          <p class="metric__label">Units cleared</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="acad-semesters">
+      <div class="acad-tabs" role="tablist" aria-label="Semesters">
+        @for (track of academics.tracks(); track track.id) {
+          <button
+            type="button"
+            class="acad-tab"
+            [class.acad-tab--on]="academics.activeTrack()?.id === track.id"
+            (click)="academics.setActive(track.id)"
+          >
+            {{ track.name }}
+          </button>
+        }
+      </div>
+      <form class="acad-add-track" (submit)="$event.preventDefault(); addSemester()">
+        <input class="input" [(ngModel)]="newTrackName" name="newTrack" placeholder="New semester name" />
+        <button type="submit" class="btn btn--ghost">Add semester</button>
+      </form>
+      <div class="acad-presets-mini">
+        @for (preset of presets; track preset.id) {
+          @if (preset.subjects.length) {
+            <button type="button" class="chip" (click)="academics.applyPreset(preset)">Load {{ preset.name }}</button>
+          }
+        }
+      </div>
+    </section>
+
+    @if (!academics.tracks().length) {
+      <section class="acad-empty">
+        <h2>Start a semester tracker</h2>
+        <p class="lede">Load a preset or create an empty one. Progress stays on your account.</p>
+        <div class="acad-presets">
+          @for (preset of presets; track preset.id) {
+            <button type="button" class="preset" (click)="academics.applyPreset(preset)">
+              <strong>{{ preset.name }}</strong>
+              <span>{{ preset.blurb }}</span>
+              @if (preset.subjects.length) {
+                <em>{{ preset.subjects.length }} subjects</em>
+              }
+            </button>
+          }
+        </div>
+      </section>
+    } @else {
+      @if (academics.activeTrack(); as track) {
+        <section class="acad-toolbar">
+          <input class="input" [ngModel]="query()" (ngModelChange)="query.set($event)" name="query" placeholder="Search subjects and units" />
+          <div class="acad-filters">
+            @for (item of filters; track item.id) {
+              <button
+                type="button"
+                class="chip"
+                [class.chip--on]="filter() === item.id"
+                (click)="filter.set(item.id)"
+              >
+                {{ item.label }}
+              </button>
+            }
+            <button type="button" class="chip" [class.chip--on]="hideDone()" (click)="hideDone.update((v) => !v)">
+              Hide done
+            </button>
+          </div>
+          <form class="acad-add-subject" (submit)="$event.preventDefault(); addSubject()">
+            <input class="input" [(ngModel)]="newSubjectName" name="newSubject" placeholder="Add a subject" />
+            <select class="input input--stars" [(ngModel)]="newSubjectStars" name="newStars">
+              @for (n of starMax; track n) {
+                <option [ngValue]="n">{{ n }} ★</option>
+              }
+            </select>
+            <button type="submit" class="btn">Add</button>
+          </form>
+        </section>
+
+        <section class="band band--primary">
+          <header class="band__head">
+            <div>
+              <p class="eyebrow">Focus</p>
+              <h2>Primary</h2>
+            </div>
+            <p class="muted tiny">Subjects rated 4–5 stars</p>
+          </header>
+          @if (!visible().primary.length) {
+            <p class="empty">No primary subjects yet. Rate a subject 4 or 5 stars to move it here.</p>
+          }
+          <div class="cards">
+            @for (subject of visible().primary; track subject.id) {
+              <ng-container *ngTemplateOutlet="subjectCard; context: { $implicit: subject, trackId: track.id }" />
+            }
+          </div>
+        </section>
+
+        <section class="band band--others">
+          <header class="band__head">
+            <div>
+              <p class="eyebrow">Supporting</p>
+              <h2>Others</h2>
+            </div>
+            <p class="muted tiny">Subjects rated 1–3 stars</p>
+          </header>
+          @if (!visible().others.length) {
+            <p class="empty">No other subjects in this view.</p>
+          }
+          <div class="cards">
+            @for (subject of visible().others; track subject.id) {
+              <ng-container *ngTemplateOutlet="subjectCard; context: { $implicit: subject, trackId: track.id }" />
+            }
+          </div>
+        </section>
+
+        <div class="acad-foot">
+          @if (renamingTrack) {
+            <form class="rename" (submit)="$event.preventDefault(); saveTrackName(track.id)">
+              <input class="input" [(ngModel)]="trackNameDraft" name="trackNameDraft" />
+              <button type="submit" class="btn">Save</button>
+              <button type="button" class="btn btn--ghost" (click)="renamingTrack = false">Cancel</button>
+            </form>
+          } @else {
+            <button type="button" class="btn btn--ghost" (click)="startRenameTrack(track.name)">Rename semester</button>
+          }
+          <button type="button" class="btn btn--ghost btn--danger" (click)="academics.removeTrack(track.id)">
+            Delete semester
+          </button>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<ng-template #subjectCard let-subject let-trackId="trackId">
+  <article
+    class="card"
+    draggable="true"
+    (dragstart)="onSubjectDragStart(subject.id, $event)"
+    (dragover)="allowDrop($event)"
+    (drop)="onSubjectDrop(subject.id)"
+  >
+    <header class="card__head">
+      <button type="button" class="card__open" (click)="toggleExpand(subject.id)">
+        <span class="card__chevron" [class.card__chevron--open]="expanded() === subject.id">›</span>
+        <span>
+          <strong>{{ subject.name }}</strong>
+          <span class="card__meta">
+            {{ progress(subject).done }}/{{ progress(subject).total || 0 }} units
+            · {{ progress(subject).percent }}%
+          </span>
+        </span>
+      </button>
+      <div class="stars" role="group" [attr.aria-label]="'Rating for ' + subject.name">
+        @for (n of starMax; track n) {
+          <button
+            type="button"
+            class="star"
+            [class.star--on]="subject.stars >= n"
+            (click)="academics.setStars(subject.id, n)"
+            [attr.aria-label]="n + ' stars'"
+          >
+            ★
+          </button>
+        }
+      </div>
+    </header>
+    <span class="card__bar"><span [style.width.%]="progress(subject).percent"></span></span>
+    @if (expanded() === subject.id) {
+      <div class="card__body">
+        <form class="unit-add" (submit)="$event.preventDefault(); addUnit(subject.id)">
+          <input
+            class="input"
+            [(ngModel)]="newUnitTitle[subject.id]"
+            [name]="'unit-' + subject.id"
+            placeholder="Add a unit or topic"
+          />
+          <button type="submit" class="btn btn--ghost">Add unit</button>
+        </form>
+        <ng-container
+          *ngTemplateOutlet="subList; context: { nodes: visibleSubs(subject.subs), subjectId: subject.id, parentId: null, depth: 0 }"
+        />
+        <div class="card__actions">
+          @if (renamingSubjectId === subject.id) {
+            <form class="rename" (submit)="$event.preventDefault(); saveSubjectName(subject.id)">
+              <input class="input" [(ngModel)]="subjectNameDraft" name="subjectNameDraft" />
+              <button type="submit" class="btn">Save</button>
+              <button type="button" class="btn btn--ghost" (click)="renamingSubjectId = null">Cancel</button>
+            </form>
+          } @else {
+            <button type="button" class="linkish" (click)="startRenameSubject(subject.id, subject.name)">Rename</button>
+          }
+          <button type="button" class="linkish" (click)="academics.duplicateSubject(subject.id)">Duplicate</button>
+          <button type="button" class="linkish linkish--danger" (click)="academics.removeSubject(subject.id)">Delete</button>
+        </div>
+      </div>
+    }
+  </article>
+</ng-template>
+
+<ng-template #subList let-nodes="nodes" let-subjectId="subjectId" let-parentId="parentId" let-depth="depth">
+  <ul class="units" [class.units--nested]="depth > 0">
+    @for (node of nodes; track node.id) {
+      <li
+        class="unit"
+        [class.unit--done]="node.done"
+        draggable="true"
+        (dragstart)="onSubDragStart(node.id, $event)"
+        (dragover)="allowDrop($event)"
+        (drop)="onSubDrop(subjectId, parentId, node.id, $event)"
+      >
+        <label class="unit__check">
+          <input type="checkbox" [checked]="node.done" (change)="academics.toggleSub(subjectId, node.id)" />
+          <span>{{ node.title }}</span>
+        </label>
+        <div class="unit__ops">
+          @if (depth < 3) {
+            <form class="unit-nested" (submit)="$event.preventDefault(); addNested(subjectId, node.id)">
+              <input
+                class="input input--tiny"
+                [(ngModel)]="nestedTitle[subjectId + ':' + node.id]"
+                [name]="'nest-' + node.id"
+                placeholder="Nested topic"
+              />
+              <button type="submit" class="btn btn--ghost btn--tiny">Add</button>
+            </form>
+          }
+          <button type="button" class="icon-btn" (click)="academics.removeSub(subjectId, node.id)" aria-label="Remove unit">×</button>
+        </div>
+        @if (visibleSubs(node.subs).length) {
+          <ng-container
+            *ngTemplateOutlet="subList; context: { nodes: visibleSubs(node.subs), subjectId: subjectId, parentId: node.id, depth: depth + 1 }"
+          />
+        }
+      </li>
+    }
+  </ul>
+</ng-template>

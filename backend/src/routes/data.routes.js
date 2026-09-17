@@ -32,4 +32,7 @@ router.put('/settings', ctrl.updateSettings);
 router.get('/grit', ctrl.getGrit);
 router.put('/grit', ctrl.saveGrit);
 
+router.get('/academics', ctrl.getAcademics);
+router.put('/academics', ctrl.saveAcademics);
+
 module.exports = router;

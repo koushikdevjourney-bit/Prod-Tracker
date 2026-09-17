@@ -27,7 +27,7 @@ export class AuthService {
 
   readonly token = this._token.asReadonly();
   readonly user = this._user.asReadonly();
-  readonly isAuthenticated = computed(() => !!this._token());
+  readonly isAuthenticated = computed(() => this.isJwt(this._token()));
 
   constructor() {
     this.restoreSession();
@@ -75,7 +75,11 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return this._token();
+    return this.isJwt(this._token()) ? this._token() : null;
+  }
+
+  private isJwt(token: string | null): boolean {
+    return Boolean(token && token.split('.').length === 3);
   }
 
   private restoreSession(): void {
@@ -83,10 +87,12 @@ export class AuthService {
       const raw = localStorage.getItem(STORAGE_KEYS.auth);
       if (!raw) return;
       const parsed = JSON.parse(raw) as StoredSession;
-      if (parsed?.token && parsed?.user) {
+      if (parsed?.token && parsed?.user && this.isJwt(parsed.token)) {
         this._token.set(parsed.token);
         this._user.set(parsed.user);
         this.syncDisplayName(parsed.user.name);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.auth);
       }
     } catch {
       localStorage.removeItem(STORAGE_KEYS.auth);

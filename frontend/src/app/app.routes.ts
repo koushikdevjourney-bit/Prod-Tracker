@@ -35,6 +35,12 @@ export const routes: Routes = [
       import('./features/grit/grit-page.component').then((m) => m.GritPageComponent),
   },
   {
+    path: 'academics',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/academics/academics-page.component').then((m) => m.AcademicsPageComponent),
+  },
+  {
     path: '',
     component: ShellComponent,
     canActivate: [authGuard],

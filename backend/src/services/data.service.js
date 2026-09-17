@@ -3,6 +3,7 @@ const Goal = require('../models/Goal');
 const Habit = require('../models/Habit');
 const UserSettings = require('../models/UserSettings');
 const UserGrit = require('../models/UserGrit');
+const UserAcademics = require('../models/UserAcademics');
 const { ACTIVITY_TYPES } = require('../models/Activity');
 const { GOAL_PERIODS } = require('../models/Goal');
 const { THEMES } = require('../models/UserSettings');
@@ -147,6 +148,61 @@ function sanitizeGritRows(rows) {
   return cleaned;
 }
 
+function newId() {
+  return require('crypto').randomUUID();
+}
+
+function sanitizeAcademicSubs(subs, depth = 0) {
+  if (!Array.isArray(subs) || depth > 4) return [];
+  return subs
+    .map((node) => ({
+      id: String(node?.id || newId()).slice(0, 80),
+      title: String(node?.title || '').trim().slice(0, 200),
+      done: Boolean(node?.done),
+      subs: sanitizeAcademicSubs(node?.subs, depth + 1),
+    }))
+    .filter((node) => node.title);
+}
+
+function mapAcademicSubs(subs) {
+  if (!Array.isArray(subs)) return [];
+  return subs.map((node) => ({
+    id: node.id,
+    title: node.title,
+    done: Boolean(node.done),
+    subs: mapAcademicSubs(node.subs),
+  }));
+}
+
+function sanitizeAcademicTracks(tracks) {
+  if (!Array.isArray(tracks)) return [];
+  return tracks.slice(0, 20).map((track) => ({
+    id: String(track?.id || newId()).slice(0, 80),
+    name: String(track?.name || 'Semester').trim().slice(0, 120) || 'Semester',
+    subjects: Array.isArray(track?.subjects)
+      ? track.subjects.slice(0, 40).map((subject) => ({
+          id: String(subject?.id || newId()).slice(0, 80),
+          name: String(subject?.name || '').trim().slice(0, 200) || 'Subject',
+          stars: Math.min(5, Math.max(1, Number(subject?.stars) || 3)),
+          subs: sanitizeAcademicSubs(subject?.subs),
+        }))
+      : [],
+  }));
+}
+
+function mapAcademicTracks(tracks) {
+  return (tracks || []).map((track) => ({
+    id: track.id,
+    name: track.name,
+    subjects: (track.subjects || []).map((subject) => ({
+      id: subject.id,
+      name: subject.name,
+      stars: subject.stars,
+      subs: mapAcademicSubs(subject.subs),
+    })),
+  }));
+}
+
 async function getGrit(userId) {
   const doc = await UserGrit.findOne({ user: userId });
   return doc?.rows ? doc.rows.map((row) => ({
@@ -178,13 +234,29 @@ async function saveGrit(userId, rows) {
   }));
 }
 
+async function getAcademics(userId) {
+  const doc = await UserAcademics.findOne({ user: userId });
+  return mapAcademicTracks(doc?.tracks);
+}
+
+async function saveAcademics(userId, tracks) {
+  const cleaned = sanitizeAcademicTracks(tracks);
+  const doc = await UserAcademics.findOneAndUpdate(
+    { user: userId },
+    { user: userId, tracks: cleaned },
+    { new: true, upsert: true, setDefaultsOnInsert: true },
+  );
+  return mapAcademicTracks(doc.tracks);
+}
+
 async function getSnapshot(userId) {
-  const [activities, goals, habits, settingsDoc, grit] = await Promise.all([
+  const [activities, goals, habits, settingsDoc, grit, academics] = await Promise.all([
     Activity.find({ user: userId }).sort({ date: -1, startTime: 1 }),
     Goal.find({ user: userId }).sort({ date: -1 }),
     Habit.find({ user: userId }).sort({ createdAt: 1 }),
     UserSettings.findOne({ user: userId }),
     getGrit(userId),
+    getAcademics(userId),
   ]);
 
   return {
@@ -193,6 +265,7 @@ async function getSnapshot(userId) {
     habits: toClientList(habits),
     settings: settingsDoc ? toClient(settingsDoc) : defaultSettings(),
     grit,
+    academics,
   };
 }
 
@@ -202,11 +275,12 @@ async function clearAll(userId) {
     Goal.deleteMany({ user: userId }),
     Habit.deleteMany({ user: userId }),
     UserGrit.deleteMany({ user: userId }),
+    UserAcademics.deleteMany({ user: userId }),
   ]);
 }
 
 async function importSnapshot(userId, payload = {}) {
-  const created = { activities: [], goals: [], habits: [], grit: [] };
+  const created = { activities: [], goals: [], habits: [], grit: [], academics: [] };
 
   if (Array.isArray(payload.activities) && payload.activities.length) {
     const docs = payload.activities.map((item) => ({
@@ -242,6 +316,13 @@ async function importSnapshot(userId, payload = {}) {
   const gritRows = Array.isArray(payload.grit) ? payload.grit : payload.grit?.rows;
   if (Array.isArray(gritRows) && gritRows.length) {
     created.grit = await saveGrit(userId, gritRows);
+  }
+
+  const academicTracks = Array.isArray(payload.academics)
+    ? payload.academics
+    : payload.academics?.tracks;
+  if (Array.isArray(academicTracks) && academicTracks.length) {
+    created.academics = await saveAcademics(userId, academicTracks);
   }
 
   return created;
@@ -393,4 +474,6 @@ module.exports = {
   upsertSettings,
   getGrit,
   saveGrit,
+  getAcademics,
+  saveAcademics,
 };

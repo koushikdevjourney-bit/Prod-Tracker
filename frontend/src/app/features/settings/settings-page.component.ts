@@ -111,7 +111,7 @@ export class SettingsPageComponent {
   }
 
   clearData(): void {
-    if (!confirm('Clear all activities, goals, habits, and grit progress from your account?')) return;
+    if (!confirm('Clear all activities, goals, habits, grit, and academic progress from your account?')) return;
     this.sample.clearAllData();
   }
 
