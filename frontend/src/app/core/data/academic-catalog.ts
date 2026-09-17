@@ -75,3 +75,14 @@ export function trackProgress(track: AcademicTrack): { done: number; total: numb
   }
   return { done, total, percent: total ? Math.round((done / total) * 100) : 0 };
 }
+
+export function summarizeTrack(track: AcademicTrack) {
+  const progress = trackProgress(track);
+  const primary = track.subjects.filter((subject) => subject.stars >= PRIMARY_STAR_MIN).length;
+  return {
+    ...progress,
+    subjects: track.subjects.length,
+    primary,
+    others: track.subjects.length - primary,
+  };
+}
