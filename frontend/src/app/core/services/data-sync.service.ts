@@ -5,11 +5,13 @@ import { STORAGE_KEYS } from '../constants/categories';
 import { Activity, AppSettings, Goal, Habit } from '../models';
 import { GritProgress } from '../data/grit-catalog';
 import { AcademicTrack } from '../data/academic-catalog';
+import { ProgressState, EMPTY_PROGRESS } from '../data/progress-catalog';
 import { ActivityService } from './activity.service';
 import { AcademicService } from './academic.service';
 import { GoalService } from './goal.service';
 import { GritService } from './grit.service';
 import { HabitService } from './habit.service';
+import { ProgressService } from './progress.service';
 import { LocalStoreService } from './local-store.service';
 import { SettingsService } from './settings.service';
 import { ThemeService } from './theme.service';
@@ -26,6 +28,7 @@ export class DataSyncService {
   private readonly habits = inject(HabitService);
   private readonly grit = inject(GritService);
   private readonly academics = inject(AcademicService);
+  private readonly progress = inject(ProgressService);
   private readonly settings = inject(SettingsService);
   private readonly theme = inject(ThemeService);
   private readonly toast = inject(ToastService);
@@ -52,6 +55,7 @@ export class DataSyncService {
     this.habits.hydrate([]);
     this.grit.resetLocal();
     this.academics.resetLocal();
+    this.progress.resetLocal();
     this.settings.resetLocal();
   }
 
@@ -78,6 +82,7 @@ export class DataSyncService {
     this.habits.hydrate(snap.habits ?? []);
     if (Array.isArray(snap.grit)) this.grit.hydrate(snap.grit);
     if (Array.isArray(snap.academics)) this.academics.hydrate(snap.academics);
+    if (snap.progress) this.progress.hydrate(snap.progress);
     this.settings.hydrate(snap.settings);
     const theme = snap.settings?.theme;
     if (theme) this.theme.setMode(theme);
@@ -89,7 +94,8 @@ export class DataSyncService {
       (snap.goals?.length ?? 0) === 0 &&
       (snap.habits?.length ?? 0) === 0 &&
       (snap.grit?.length ?? 0) === 0 &&
-      (snap.academics?.length ?? 0) === 0;
+      (snap.academics?.length ?? 0) === 0 &&
+      (snap.progress?.items?.length ?? 0) === 0;
     if (!cloudEmpty || this.store.get(this.migratedKey(), false)) {
       return this.maybeMigrateGrit(snap);
     }
@@ -100,7 +106,8 @@ export class DataSyncService {
       (local.goals?.length ?? 0) > 0 ||
       (local.habits?.length ?? 0) > 0 ||
       (local.grit?.length ?? 0) > 0 ||
-      (local.academics?.length ?? 0) > 0;
+      (local.academics?.length ?? 0) > 0 ||
+      (local.progress?.items?.length ?? 0) > 0;
     if (!hasLegacy) {
       this.store.set(this.migratedKey(), true);
       return of(snap);
@@ -120,14 +127,18 @@ export class DataSyncService {
   }
 
   private maybeMigrateGrit(snap: TrackerSnapshot): Observable<TrackerSnapshot> {
-    if ((snap.grit?.length ?? 0) > 0 && (snap.academics?.length ?? 0) > 0) return of(snap);
+    const hasProgress = (snap.progress?.items?.length ?? 0) > 0;
+    if ((snap.grit?.length ?? 0) > 0 && (snap.academics?.length ?? 0) > 0 && hasProgress) return of(snap);
     const grit = (snap.grit?.length ?? 0) > 0 ? undefined : this.store.get<GritProgress[]>(STORAGE_KEYS.grit, []);
     const academics =
       (snap.academics?.length ?? 0) > 0
         ? undefined
         : this.store.get<AcademicTrack[]>(STORAGE_KEYS.academics, []);
-    if (!grit?.length && !academics?.length) return of(snap);
-    return this.api.importSnapshot({ grit, academics }).pipe(
+    const progress = hasProgress
+      ? undefined
+      : this.store.get<ProgressState>(STORAGE_KEYS.progress, EMPTY_PROGRESS);
+    if (!grit?.length && !academics?.length && !progress?.items?.length) return of(snap);
+    return this.api.importSnapshot({ grit, academics, progress }).pipe(
       switchMap(() => this.api.getSnapshot()),
       catchError(() => of(snap)),
     );
@@ -150,6 +161,7 @@ export class DataSyncService {
     const settings = this.store.get<Partial<AppSettings>>(STORAGE_KEYS.settings, {});
     const grit = this.store.get<GritProgress[]>(STORAGE_KEYS.grit, []);
     const academics = this.store.get<AcademicTrack[]>(STORAGE_KEYS.academics, []);
+    const progress = this.store.get<ProgressState>(STORAGE_KEYS.progress, EMPTY_PROGRESS);
     return {
       activities: activities.map(({ _id: _unused, createdAt: _c, updatedAt: _u, ...rest }) => rest),
       goals: goals.map(({ _id: _unused, createdAt: _c, updatedAt: _u, ...rest }) => rest),
@@ -157,6 +169,7 @@ export class DataSyncService {
       settings,
       grit,
       academics,
+      progress,
     };
   }
 
@@ -166,5 +179,6 @@ export class DataSyncService {
     this.store.remove(STORAGE_KEYS.habits);
     this.store.remove(STORAGE_KEYS.grit);
     this.store.remove(STORAGE_KEYS.academics);
+    this.store.remove(STORAGE_KEYS.progress);
   }
 }

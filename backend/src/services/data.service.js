@@ -4,6 +4,7 @@ const Habit = require('../models/Habit');
 const UserSettings = require('../models/UserSettings');
 const UserGrit = require('../models/UserGrit');
 const UserAcademics = require('../models/UserAcademics');
+const UserProgress = require('../models/UserProgress');
 const { ACTIVITY_TYPES } = require('../models/Activity');
 const { GOAL_PERIODS } = require('../models/Goal');
 const { THEMES } = require('../models/UserSettings');
@@ -203,6 +204,51 @@ function mapAcademicTracks(tracks) {
   }));
 }
 
+function newProgressId() {
+  return require('crypto').randomUUID();
+}
+
+function sanitizeProgress(payload) {
+  const intention = String(payload?.intention || '').trim().slice(0, 200);
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  const dueOk = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+  return {
+    intention,
+    focusMinutesToday: Math.max(0, Math.round(Number(payload?.focusMinutesToday) || 0)),
+    focusDate: dueOk(payload?.focusDate) ? String(payload.focusDate) : '',
+    items: items.slice(0, 40).map((item, index) => ({
+      id: String(item?.id || newProgressId()).slice(0, 80),
+      title: String(item?.title || '').trim().slice(0, 160) || 'Focus',
+      note: String(item?.note || '').trim().slice(0, 400),
+      percent: Math.min(100, Math.max(0, Math.round(Number(item?.percent) || 0))),
+      done: Boolean(item?.done),
+      position: Number.isFinite(Number(item?.position)) ? Math.max(0, Math.round(Number(item.position))) : index,
+      source: String(item?.source || 'Custom').trim().slice(0, 80) || 'Custom',
+      due: dueOk(item?.due) ? String(item.due) : '',
+      minutes: Math.max(0, Math.round(Number(item?.minutes) || 0)),
+    })),
+  };
+}
+
+function mapProgress(doc) {
+  return {
+    intention: doc?.intention || '',
+    focusMinutesToday: doc?.focusMinutesToday || 0,
+    focusDate: doc?.focusDate || '',
+    items: (doc?.items || []).map((item) => ({
+      id: item.id,
+      title: item.title,
+      note: item.note || '',
+      percent: item.percent,
+      done: Boolean(item.done),
+      position: item.position,
+      source: item.source || 'Custom',
+      due: item.due || '',
+      minutes: item.minutes || 0,
+    })),
+  };
+}
+
 async function getGrit(userId) {
   const doc = await UserGrit.findOne({ user: userId });
   return doc?.rows ? doc.rows.map((row) => ({
@@ -249,14 +295,30 @@ async function saveAcademics(userId, tracks) {
   return mapAcademicTracks(doc.tracks);
 }
 
+async function getProgress(userId) {
+  const doc = await UserProgress.findOne({ user: userId });
+  return mapProgress(doc);
+}
+
+async function saveProgress(userId, payload) {
+  const cleaned = sanitizeProgress(payload);
+  const doc = await UserProgress.findOneAndUpdate(
+    { user: userId },
+    { user: userId, ...cleaned },
+    { new: true, upsert: true, setDefaultsOnInsert: true },
+  );
+  return mapProgress(doc);
+}
+
 async function getSnapshot(userId) {
-  const [activities, goals, habits, settingsDoc, grit, academics] = await Promise.all([
+  const [activities, goals, habits, settingsDoc, grit, academics, progress] = await Promise.all([
     Activity.find({ user: userId }).sort({ date: -1, startTime: 1 }),
     Goal.find({ user: userId }).sort({ date: -1 }),
     Habit.find({ user: userId }).sort({ createdAt: 1 }),
     UserSettings.findOne({ user: userId }),
     getGrit(userId),
     getAcademics(userId),
+    getProgress(userId),
   ]);
 
   return {
@@ -266,6 +328,7 @@ async function getSnapshot(userId) {
     settings: settingsDoc ? toClient(settingsDoc) : defaultSettings(),
     grit,
     academics,
+    progress,
   };
 }
 
@@ -276,11 +339,12 @@ async function clearAll(userId) {
     Habit.deleteMany({ user: userId }),
     UserGrit.deleteMany({ user: userId }),
     UserAcademics.deleteMany({ user: userId }),
+    UserProgress.deleteMany({ user: userId }),
   ]);
 }
 
 async function importSnapshot(userId, payload = {}) {
-  const created = { activities: [], goals: [], habits: [], grit: [], academics: [] };
+  const created = { activities: [], goals: [], habits: [], grit: [], academics: [], progress: null };
 
   if (Array.isArray(payload.activities) && payload.activities.length) {
     const docs = payload.activities.map((item) => ({
@@ -323,6 +387,10 @@ async function importSnapshot(userId, payload = {}) {
     : payload.academics?.tracks;
   if (Array.isArray(academicTracks) && academicTracks.length) {
     created.academics = await saveAcademics(userId, academicTracks);
+  }
+
+  if (payload.progress && typeof payload.progress === 'object') {
+    created.progress = await saveProgress(userId, payload.progress);
   }
 
   return created;
@@ -476,4 +544,6 @@ module.exports = {
   saveGrit,
   getAcademics,
   saveAcademics,
+  getProgress,
+  saveProgress,
 };

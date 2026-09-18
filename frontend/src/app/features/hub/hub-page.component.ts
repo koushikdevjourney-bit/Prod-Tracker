@@ -40,9 +40,9 @@ export class HubPageComponent {
 
   readonly sections: HubSection[] = [
     {
-      path: '/dashboard',
+      path: '/progress',
       title: 'Current progress tracker',
-      body: 'Pick what you are focusing on now and set the order.',
+      body: 'What you are on now, in the order you’ll take it.',
       icon: 'progress',
     },
     {

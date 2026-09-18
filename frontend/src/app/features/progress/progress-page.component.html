@@ -1,0 +1,224 @@
+<div class="prog">
+  <header class="prog-top">
+    <a class="prog-back" routerLink="/home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m12 19-7-7 7-7" />
+        <path d="M19 12H5" />
+      </svg>
+      My tracker
+    </a>
+    <p class="prog-top__title">Progress</p>
+    <button type="button" class="btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
+      {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
+    </button>
+  </header>
+
+  <div class="prog-body">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Current focus</p>
+        <h1>What you’re on now</h1>
+        <p class="lede">One thing in front. Queue the rest. Timer and progress save to your account.</p>
+      </div>
+      <div class="hero__ring" aria-hidden="true">
+        <svg viewBox="0 0 48 48">
+          <circle class="ring-bg" cx="24" cy="24" r="18" />
+          <circle class="ring-fg" cx="24" cy="24" r="18" [attr.stroke-dasharray]="ringC" [attr.stroke-dashoffset]="ringOffset()" />
+        </svg>
+        <strong>{{ progress.totals().percent }}%</strong>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="Today">
+      <article>
+        <strong>{{ progress.totals().open }}</strong>
+        <span>Open</span>
+      </article>
+      <article>
+        <strong>{{ progress.totals().done }}</strong>
+        <span>Cleared</span>
+      </article>
+      <article>
+        <strong>{{ todayMinutes() }}</strong>
+        <span>Focused today</span>
+      </article>
+    </section>
+
+    @if (editingIntention()) {
+      <form class="intention intention--edit" (submit)="$event.preventDefault(); saveIntention()">
+        <input class="input" [(ngModel)]="intentionDraft" name="intention" placeholder="Today I’m focusing on…" maxlength="200" />
+        <button type="submit" class="btn btn--primary">Save</button>
+        <button type="button" class="btn btn--ghost" (click)="editingIntention.set(false)">Cancel</button>
+      </form>
+    } @else {
+      <button type="button" class="intention" (click)="startIntention()">
+        @if (progress.state().intention) {
+          <span>{{ progress.state().intention }}</span>
+        } @else {
+          <span class="muted">Add a one-line intention for today</span>
+        }
+      </button>
+    }
+
+    @if (progress.now(); as now) {
+      <section class="now" aria-label="Now">
+        <div class="now__top">
+          <div>
+            <p class="now__kicker">Now</p>
+            <h2>{{ now.title }}</h2>
+            @if (now.source !== 'Custom') {
+              <p class="now__source">{{ now.source }}</p>
+            }
+          </div>
+          @if (itemDue(now); as due) {
+            <span class="badge" [class.badge--warn]="due === 'overdue'" [class.badge--now]="due === 'today'">
+              {{ due === 'overdue' ? 'Overdue' : due === 'today' ? 'Due today' : 'Due ' + now.due }}
+            </span>
+          }
+        </div>
+
+        <div class="timer">
+          <div class="timer__clock">{{ running() || remaining() ? clock() : sessionLen() + ':00' }}</div>
+          <div class="timer__lens">
+            @for (n of lengths; track n) {
+              <button type="button" class="chip" [class.chip--on]="sessionLen() === n" (click)="sessionLen.set(n)" [disabled]="running()">
+                {{ n }}m
+              </button>
+            }
+          </div>
+          <div class="timer__run">
+            @if (!running()) {
+              <button type="button" class="btn btn--primary" (click)="startSession()">Start focus</button>
+            } @else {
+              <button type="button" class="btn btn--ghost" (click)="pauseSession()">Pause</button>
+              <button type="button" class="btn btn--ghost" (click)="stopSession()">Stop</button>
+            }
+          </div>
+        </div>
+
+        <div class="now__bar">
+          <span>{{ now.percent }}%</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            [ngModel]="now.percent"
+            (ngModelChange)="progress.setPercent(now.id, +$event)"
+            name="nowPercent"
+            [attr.aria-label]="'Progress for ' + now.title"
+          />
+        </div>
+        <div class="now__actions">
+          <button type="button" class="btn btn--ghost" (click)="progress.bump(now.id, -10)">−10</button>
+          <button type="button" class="btn btn--ghost" (click)="progress.bump(now.id, 10)">+10</button>
+          <button type="button" class="btn btn--primary" (click)="progress.toggleDone(now.id)">Mark done</button>
+          @if (progress.queue().length) {
+            <button type="button" class="btn btn--ghost" (click)="progress.skip(now.id)">Skip</button>
+          }
+        </div>
+        <div class="now__meta">
+          <label class="due">
+            <span>Due</span>
+            <input class="input" type="date" [ngModel]="now.due" (ngModelChange)="progress.setDue(now.id, $event)" name="nowDue" />
+          </label>
+          @if (now.minutes) {
+            <p class="muted tiny">{{ now.minutes }}m logged on this</p>
+          }
+        </div>
+        @if (editingNote() === now.id) {
+          <form class="note-form" (submit)="$event.preventDefault(); saveNote(now.id)">
+            <textarea class="input" [(ngModel)]="noteDraft" name="nowNote" rows="2" placeholder="Next action — what’s the next 5 minutes?"></textarea>
+            <button type="submit" class="btn btn--ghost">Save</button>
+          </form>
+        } @else {
+          <button type="button" class="note-btn" (click)="startNote(now)">
+            {{ now.note || 'What’s the next action?' }}
+          </button>
+        }
+      </section>
+    } @else {
+      <section class="empty">
+        <h2>Nothing in focus yet</h2>
+        <p class="lede">Add what you’re working on. The first item becomes Now; the rest wait in your queue.</p>
+      </section>
+    }
+
+    @if (progress.queue().length) {
+      <section class="queue">
+        <header class="queue__head">
+          <h2>Up next</h2>
+          <p>Drag to set the order</p>
+        </header>
+        <ol class="queue__list">
+          @for (item of progress.queue(); track item.id; let i = $index) {
+            <li
+              class="row"
+              [class.row--dragging]="draggingId() === item.id"
+              draggable="true"
+              (dragstart)="onDragStart(item.id, $event)"
+              (dragover)="allowDrop($event)"
+              (drop)="onDrop(item.id, $event)"
+            >
+              <span class="row__pos">{{ i + 2 }}</span>
+              <div class="row__copy">
+                <strong>{{ item.title }}</strong>
+                <span class="row__bar"><span [style.width.%]="item.percent"></span></span>
+                @if (itemDue(item); as due) {
+                  <span class="badge badge--tiny" [class.badge--warn]="due === 'overdue'" [class.badge--now]="due === 'today'">
+                    {{ due === 'overdue' ? 'Overdue' : due === 'today' ? 'Today' : item.due }}
+                  </span>
+                }
+              </div>
+              <span class="row__pct">{{ item.percent }}%</span>
+              <div class="row__ops">
+                <button type="button" class="ghost-mini" (click)="progress.makeNow(item.id)">Now</button>
+                <button type="button" class="ghost-mini" (click)="progress.move(item.id, -1)" aria-label="Move up">↑</button>
+                <button type="button" class="ghost-mini" (click)="progress.move(item.id, 1)" aria-label="Move down">↓</button>
+                <button type="button" class="ghost-mini" (click)="progress.remove(item.id)" aria-label="Remove">×</button>
+              </div>
+            </li>
+          }
+        </ol>
+      </section>
+    }
+
+    <section class="add">
+      <form class="add__form" (submit)="$event.preventDefault(); addCustom()">
+        <input class="input" [(ngModel)]="newTitle" name="newTitle" placeholder="Add something you’re focusing on" />
+        <button type="submit" class="btn btn--primary" [disabled]="!newTitle.trim()">Add</button>
+      </form>
+      <label class="check">
+        <input type="checkbox" [ngModel]="addAsNow()" (ngModelChange)="addAsNow.set($event)" name="addAsNow" />
+        Add as Now
+      </label>
+      @if (suggestions().length) {
+        <div class="chips">
+          <span class="chips__label">Quick add</span>
+          @for (item of suggestions(); track item.source + item.title) {
+            <button type="button" class="chip" (click)="addSuggestion(item.title, item.source)">{{ item.title }}</button>
+          }
+        </div>
+      }
+    </section>
+
+    @if (progress.cleared().length) {
+      <section class="cleared">
+        <button type="button" class="cleared__toggle" (click)="showCleared.update((v) => !v)" [attr.aria-expanded]="showCleared()">
+          Cleared · {{ progress.cleared().length }}
+          <span>{{ showCleared() ? 'Hide' : 'Show' }}</span>
+        </button>
+        @if (showCleared()) {
+          <ul class="cleared__list">
+            @for (item of progress.cleared(); track item.id) {
+              <li>
+                <span>{{ item.title }}</span>
+                <button type="button" class="ghost-mini" (click)="progress.toggleDone(item.id)">Undo</button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+  </div>
+</div>

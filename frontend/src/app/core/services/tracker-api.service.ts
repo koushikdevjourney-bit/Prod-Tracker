@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { Activity, ActivityType, AppSettings, Goal, GoalPeriod, Habit } from '../models';
 import { GritProgress } from '../data/grit-catalog';
 import { AcademicTrack } from '../data/academic-catalog';
+import { ProgressState } from '../data/progress-catalog';
 
 export interface ActivityPayload {
   _id?: string;
@@ -43,6 +44,7 @@ export interface TrackerSnapshot {
   settings: AppSettings;
   grit: GritProgress[];
   academics: AcademicTrack[];
+  progress: ProgressState;
 }
 
 export interface ImportPayload {
@@ -52,6 +54,7 @@ export interface ImportPayload {
   settings?: Partial<AppSettings>;
   grit?: GritProgress[];
   academics?: AcademicTrack[];
+  progress?: ProgressState;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -125,5 +128,9 @@ export class TrackerApiService {
     return this.http
       .put<{ tracks: AcademicTrack[] }>(`${this.base}/academics`, { tracks })
       .pipe(map((res) => res.tracks ?? tracks));
+  }
+
+  saveProgress(state: ProgressState): Observable<ProgressState> {
+    return this.http.put<ProgressState>(`${this.base}/progress`, state);
   }
 }

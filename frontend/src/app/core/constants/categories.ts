@@ -44,6 +44,7 @@ export const STORAGE_KEYS = {
   cloudMigrated: 'pt.cloudMigrated',
   grit: 'pt.grit',
   academics: 'pt.academics',
+  progress: 'pt.progress',
 } as const;
 
 export const DEFAULT_SLEEP_TARGET_MINUTES = 8 * 60;

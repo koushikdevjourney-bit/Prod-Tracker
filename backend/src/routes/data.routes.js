@@ -35,4 +35,7 @@ router.put('/grit', ctrl.saveGrit);
 router.get('/academics', ctrl.getAcademics);
 router.put('/academics', ctrl.saveAcademics);
 
+router.get('/progress', ctrl.getProgress);
+router.put('/progress', ctrl.saveProgress);
+
 module.exports = router;

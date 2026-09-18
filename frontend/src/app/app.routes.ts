@@ -41,6 +41,12 @@ export const routes: Routes = [
       import('./features/academics/academics-page.component').then((m) => m.AcademicsPageComponent),
   },
   {
+    path: 'progress',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/progress/progress-page.component').then((m) => m.ProgressPageComponent),
+  },
+  {
     path: '',
     component: ShellComponent,
     canActivate: [authGuard],

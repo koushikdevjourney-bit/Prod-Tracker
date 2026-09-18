@@ -185,6 +185,22 @@ async function saveAcademics(req, res, next) {
   }
 }
 
+async function getProgress(req, res, next) {
+  try {
+    res.json(await data.getProgress(userId(req)));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function saveProgress(req, res, next) {
+  try {
+    res.json(await data.saveProgress(userId(req), req.body || {}));
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   snapshot,
   clearAll,
@@ -208,4 +224,6 @@ module.exports = {
   saveGrit,
   getAcademics,
   saveAcademics,
+  getProgress,
+  saveProgress,
 };
