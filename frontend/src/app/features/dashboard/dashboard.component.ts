@@ -66,15 +66,27 @@ export class DashboardComponent {
   readonly isEmpty = computed(() => this.stats().activityCount === 0);
 
   addActivity(): void {
-    this.modal.openCreate({ date: this.dates.selectedDate() });
+    const date = this.dates.selectedDate();
+    const slot = this.activities.nextSlot(date);
+    this.modal.openCreate({
+      date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      continueFrom: slot.afterName,
+    });
   }
 
   quickAdd(category: string, type: Activity['type']): void {
+    const date = this.dates.selectedDate();
+    const slot = this.activities.nextSlot(date);
     this.modal.openCreate({
-      date: this.dates.selectedDate(),
+      date,
       category,
       type,
       name: category,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      continueFrom: slot.afterName,
     });
   }
 

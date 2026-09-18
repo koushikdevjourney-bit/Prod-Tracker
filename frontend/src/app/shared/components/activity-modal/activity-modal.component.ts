@@ -42,19 +42,22 @@ import { DurationPipe } from '../../pipes/format.pipes';
 
           <label class="field">
             <span>Date</span>
-            <input class="input" type="date" [(ngModel)]="date" name="date" required (ngModelChange)="syncMeta()" />
+            <input class="input" type="date" [(ngModel)]="date" name="date" required (ngModelChange)="onDateChange()" />
           </label>
 
           <div class="field-row">
             <label class="field">
               <span>From</span>
-              <input class="input" type="time" [(ngModel)]="startTime" name="startTime" required (ngModelChange)="syncMeta()" />
+              <input class="input" type="time" [(ngModel)]="startTime" name="startTime" required (ngModelChange)="onTimeChange()" />
             </label>
             <label class="field">
               <span>To</span>
-              <input class="input" type="time" [(ngModel)]="endTime" name="endTime" required (ngModelChange)="syncMeta()" />
+              <input class="input" type="time" [(ngModel)]="endTime" name="endTime" required (ngModelChange)="onTimeChange()" />
             </label>
           </div>
+          @if (continueFrom) {
+            <p class="muted tiny">Starts when {{ continueFrom }} ended.</p>
+          }
 
           <p class="drawer__duration">
             Duration
@@ -107,6 +110,7 @@ export class ActivityModalComponent {
   endTime = '10:00';
   type: ActivityType = 'productive';
   notes = '';
+  continueFrom = '';
 
   readonly durationMinutes = signal(60);
   readonly overnight = signal(false);
@@ -125,18 +129,39 @@ export class ActivityModalComponent {
         this.endTime = a.endTime;
         this.type = a.type;
         this.notes = a.notes ?? '';
+        this.continueFrom = '';
       } else {
         const d = s.defaults ?? {};
         this.name = d.name ?? d.category ?? '';
         this.category = d.category ?? 'Coding';
         this.date = d.date ?? new Date().toISOString().slice(0, 10);
-        this.startTime = d.startTime ?? '09:00';
-        this.endTime = d.endTime ?? '10:00';
+        const slot =
+          d.startTime && d.endTime
+            ? { startTime: d.startTime, endTime: d.endTime, afterName: d.continueFrom }
+            : this.activities.nextSlot(this.date);
+        this.startTime = slot.startTime;
+        this.endTime = slot.endTime;
+        this.continueFrom = slot.afterName ?? '';
         this.type = d.type ?? getCategoryDefaultType(this.category);
         this.notes = '';
       }
       this.syncMeta();
     });
+  }
+
+  onDateChange(): void {
+    if (this.modal.state().mode === 'create') {
+      const slot = this.activities.nextSlot(this.date);
+      this.startTime = slot.startTime;
+      this.endTime = slot.endTime;
+      this.continueFrom = slot.afterName ?? '';
+    }
+    this.syncMeta();
+  }
+
+  onTimeChange(): void {
+    this.continueFrom = '';
+    this.syncMeta();
   }
 
   onCategoryChange(cat: string): void {

@@ -12,6 +12,7 @@ export interface ActivityModalState {
     startTime: string;
     endTime: string;
     type: ActivityType;
+    continueFrom: string;
   }>;
 }
 

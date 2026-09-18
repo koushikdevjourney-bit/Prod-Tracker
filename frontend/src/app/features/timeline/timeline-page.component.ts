@@ -66,7 +66,14 @@ export class TimelinePageComponent {
   });
 
   add(): void {
-    this.modal.openCreate({ date: this.dates.selectedDate() });
+    const date = this.dates.selectedDate();
+    const slot = this.activities.nextSlot(date);
+    this.modal.openCreate({
+      date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      continueFrom: slot.afterName,
+    });
   }
 
   edit(a: Activity): void {

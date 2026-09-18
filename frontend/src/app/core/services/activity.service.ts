@@ -11,6 +11,7 @@ import {
   createObjectId,
   detectOverlappingActivities,
   getCategoryDefaultType,
+  minutesToTime,
   parseTimeToMinutes,
 } from '../utils/stats.utils';
 
@@ -53,6 +54,17 @@ export class ActivityService {
 
   getByDate(date: string): Activity[] {
     return this.sorted().filter((a) => a.date === date);
+  }
+
+  /** Next create slot: starts when the last chronological log that day ended. */
+  nextSlot(date: string): { startTime: string; endTime: string; afterName?: string } {
+    const sameDay = this.getByDate(date);
+    const last = sameDay.at(-1);
+    if (!last) return { startTime: '09:00', endTime: '10:00' };
+
+    const startTime = last.endTime;
+    const endTime = minutesToTime(parseTimeToMinutes(startTime) + 60);
+    return { startTime, endTime, afterName: last.name };
   }
 
   getByRange(start: string, end: string): Activity[] {
