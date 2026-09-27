@@ -52,12 +52,6 @@ export class HubPageComponent {
       icon: 'todo',
     },
     {
-      path: '/goals',
-      title: 'Career roles',
-      body: '1 role tracker · add packs, topics and skills.',
-      icon: 'roles',
-    },
-    {
       path: '/academics',
       title: 'Academic trackers',
       body: 'Primary vs others · subjects, stars and nested units.',

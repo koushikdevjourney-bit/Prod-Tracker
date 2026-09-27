@@ -1,19 +1,24 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
 import { AcademicService } from '../../core/services/academic.service';
+import { ProgressService } from '../../core/services/progress.service';
+import { ToastService } from '../../core/services/toast.service';
 import {
   ACADEMIC_PRESETS,
+  AcademicPreset,
   AcademicSubject,
   AcademicTrack,
   PRIMARY_STAR_MIN,
+  searchSubjectMatches,
   subjectProgress,
   summarizeTrack,
 } from '../../core/data/academic-catalog';
 
-type SectionKind = 'primary' | 'others';
+export type SectionKind = 'primary' | 'others';
+export type FilterTab = 'all' | 'primary' | 'others' | 'pending' | 'completed';
 
 @Component({
   selector: 'app-academics-page',
@@ -25,19 +30,38 @@ type SectionKind = 'primary' | 'others';
 export class AcademicsPageComponent {
   readonly theme = inject(ThemeService);
   readonly academics = inject(AcademicService);
+  private readonly progressService = inject(ProgressService);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+
   readonly presets = ACADEMIC_PRESETS;
   readonly starMax = [1, 2, 3, 4, 5];
 
   readonly selectedId = signal<string | null>(null);
-  readonly expanded = signal<string | null>(null);
+  readonly expandedIds = signal<Set<string>>(new Set());
   readonly addingSection = signal<SectionKind | null>(null);
   readonly addingNestedId = signal<string | null>(null);
   readonly creating = signal(false);
+
+  // Search & Filter
+  readonly searchQuery = signal<string>('');
+  readonly filterTab = signal<FilterTab>('all');
+
+  // In-place edits
+  readonly editingTrack = signal(false);
+  readonly editingSubjectId = signal<string | null>(null);
+  readonly editingUnitId = signal<string | null>(null);
+
+  trackNameDraft = '';
+  subjectNameDraft = '';
+  unitTitleDraft = '';
 
   newTrackName = '';
   newSubjectName = '';
   newUnitTitle: Record<string, string> = {};
   nestedTitle = '';
+
+  readonly ringC = 2 * Math.PI * 18;
 
   readonly selected = computed(() => {
     const id = this.selectedId();
@@ -45,18 +69,34 @@ export class AcademicsPageComponent {
     return this.academics.tracks().find((track) => track.id === id) ?? null;
   });
 
-  readonly sections = computed(() => {
-    const track = this.selected();
-    if (!track) return { primary: [] as AcademicSubject[], others: [] as AcademicSubject[] };
-    return {
-      primary: track.subjects.filter((subject) => subject.stars >= PRIMARY_STAR_MIN),
-      others: track.subjects.filter((subject) => subject.stars < PRIMARY_STAR_MIN),
-    };
-  });
-
   readonly summary = computed(() => {
     const track = this.selected();
     return track ? summarizeTrack(track) : null;
+  });
+
+  readonly filteredSubjects = computed(() => {
+    const track = this.selected();
+    if (!track) return { primary: [] as AcademicSubject[], others: [] as AcademicSubject[] };
+
+    const query = this.searchQuery().trim();
+    const tab = this.filterTab();
+
+    const matchesFilter = (s: AcademicSubject) => {
+      if (!searchSubjectMatches(s, query)) return false;
+      const prog = subjectProgress(s);
+      if (tab === 'primary') return s.stars >= PRIMARY_STAR_MIN;
+      if (tab === 'others') return s.stars < PRIMARY_STAR_MIN;
+      if (tab === 'pending') return prog.percent < 100;
+      if (tab === 'completed') return prog.percent >= 100;
+      return true;
+    };
+
+    const valid = track.subjects.filter(matchesFilter);
+    return {
+      primary: valid.filter((subject) => subject.stars >= PRIMARY_STAR_MIN),
+      others: valid.filter((subject) => subject.stars < PRIMARY_STAR_MIN),
+      totalMatches: valid.length,
+    };
   });
 
   toggleTheme(): void {
@@ -66,15 +106,21 @@ export class AcademicsPageComponent {
   openSemester(id: string): void {
     this.selectedId.set(id);
     this.academics.setActive(id);
-    this.expanded.set(null);
+    this.expandedIds.set(new Set());
     this.addingSection.set(null);
     this.addingNestedId.set(null);
+    this.searchQuery.set('');
+    this.filterTab.set('all');
+    this.editingTrack.set(false);
+    this.editingSubjectId.set(null);
+    this.editingUnitId.set(null);
   }
 
   backToSemesters(): void {
     this.selectedId.set(null);
-    this.expanded.set(null);
+    this.expandedIds.set(new Set());
     this.addingSection.set(null);
+    this.searchQuery.set('');
   }
 
   cardSummary(track: AcademicTrack) {
@@ -85,9 +131,78 @@ export class AcademicsPageComponent {
     return subjectProgress(subject);
   }
 
+  ringOffset(): number {
+    const pct = this.summary()?.percent ?? 0;
+    return this.ringC * (1 - pct / 100);
+  }
+
+  isExpanded(id: string): boolean {
+    return this.expandedIds().has(id);
+  }
+
   toggleExpand(id: string): void {
-    this.expanded.update((current) => (current === id ? null : id));
+    const current = new Set(this.expandedIds());
+    if (current.has(id)) {
+      current.delete(id);
+    } else {
+      current.add(id);
+    }
+    this.expandedIds.set(current);
     this.addingNestedId.set(null);
+  }
+
+  expandAll(): void {
+    const track = this.selected();
+    if (!track) return;
+    const allIds = new Set(track.subjects.map((s) => s.id));
+    this.expandedIds.set(allIds);
+  }
+
+  collapseAll(): void {
+    this.expandedIds.set(new Set());
+  }
+
+  startEditTrack(currentName: string): void {
+    this.trackNameDraft = currentName;
+    this.editingTrack.set(true);
+  }
+
+  saveEditTrack(id: string): void {
+    const name = this.trackNameDraft.trim();
+    if (name) {
+      this.academics.renameTrack(id, name);
+      this.toast.success('Semester renamed');
+    }
+    this.editingTrack.set(false);
+  }
+
+  startEditSubject(subject: AcademicSubject, event: Event): void {
+    event.stopPropagation();
+    this.subjectNameDraft = subject.name;
+    this.editingSubjectId.set(subject.id);
+  }
+
+  saveEditSubject(subjectId: string): void {
+    const name = this.subjectNameDraft.trim();
+    if (name) {
+      this.academics.renameSubject(subjectId, name);
+      this.toast.success('Subject updated');
+    }
+    this.editingSubjectId.set(null);
+  }
+
+  startEditUnit(unitId: string, currentTitle: string, event: Event): void {
+    event.stopPropagation();
+    this.unitTitleDraft = currentTitle;
+    this.editingUnitId.set(unitId);
+  }
+
+  saveEditUnit(subjectId: string, unitId: string): void {
+    const title = this.unitTitleDraft.trim();
+    if (title) {
+      this.academics.renameSub(subjectId, unitId, title);
+    }
+    this.editingUnitId.set(null);
   }
 
   startCreate(): void {
@@ -102,6 +217,7 @@ export class AcademicsPageComponent {
     this.newTrackName = '';
     this.creating.set(false);
     if (created) this.openSemester(created.id);
+    this.toast.success(`Created semester "${name}"`);
   }
 
   usePreset(id: string): void {
@@ -112,13 +228,21 @@ export class AcademicsPageComponent {
       .tracks()
       .find((track) => track.name.toLowerCase() === preset.name.toLowerCase());
     if (match) this.openSemester(match.id);
+    this.toast.success(`Loaded ${preset.name} syllabus`);
+  }
+
+  duplicateSemester(trackId: string, event?: Event): void {
+    event?.stopPropagation();
+    this.academics.duplicateTrack(trackId);
+    this.toast.success('Semester duplicated');
   }
 
   removeSemester(id: string, event?: Event): void {
     event?.stopPropagation();
-    if (!confirm('Delete this semester and its subjects?')) return;
+    if (!confirm('Are you sure you want to delete this semester and all its subjects?')) return;
     this.academics.removeTrack(id);
     if (this.selectedId() === id) this.backToSemesters();
+    this.toast.info('Semester removed');
   }
 
   startAddSubject(section: SectionKind): void {
@@ -131,12 +255,52 @@ export class AcademicsPageComponent {
     const section = this.addingSection();
     if (!track || !section) return;
     this.academics.addSubject(track.id, this.newSubjectName, section === 'primary' ? 5 : 3);
+    this.toast.success(`Added "${this.newSubjectName}"`);
     this.newSubjectName = '';
     this.addingSection.set(null);
   }
 
+  duplicateSubject(subjectId: string, event?: Event): void {
+    event?.stopPropagation();
+    this.academics.duplicateSubject(subjectId);
+    this.toast.success('Subject duplicated');
+  }
+
+  removeSubject(subjectId: string, event?: Event): void {
+    event?.stopPropagation();
+    if (!confirm('Delete this subject and its units?')) return;
+    this.academics.removeSubject(subjectId);
+    this.toast.info('Subject deleted');
+  }
+
+  setStars(subjectId: string, stars: number, event?: Event): void {
+    event?.stopPropagation();
+    this.academics.setStars(subjectId, stars);
+  }
+
+  setAllUnitsDone(subject: AcademicSubject, done: boolean): void {
+    this.academics.setAllSubs(subject.id, done);
+    this.toast.info(done ? `All units in ${subject.name} marked complete!` : `Reset units in ${subject.name}`);
+  }
+
+  focusSubject(subject: AcademicSubject, unitTitle?: string, event?: Event): void {
+    event?.stopPropagation();
+    const title = unitTitle ? `${subject.name}: ${unitTitle}` : subject.name;
+    const track = this.selected();
+    this.progressService.add(title, track ? track.name : 'Academics', true);
+    this.toast.success(`"${title}" sent to Current Focus!`);
+  }
+
+  focusAndGo(subject: AcademicSubject, event?: Event): void {
+    event?.stopPropagation();
+    this.focusSubject(subject);
+    this.router.navigate(['/progress']);
+  }
+
   addUnit(subjectId: string): void {
-    this.academics.addSub(subjectId, null, this.newUnitTitle[subjectId] || '');
+    const title = (this.newUnitTitle[subjectId] || '').trim();
+    if (!title) return;
+    this.academics.addSub(subjectId, null, title);
     this.newUnitTitle[subjectId] = '';
   }
 
@@ -147,7 +311,9 @@ export class AcademicsPageComponent {
   }
 
   addNested(subjectId: string, parentId: string): void {
-    this.academics.addSub(subjectId, parentId, this.nestedTitle);
+    const title = this.nestedTitle.trim();
+    if (!title) return;
+    this.academics.addSub(subjectId, parentId, title);
     this.nestedTitle = '';
     this.addingNestedId.set(null);
   }

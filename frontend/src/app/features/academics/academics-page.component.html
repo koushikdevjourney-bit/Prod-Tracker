@@ -1,4 +1,5 @@
 <div class="acad">
+  <!-- Top Navigation Bar -->
   <header class="acad-top">
     @if (selected(); as track) {
       <button type="button" class="acad-back" (click)="backToSemesters()">
@@ -6,12 +7,12 @@
           <path d="m12 19-7-7 7-7" />
           <path d="M19 12H5" />
         </svg>
-        Semesters
+        <span>Semesters</span>
       </button>
       <div class="acad-top__mid">
         <p class="acad-top__title">{{ track.name }}</p>
         @if (summary(); as stats) {
-          <p class="acad-top__sub">{{ stats.percent }}%</p>
+          <p class="acad-top__sub">{{ stats.percent }}% syllabus completed</p>
         }
       </div>
     } @else {
@@ -20,9 +21,9 @@
           <path d="m12 19-7-7 7-7" />
           <path d="M19 12H5" />
         </svg>
-        My tracker
+        <span>My tracker</span>
       </a>
-      <p class="acad-top__title">Academics</p>
+      <p class="acad-top__title">Academics & Syllabus</p>
     }
     <button type="button" class="btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
       {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
@@ -30,171 +31,451 @@
   </header>
 
   <div class="acad-body">
+    <!-- VIEW 1: SEMESTER LIST / PICKER -->
     @if (!selected()) {
       <section class="picker">
         <header class="picker__hero">
-          <p class="eyebrow">Academic tracker</p>
-          <h1>Your semesters</h1>
-          <p class="lede">Open a semester you already added, or create a new one. Subjects split into Primary and Others.</p>
+          <div class="picker__pill">
+            <span class="picker__dot"></span>
+            <span>Academic Curriculum</span>
+          </div>
+          <h1>Your Semesters & Tracks</h1>
+          <p class="lede">Manage semester courses, break down syllabi into actionable units, and track topic mastery.</p>
         </header>
 
+        <!-- Semester Grid -->
         @if (academics.tracks().length) {
           <div class="sem-grid">
             @for (track of academics.tracks(); track track.id) {
               <div class="sem-wrap">
                 <button type="button" class="sem-card" (click)="openSemester(track.id)">
-                  <span class="sem-card__top">
-                    <strong>{{ track.name }}</strong>
+                  <div class="sem-card__top">
+                    <div>
+                      <strong class="sem-card__name">{{ track.name }}</strong>
+                      <div class="sem-card__meta">
+                        {{ cardSummary(track).subjects }} subjects · {{ cardSummary(track).primary }} primary · {{ cardSummary(track).done }}/{{ cardSummary(track).total || 0 }} topics done
+                      </div>
+                    </div>
                     <span class="sem-card__pct">{{ cardSummary(track).percent }}%</span>
-                  </span>
-                  <span class="sem-card__bar" aria-hidden="true">
-                    <span [style.width.%]="cardSummary(track).percent"></span>
-                  </span>
-                  <span class="sem-card__meta">
-                    {{ cardSummary(track).subjects }} subjects
-                    · {{ cardSummary(track).primary }} primary
-                    · {{ cardSummary(track).others }} others
-                  </span>
+                  </div>
+                  <div class="sem-card__bar" aria-hidden="true">
+                    <span [style.width.%]="cardSummary(track).percent" [class.bar--complete]="cardSummary(track).percent === 100"></span>
+                  </div>
                 </button>
-                <button type="button" class="sem-wrap__del" (click)="removeSemester(track.id, $event)" aria-label="Delete semester">×</button>
+                <div class="sem-wrap__actions">
+                  <button type="button" class="sem-tool" (click)="duplicateSemester(track.id, $event)" title="Duplicate semester">
+                    ⧉
+                  </button>
+                  <button type="button" class="sem-tool sem-tool--del" (click)="removeSemester(track.id, $event)" title="Delete semester">
+                    ×
+                  </button>
+                </div>
               </div>
             }
           </div>
         } @else {
-          <p class="picker__empty">No semesters yet. Add one to start tracking subjects.</p>
+          <div class="picker__empty">
+            <p class="picker__empty-icon">📚</p>
+            <p>No semesters created yet. Add a new semester or load a curated syllabus pack below.</p>
+          </div>
         }
 
+        <!-- Add Semester Form -->
         @if (creating()) {
           <form class="create-panel" (submit)="$event.preventDefault(); addSemester()">
             <label class="field">
-              <span>Semester name</span>
-              <input class="input" [(ngModel)]="newTrackName" name="newTrack" placeholder="Academics Sem-5" autofocus />
+              <span>Semester Name / Title</span>
+              <input class="input" [(ngModel)]="newTrackName" name="newTrack" placeholder="e.g., Computer Science Sem-6" autofocus />
             </label>
             <div class="create-panel__row">
-              <button type="submit" class="btn btn--primary" [disabled]="!newTrackName.trim()">Create semester</button>
+              <button type="submit" class="btn btn--primary" [disabled]="!newTrackName.trim()">Create Semester</button>
               <button type="button" class="btn btn--ghost" (click)="cancelAdd()">Cancel</button>
             </div>
           </form>
         } @else {
           <div class="picker__actions">
-            <button type="button" class="btn btn--primary" (click)="startCreate()">Add semester</button>
-            @if (presets[0]; as preset) {
-              <button type="button" class="btn btn--ghost" (click)="usePreset(preset.id)">Use {{ preset.name }} pack</button>
-            }
+            <button type="button" class="btn btn--primary" (click)="startCreate()">+ Add Custom Semester</button>
           </div>
         }
+
+        <!-- Curated Syllabus Packs -->
+        <section class="presets-section">
+          <div class="presets-section__head">
+            <h3>⚡ Quick-Start Curated Syllabus Packs</h3>
+            <p>1-click setup with subjects and modular units pre-structured</p>
+          </div>
+          <div class="presets-grid">
+            @for (preset of presets; track preset.id) {
+              <article class="preset-card">
+                <div class="preset-card__top">
+                  <div>
+                    @if (preset.badge) {
+                      <span class="badge badge--preset">{{ preset.badge }}</span>
+                    }
+                    <h4>{{ preset.name }}</h4>
+                  </div>
+                  <button type="button" class="btn btn--sm btn--primary" (click)="usePreset(preset.id)">
+                    Load Pack
+                  </button>
+                </div>
+                <p class="preset-card__blurb">{{ preset.blurb }}</p>
+                <div class="preset-card__preview">
+                  @for (s of preset.subjects; track s.name) {
+                    <span class="preset-subject-tag">{{ s.name }}</span>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        </section>
       </section>
-    } @else if (selected(); as track) {
+    }
+
+    <!-- VIEW 2: ACTIVE SEMESTER VIEW -->
+    @else if (selected(); as track) {
       <section class="sem-view">
+        <!-- Semester Hero Overview -->
+        <div class="sem-hero">
+          <div class="sem-hero__main">
+            @if (editingTrack()) {
+              <form class="sem-hero__edit-form" (submit)="$event.preventDefault(); saveEditTrack(track.id)">
+                <input class="input sem-hero__edit-input" [(ngModel)]="trackNameDraft" name="trackNameDraft" autofocus />
+                <button type="submit" class="btn btn--primary btn--sm">Save</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="editingTrack.set(false)">Cancel</button>
+              </form>
+            } @else {
+              <div class="sem-hero__title-row">
+                <h1>{{ track.name }}</h1>
+                <button type="button" class="btn-icon-subtle" (click)="startEditTrack(track.name)" title="Rename semester">
+                  ✎
+                </button>
+              </div>
+            }
+            <p class="sem-hero__meta">
+              {{ summary()?.subjects }} subjects total · High-priority courses rated ★ 4–5
+            </p>
+          </div>
+
+          <!-- Progress Ring -->
+          <div class="sem-hero__ring-wrap">
+            <svg viewBox="0 0 48 48" class="sem-hero__ring">
+              <circle class="ring-bg" cx="24" cy="24" r="18" />
+              <circle
+                class="ring-fg"
+                cx="24"
+                cy="24"
+                r="18"
+                [attr.stroke-dasharray]="ringC"
+                [attr.stroke-dashoffset]="ringOffset()"
+              />
+            </svg>
+            <div class="sem-hero__ring-label">
+              <strong>{{ summary()?.percent }}%</strong>
+              <span>syllabus</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric Stat Cards -->
+        <div class="sem-stats">
+          <div class="sem-stat">
+            <span class="sem-stat__val">{{ summary()?.subjects }}</span>
+            <span class="sem-stat__lbl">Subjects</span>
+          </div>
+          <div class="sem-stat sem-stat--accent">
+            <span class="sem-stat__val">{{ summary()?.primary }}</span>
+            <span class="sem-stat__lbl">Primary (★ 4-5)</span>
+          </div>
+          <div class="sem-stat">
+            <span class="sem-stat__val">{{ summary()?.total }}</span>
+            <span class="sem-stat__lbl">Total Topics</span>
+          </div>
+          <div class="sem-stat sem-stat--success">
+            <span class="sem-stat__val">{{ summary()?.done }}</span>
+            <span class="sem-stat__lbl">Completed</span>
+          </div>
+        </div>
+
+        <!-- Controls Toolbar: Search, Filters & Actions -->
+        <div class="toolbar">
+          <div class="toolbar__search">
+            <input
+              class="input toolbar__search-input"
+              [(ngModel)]="searchQuery"
+              name="searchQuery"
+              placeholder="🔍 Search subjects, chapters, or units..."
+            />
+          </div>
+
+          <div class="toolbar__filters">
+            <button
+              type="button"
+              class="filter-chip"
+              [class.filter-chip--active]="filterTab() === 'all'"
+              (click)="filterTab.set('all')"
+            >
+              All ({{ track.subjects.length }})
+            </button>
+            <button
+              type="button"
+              class="filter-chip"
+              [class.filter-chip--active]="filterTab() === 'primary'"
+              (click)="filterTab.set('primary')"
+            >
+              Primary ★ 4-5
+            </button>
+            <button
+              type="button"
+              class="filter-chip"
+              [class.filter-chip--active]="filterTab() === 'others'"
+              (click)="filterTab.set('others')"
+            >
+              Others ★ 1-3
+            </button>
+            <button
+              type="button"
+              class="filter-chip"
+              [class.filter-chip--active]="filterTab() === 'pending'"
+              (click)="filterTab.set('pending')"
+            >
+              In Progress
+            </button>
+            <button
+              type="button"
+              class="filter-chip"
+              [class.filter-chip--active]="filterTab() === 'completed'"
+              (click)="filterTab.set('completed')"
+            >
+              Completed
+            </button>
+          </div>
+
+          <div class="toolbar__actions">
+            <button type="button" class="btn-subtle" (click)="expandAll()" title="Expand all subject units">
+              Expand All
+            </button>
+            <button type="button" class="btn-subtle" (click)="collapseAll()" title="Collapse all">
+              Collapse All
+            </button>
+            <button type="button" class="btn-subtle" (click)="duplicateSemester(track.id)" title="Make a duplicate copy">
+              Duplicate
+            </button>
+          </div>
+        </div>
+
+        <!-- Subjects Sections: Primary & Others -->
         <div class="sections">
-          <section class="section section--primary">
-            <header class="section__head">
-              <div>
-                <h2>Primary</h2>
-                <p>4–5 star subjects</p>
-              </div>
-              <button type="button" class="btn btn--ghost" (click)="startAddSubject('primary')">Add</button>
-            </header>
+          <!-- Primary Subjects Section -->
+          @if (filterTab() !== 'others') {
+            <section class="section section--primary">
+              <header class="section__head">
+                <div class="section__title-group">
+                  <span class="section__badge">★ 4–5</span>
+                  <div>
+                    <h2>Primary Focus Subjects</h2>
+                    <p>High credit courses and core technical priorities</p>
+                  </div>
+                </div>
+                <button type="button" class="btn btn--sm btn--primary" (click)="startAddSubject('primary')">
+                  + Add Subject
+                </button>
+              </header>
 
-            @if (addingSection() === 'primary') {
-              <form class="inline-add" (submit)="$event.preventDefault(); addSubject()">
-                <input class="input" [(ngModel)]="newSubjectName" name="primarySubject" placeholder="Subject name" />
-                <button type="submit" class="btn btn--primary" [disabled]="!newSubjectName.trim()">Add</button>
-                <button type="button" class="btn btn--ghost" (click)="cancelAdd()">Cancel</button>
-              </form>
-            }
-
-            @if (!sections().primary.length && addingSection() !== 'primary') {
-              <p class="empty">No primary subjects. Add one, or raise a subject to 4 stars.</p>
-            }
-
-            <div class="cards">
-              @for (subject of sections().primary; track subject.id) {
-                <ng-container *ngTemplateOutlet="subjectCard; context: { $implicit: subject }" />
+              @if (addingSection() === 'primary') {
+                <form class="inline-add" (submit)="$event.preventDefault(); addSubject()">
+                  <input
+                    class="input"
+                    [(ngModel)]="newSubjectName"
+                    name="primarySubject"
+                    placeholder="Enter subject name (e.g. Distributed Systems)"
+                    autofocus
+                  />
+                  <div class="inline-add__btns">
+                    <button type="submit" class="btn btn--primary btn--sm" [disabled]="!newSubjectName.trim()">Add</button>
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="cancelAdd()">Cancel</button>
+                  </div>
+                </form>
               }
-            </div>
-          </section>
 
-          <section class="section section--others">
-            <header class="section__head">
-              <div>
-                <h2>Others</h2>
-                <p>1–3 star subjects</p>
-              </div>
-              <button type="button" class="btn btn--ghost" (click)="startAddSubject('others')">Add</button>
-            </header>
-
-            @if (addingSection() === 'others') {
-              <form class="inline-add" (submit)="$event.preventDefault(); addSubject()">
-                <input class="input" [(ngModel)]="newSubjectName" name="otherSubject" placeholder="Subject name" />
-                <button type="submit" class="btn btn--primary" [disabled]="!newSubjectName.trim()">Add</button>
-                <button type="button" class="btn btn--ghost" (click)="cancelAdd()">Cancel</button>
-              </form>
-            }
-
-            @if (!sections().others.length && addingSection() !== 'others') {
-              <p class="empty">No other subjects yet.</p>
-            }
-
-            <div class="cards">
-              @for (subject of sections().others; track subject.id) {
-                <ng-container *ngTemplateOutlet="subjectCard; context: { $implicit: subject }" />
+              @if (!filteredSubjects().primary.length && addingSection() !== 'primary') {
+                <div class="empty-section">
+                  <p>No primary subjects match the current view.</p>
+                  <button type="button" class="btn-link" (click)="startAddSubject('primary')">+ Add a primary subject</button>
+                </div>
               }
-            </div>
-          </section>
+
+              <div class="cards">
+                @for (subject of filteredSubjects().primary; track subject.id) {
+                  <ng-container *ngTemplateOutlet="subjectCard; context: { $implicit: subject }" />
+                }
+              </div>
+            </section>
+          }
+
+          <!-- Other Subjects Section -->
+          @if (filterTab() !== 'primary') {
+            <section class="section section--others">
+              <header class="section__head">
+                <div class="section__title-group">
+                  <span class="section__badge section__badge--others">★ 1–3</span>
+                  <div>
+                    <h2>Other Subjects & Electives</h2>
+                    <p>Supporting modules, labs, and elective courses</p>
+                  </div>
+                </div>
+                <button type="button" class="btn btn--sm btn--ghost" (click)="startAddSubject('others')">
+                  + Add Subject
+                </button>
+              </header>
+
+              @if (addingSection() === 'others') {
+                <form class="inline-add" (submit)="$event.preventDefault(); addSubject()">
+                  <input
+                    class="input"
+                    [(ngModel)]="newSubjectName"
+                    name="otherSubject"
+                    placeholder="Enter elective / subject name"
+                    autofocus
+                  />
+                  <div class="inline-add__btns">
+                    <button type="submit" class="btn btn--primary btn--sm" [disabled]="!newSubjectName.trim()">Add</button>
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="cancelAdd()">Cancel</button>
+                  </div>
+                </form>
+              }
+
+              @if (!filteredSubjects().others.length && addingSection() !== 'others') {
+                <div class="empty-section">
+                  <p>No supporting subjects match the current view.</p>
+                  <button type="button" class="btn-link" (click)="startAddSubject('others')">+ Add a supporting subject</button>
+                </div>
+              }
+
+              <div class="cards">
+                @for (subject of filteredSubjects().others; track subject.id) {
+                  <ng-container *ngTemplateOutlet="subjectCard; context: { $implicit: subject }" />
+                }
+              </div>
+            </section>
+          }
         </div>
       </section>
     }
   </div>
 </div>
 
+<!-- SUBJECT CARD TEMPLATE -->
 <ng-template #subjectCard let-subject>
-  <article class="card" [class.card--open]="expanded() === subject.id">
-    <button type="button" class="card__main" (click)="toggleExpand(subject.id)">
-      <span class="card__copy">
-        <strong>{{ subject.name }}</strong>
-        <span class="card__bar" aria-hidden="true"><span [style.width.%]="progress(subject).percent"></span></span>
-      </span>
-      <span class="card__side">
-        <span class="stars stars--quiet" aria-hidden="true">
-          @for (n of starMax; track n) {
-            <span class="star" [class.star--on]="subject.stars >= n">★</span>
-          }
-        </span>
-        <span class="card__count">{{ progress(subject).done }}/{{ progress(subject).total || 0 }}</span>
-        <span class="card__chevron" [class.card__chevron--open]="expanded() === subject.id">›</span>
-      </span>
-    </button>
-    @if (expanded() === subject.id) {
-      <div class="card__body">
-        <div class="stars" role="group" [attr.aria-label]="'Rating for ' + subject.name">
+  <article class="card" [class.card--open]="isExpanded(subject.id)">
+    <div class="card__header" (click)="toggleExpand(subject.id)">
+      <div class="card__copy">
+        @if (editingSubjectId() === subject.id) {
+          <form class="card__edit-form" (submit)="$event.preventDefault(); saveEditSubject(subject.id)" (click)="$event.stopPropagation()">
+            <input class="input card__edit-input" [(ngModel)]="subjectNameDraft" name="subjectNameDraft" autofocus />
+            <button type="submit" class="btn btn--primary btn--sm">Save</button>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="editingSubjectId.set(null)">✕</button>
+          </form>
+        } @else {
+          <div class="card__title-row">
+            <strong>{{ subject.name }}</strong>
+            <button type="button" class="btn-icon-subtle" (click)="startEditSubject(subject, $event)" title="Rename subject">
+              ✎
+            </button>
+          </div>
+        }
+        <div class="card__bar" aria-hidden="true">
+          <span [style.width.%]="progress(subject).percent" [class.bar--complete]="progress(subject).percent === 100"></span>
+        </div>
+      </div>
+
+      <div class="card__side">
+        <!-- Interactive Star Rating right on card -->
+        <div class="stars" role="group" [attr.aria-label]="'Rating for ' + subject.name" (click)="$event.stopPropagation()">
           @for (n of starMax; track n) {
             <button
               type="button"
               class="star"
               [class.star--on]="subject.stars >= n"
-              (click)="academics.setStars(subject.id, n)"
-              [attr.aria-label]="n + ' stars'"
+              (click)="setStars(subject.id, n, $event)"
+              [title]="'Set priority to ' + n + ' stars'"
             >★</button>
           }
         </div>
+
+        <span class="card__count" [class.card__count--done]="progress(subject).percent === 100">
+          {{ progress(subject).done }}/{{ progress(subject).total || 0 }} ({{ progress(subject).percent }}%)
+        </span>
+
+        <span class="card__chevron" [class.card__chevron--open]="isExpanded(subject.id)">›</span>
+      </div>
+    </div>
+
+    <!-- Expanded Subject Details -->
+    @if (isExpanded(subject.id)) {
+      <div class="card__body">
+        <!-- Quick Action Toolbar for this subject -->
+        <div class="card__tools">
+          <div class="card__tools-left">
+            <button
+              type="button"
+              class="btn-pill btn-pill--study"
+              (click)="focusAndGo(subject, $event)"
+              title="Add this subject to Current Focus and jump to Timer"
+            >
+              <span>⚡</span>
+              <span>Study Now (Pomodoro)</span>
+            </button>
+            <button
+              type="button"
+              class="btn-pill"
+              (click)="focusSubject(subject, undefined, $event)"
+              title="Add to Current Focus queue"
+            >
+              + Queue Focus
+            </button>
+          </div>
+
+          <div class="card__tools-right">
+            @if (progress(subject).percent < 100) {
+              <button type="button" class="btn-subtle" (click)="setAllUnitsDone(subject, true)" title="Check off all units">
+                ✓ Mark All Done
+              </button>
+            } @else {
+              <button type="button" class="btn-subtle" (click)="setAllUnitsDone(subject, false)" title="Uncheck all units">
+                ↺ Reset All
+              </button>
+            }
+            <button type="button" class="btn-subtle" (click)="duplicateSubject(subject.id, $event)" title="Duplicate subject">
+              Duplicate
+            </button>
+            <button type="button" class="btn-subtle btn-subtle--del" (click)="removeSubject(subject.id, $event)" title="Delete subject">
+              Delete
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Unit Form -->
         <form class="inline-add" (submit)="$event.preventDefault(); addUnit(subject.id)">
           <input
             class="input"
             [(ngModel)]="newUnitTitle[subject.id]"
             [name]="'unit-' + subject.id"
-            placeholder="Add a unit"
+            placeholder="Add chapter, topic, or unit title..."
           />
-          <button type="submit" class="btn btn--ghost">Add unit</button>
+          <button type="submit" class="btn btn--primary btn--sm" [disabled]="!newUnitTitle[subject.id]?.trim()">
+            + Add Topic
+          </button>
         </form>
-        <ng-container *ngTemplateOutlet="subList; context: { nodes: subject.subs || [], subjectId: subject.id, depth: 0 }" />
-        <button type="button" class="danger-link" (click)="academics.removeSubject(subject.id)">Remove subject</button>
+
+        <!-- Nested Unit Tree -->
+        <ng-container *ngTemplateOutlet="subList; context: { nodes: subject.subs || [], subjectId: subject.id, depth: 0, subject: subject }" />
       </div>
     }
   </article>
 </ng-template>
 
-<ng-template #subList let-nodes="nodes" let-subjectId="subjectId" let-depth="depth">
+<!-- UNIT / SUBTOPIC LIST TEMPLATE -->
+<ng-template #subList let-nodes="nodes" let-subjectId="subjectId" let-depth="depth" let-subject="subject">
   @if (nodes.length) {
     <ul class="units" [class.units--nested]="depth > 0">
       @for (node of nodes; track node.id) {
@@ -202,22 +483,55 @@
           <div class="unit__row">
             <label class="unit__check">
               <input type="checkbox" [checked]="node.done" (change)="academics.toggleSub(subjectId, node.id)" />
-              <span>{{ node.title }}</span>
-            </label>
-            <div class="unit__ops">
-              @if (depth < 3) {
-                <button type="button" class="ghost-mini" (click)="startNested(node.id, $event)">+</button>
+              @if (editingUnitId() === node.id) {
+                <form class="unit__edit-form" (submit)="$event.preventDefault(); saveEditUnit(subjectId, node.id)" (click)="$event.stopPropagation()">
+                  <input class="input unit__edit-input" [(ngModel)]="unitTitleDraft" name="unitTitleDraft" autofocus />
+                  <button type="submit" class="btn btn--primary btn--sm">Save</button>
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="editingUnitId.set(null)">✕</button>
+                </form>
+              } @else {
+                <span class="unit__title">{{ node.title }}</span>
               }
-              <button type="button" class="ghost-mini" (click)="academics.removeSub(subjectId, node.id)" aria-label="Remove">×</button>
+            </label>
+
+            <div class="unit__ops">
+              <button
+                type="button"
+                class="ghost-mini"
+                (click)="focusSubject(subject, node.title, $event)"
+                title="Send this topic to Current Focus tracker"
+              >
+                ⚡
+              </button>
+              <button
+                type="button"
+                class="ghost-mini"
+                (click)="startEditUnit(node.id, node.title, $event)"
+                title="Rename topic"
+              >
+                ✎
+              </button>
+              @if (depth < 3) {
+                <button type="button" class="ghost-mini" (click)="startNested(node.id, $event)" title="Add sub-bullet or nested topic">
+                  +
+                </button>
+              }
+              <button type="button" class="ghost-mini ghost-mini--del" (click)="academics.removeSub(subjectId, node.id)" aria-label="Remove topic">
+                ×
+              </button>
             </div>
           </div>
+
+          <!-- Add Nested Subtopic Form -->
           @if (addingNestedId() === node.id) {
             <form class="inline-add inline-add--tight" (submit)="$event.preventDefault(); addNested(subjectId, node.id)">
-              <input class="input" [(ngModel)]="nestedTitle" [name]="'nest-' + node.id" placeholder="Nested topic" />
-              <button type="submit" class="btn btn--ghost">Add</button>
+              <input class="input" [(ngModel)]="nestedTitle" [name]="'nest-' + node.id" placeholder="Sub-concept or problem type..." autofocus />
+              <button type="submit" class="btn btn--primary btn--sm" [disabled]="!nestedTitle.trim()">Add</button>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="addingNestedId.set(null)">Cancel</button>
             </form>
           }
-          <ng-container *ngTemplateOutlet="subList; context: { nodes: node.subs || [], subjectId: subjectId, depth: depth + 1 }" />
+
+          <ng-container *ngTemplateOutlet="subList; context: { nodes: node.subs || [], subjectId: subjectId, depth: depth + 1, subject: subject }" />
         </li>
       }
     </ul>

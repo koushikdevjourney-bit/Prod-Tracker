@@ -55,6 +55,14 @@ function toggleSubDeep(subs: AcademicSub[], id: string): AcademicSub[] {
   );
 }
 
+function setSubsDoneDeep(subs: AcademicSub[], done: boolean): AcademicSub[] {
+  return subs.map((node) => ({
+    ...node,
+    done,
+    subs: setSubsDoneDeep(node.subs || [], done),
+  }));
+}
+
 function removeSubDeep(subs: AcademicSub[], id: string): AcademicSub[] {
   return subs
     .filter((node) => node.id !== id)
@@ -302,6 +310,30 @@ export class AcademicService {
       ...subject,
       subs: reorderSubsDeep(subject.subs || [], parentId, draggedId, overId),
     }));
+  }
+
+  setAllSubs(subjectId: string, done: boolean): void {
+    this.patchSubject(subjectId, (subject) => ({
+      ...subject,
+      subs: setSubsDoneDeep(subject.subs || [], done),
+    }));
+  }
+
+  duplicateTrack(trackId: string): void {
+    this.patchTracks((list) => {
+      const source = list.find((t) => t.id === trackId);
+      if (!source) return list;
+      const copy: AcademicTrack = {
+        id: createId(),
+        name: `${source.name} (Copy)`,
+        subjects: cloneTracks([source])[0].subjects.map((s) => ({
+          ...s,
+          id: createId(),
+          subs: cloneSubs(s.subs),
+        })),
+      };
+      return [...list, copy];
+    });
   }
 
   private patchSubject(subjectId: string, mapper: (subject: AcademicSubject) => AcademicSubject): void {
