@@ -315,6 +315,17 @@
             <option [value]="c">{{ c }}</option>
           }
         </select>
+
+        @if (filteredTodos().length > 0) {
+          <button
+            type="button"
+            class="btn btn--ghost ft-accordion-all-btn"
+            (click)="allExpanded() ? collapseAll() : expandAll()"
+            title="Expand or collapse all checklist accordion panels"
+          >
+            <span>{{ allExpanded() ? '⊟ Collapse All' : '⊞ Expand All' }}</span>
+          </button>
+        }
       </div>
     </section>
 
@@ -436,13 +447,13 @@
                 </form>
               } @else {
                 <!-- Standard Item View -->
-                <div class="ft-item-row">
+                <div class="ft-item-row" (click)="toggleCard(todo.id)">
                   <!-- Checkbox -->
                   <button
                     type="button"
                     class="ft-checkbox"
                     [class.ft-checkbox--checked]="todo.status === 'completed'"
-                    (click)="focus.toggleComplete(todo.id)"
+                    (click)="$event.stopPropagation(); focus.toggleComplete(todo.id)"
                     [attr.aria-label]="todo.status === 'completed' ? 'Mark as incomplete' : 'Mark as complete'"
                   >
                     @if (todo.status === 'completed') {
@@ -457,14 +468,14 @@
                     type="button"
                     class="ft-pin-btn"
                     [class.ft-pin-btn--pinned]="todo.isPinned"
-                    (click)="focus.togglePin(todo.id)"
+                    (click)="$event.stopPropagation(); focus.togglePin(todo.id)"
                     [title]="todo.isPinned ? 'Unpin from Core Focus' : 'Pin to Core Focus'"
                     aria-label="Toggle pin"
                   >
                     ★
                   </button>
 
-                  <!-- Main Content -->
+                  <!-- Main Content (Clickable Accordion Header) -->
                   <div class="ft-item-body">
                     <div class="ft-item-top">
                       <span class="ft-item-title" [class.ft-item-title--done]="todo.status === 'completed'">
@@ -505,38 +516,32 @@
                             · <strong>{{ todo.loggedMinutes }}m logged</strong>
                           }
                         </span>
+
+                        <!-- Subtasks Indicator Badge -->
+                        @if (todo.subtasks.length > 0) {
+                          <span class="ft-badge ft-badge--subtasks" title="Checklist steps">
+                            📋 {{ subtasksProgress(todo).done }}/{{ subtasksProgress(todo).total }} steps ({{ subtasksProgress(todo).percent }}%)
+                          </span>
+                        }
+
+                        <!-- Notes Indicator Badge -->
+                        @if (todo.notes && !isCardExpanded(todo.id)) {
+                          <span class="ft-badge ft-badge--notes-hint" title="Has notes">
+                            📝 Note
+                          </span>
+                        }
                       </div>
                     </div>
-
-                    <!-- Notes Preview -->
-                    @if (todo.notes) {
-                      <p class="ft-item-notes">{{ todo.notes }}</p>
-                    }
-
-                    <!-- Subtask Summary Pill -->
-                    @if (todo.subtasks.length > 0) {
-                      <div class="ft-subtasks-summary" (click)="toggleSubtasks(todo.id)">
-                        <div class="ft-subtasks-bar">
-                          <div class="ft-subtasks-fill" [style.width.%]="subtasksProgress(todo).percent"></div>
-                        </div>
-                        <span class="ft-subtasks-count">
-                          {{ subtasksProgress(todo).done }}/{{ subtasksProgress(todo).total }} subtasks ({{ subtasksProgress(todo).percent }}%)
-                        </span>
-                        <span class="ft-subtasks-toggle">
-                          {{ isSubtasksOpen(todo.id) ? '▲ Hide' : '▼ Show Checklist' }}
-                        </span>
-                      </div>
-                    }
                   </div>
 
-                  <!-- Quick Action Buttons -->
+                  <!-- Quick Action Buttons & Accordion Toggle -->
                   <div class="ft-item-ops">
                     <!-- Start Focus Timer Button -->
                     @if (todo.status !== 'completed') {
                       <button
                         type="button"
                         class="btn btn--ghost btn--sm ft-action-btn ft-action-btn--focus"
-                        (click)="openTimer(todo, todo.estimatedMinutes || 25)"
+                        (click)="$event.stopPropagation(); openTimer(todo, todo.estimatedMinutes || 25)"
                         title="Start focus timer session for this task"
                       >
                         <span class="ft-ops-icon">▶</span>
@@ -544,62 +549,39 @@
                       </button>
                     }
 
-                    <!-- Subtasks Toggle -->
+                    <!-- Accordion Trigger Button -->
                     <button
                       type="button"
-                      class="btn btn--ghost btn--sm ft-action-btn"
-                      (click)="toggleSubtasks(todo.id)"
-                      title="Add or manage checklist subtasks"
+                      class="ft-accordion-toggle-btn"
+                      [class.ft-accordion-toggle-btn--open]="isCardExpanded(todo.id)"
+                      (click)="$event.stopPropagation(); toggleCard(todo.id)"
+                      [attr.aria-expanded]="isCardExpanded(todo.id)"
+                      title="Toggle checklist & details panel"
                     >
-                      <span>+ Subtasks</span>
-                    </button>
-
-                    <!-- Log to Activity Journal Button -->
-                    <button
-                      type="button"
-                      class="btn btn--ghost btn--sm ft-action-btn"
-                      (click)="logAsActivity(todo)"
-                      title="Log as a completed activity in Pulse activity journal"
-                    >
-                      <span>Log Activity</span>
+                      <span class="ft-accordion-toggle-label">
+                        {{ isCardExpanded(todo.id) ? 'Collapse' : (todo.subtasks.length ? 'Checklist (' + subtasksProgress(todo).done + '/' + subtasksProgress(todo).total + ')' : (todo.notes ? 'Details' : '+ Steps')) }}
+                      </span>
+                      <svg class="ft-accordion-chevron" [class.ft-accordion-chevron--rotated]="isCardExpanded(todo.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
                     </button>
 
                     <!-- Edit Item -->
                     <button
                       type="button"
                       class="btn btn--ghost btn--icon-sm"
-                      (click)="startEdit(todo)"
+                      (click)="$event.stopPropagation(); startEdit(todo)"
                       title="Edit task details"
                       aria-label="Edit"
                     >
                       ✎
                     </button>
 
-                    <!-- Move Up / Down -->
-                    <button
-                      type="button"
-                      class="btn btn--ghost btn--icon-sm"
-                      (click)="focus.move(todo.id, -1)"
-                      title="Move up"
-                      aria-label="Move up"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn--ghost btn--icon-sm"
-                      (click)="focus.move(todo.id, 1)"
-                      title="Move down"
-                      aria-label="Move down"
-                    >
-                      ↓
-                    </button>
-
                     <!-- Delete -->
                     <button
                       type="button"
                       class="btn btn--ghost btn--icon-sm ft-delete-btn"
-                      (click)="focus.delete(todo.id)"
+                      (click)="$event.stopPropagation(); focus.delete(todo.id)"
                       title="Delete focus item"
                       aria-label="Delete"
                     >
@@ -608,55 +590,142 @@
                   </div>
                 </div>
 
-                <!-- Subtasks Checklist Section (Expanded) -->
-                @if (isSubtasksOpen(todo.id)) {
-                  <div class="ft-subtasks-panel">
-                    <h3 class="ft-subtasks-title">Checklist Breakdown</h3>
-
-                    <!-- Subtasks List -->
-                    @if (todo.subtasks.length > 0) {
-                      <ul class="ft-subtasks-list">
-                        @for (st of todo.subtasks; track st.id) {
-                          <li class="ft-subtask-row">
-                            <label class="ft-subtask-checkbox-label">
-                              <input
-                                type="checkbox"
-                                [checked]="st.done"
-                                (change)="focus.toggleSubtask(todo.id, st.id)"
-                              />
-                              <span [class.ft-subtask-title--done]="st.done">{{ st.title }}</span>
-                            </label>
-                            <button
-                              type="button"
-                              class="btn btn--ghost btn--icon-xs ft-subtask-del"
-                              (click)="focus.deleteSubtask(todo.id, st.id)"
-                              title="Delete subtask"
-                            >
-                              ×
-                            </button>
-                          </li>
-                        }
-                      </ul>
+                <!-- Accordion Panel (Expanded) -->
+                @if (isCardExpanded(todo.id)) {
+                  <div class="ft-accordion-panel" (click)="$event.stopPropagation()">
+                    <!-- Context & Notes Section -->
+                    @if (todo.notes) {
+                      <div class="ft-accordion-section ft-accordion-section--notes">
+                        <span class="ft-accordion-section-title">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10 9 9 9 8 9" />
+                          </svg>
+                          Context & Notes
+                        </span>
+                        <p class="ft-accordion-notes-body">{{ todo.notes }}</p>
+                      </div>
                     }
 
-                    <!-- Add Subtask Inline Input -->
-                    <div class="ft-subtask-add-row">
-                      <input
-                        type="text"
-                        class="input ft-subtask-input"
-                        [(ngModel)]="subtaskDrafts[todo.id]"
-                        (keydown.enter)="$event.preventDefault(); handleAddSubtask(todo.id)"
-                        placeholder="Add a step (e.g. Write edge cases, Push git branch)..."
-                        maxlength="200"
-                      />
-                      <button
-                        type="button"
-                        class="btn btn--primary btn--sm"
-                        (click)="handleAddSubtask(todo.id)"
-                        [disabled]="!subtaskDrafts[todo.id]?.trim()"
-                      >
-                        + Add Step
-                      </button>
+                    <!-- Checklist Breakdown Section -->
+                    <div class="ft-accordion-section ft-accordion-section--checklist">
+                      <div class="ft-accordion-checklist-head">
+                        <div class="ft-accordion-section-title">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 11 12 14 22 4" />
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                          </svg>
+                          Checklist Breakdown
+                        </div>
+                        @if (todo.subtasks.length > 0) {
+                          <span class="ft-accordion-progress-badge">
+                            {{ subtasksProgress(todo).done }} of {{ subtasksProgress(todo).total }} completed ({{ subtasksProgress(todo).percent }}%)
+                          </span>
+                        }
+                      </div>
+
+                      @if (todo.subtasks.length > 0) {
+                        <div class="ft-accordion-progress-bar">
+                          <div class="ft-accordion-progress-fill" [style.width.%]="subtasksProgress(todo).percent"></div>
+                        </div>
+                      }
+
+                      <!-- Subtasks List -->
+                      @if (todo.subtasks.length > 0) {
+                        <ul class="ft-subtasks-list">
+                          @for (st of todo.subtasks; track st.id) {
+                            <li class="ft-subtask-row">
+                              <label class="ft-subtask-checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  [checked]="st.done"
+                                  (change)="focus.toggleSubtask(todo.id, st.id)"
+                                />
+                                <span [class.ft-subtask-title--done]="st.done">{{ st.title }}</span>
+                              </label>
+                              <button
+                                type="button"
+                                class="btn btn--ghost btn--icon-xs ft-subtask-del"
+                                (click)="focus.deleteSubtask(todo.id, st.id)"
+                                title="Delete subtask"
+                              >
+                                ×
+                              </button>
+                            </li>
+                          }
+                        </ul>
+                      }
+
+                      <!-- Add Subtask Inline Input -->
+                      <div class="ft-subtask-add-row">
+                        <input
+                          type="text"
+                          class="input ft-subtask-input"
+                          [(ngModel)]="subtaskDrafts[todo.id]"
+                          (keydown.enter)="$event.preventDefault(); handleAddSubtask(todo.id)"
+                          placeholder="Add a step (e.g. Write edge cases, Push git branch)..."
+                          maxlength="200"
+                        />
+                        <button
+                          type="button"
+                          class="btn btn--primary btn--sm ft-subtask-add-btn"
+                          (click)="handleAddSubtask(todo.id)"
+                          [disabled]="!subtaskDrafts[todo.id]?.trim()"
+                        >
+                          + Add Step
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Accordion Footer / Quick Actions -->
+                    <div class="ft-accordion-footer">
+                      <div class="ft-accordion-footer__left">
+                        <button
+                          type="button"
+                          class="btn btn--ghost btn--sm"
+                          (click)="logAsActivity(todo)"
+                          title="Log as a completed activity in Pulse activity journal"
+                        >
+                          <span>Log to Activity</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn--ghost btn--sm"
+                          (click)="startEdit(todo)"
+                          title="Edit task details"
+                        >
+                          <span>✎ Edit Task</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn--ghost btn--icon-sm"
+                          (click)="focus.move(todo.id, -1)"
+                          title="Move up"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn--ghost btn--icon-sm"
+                          (click)="focus.move(todo.id, 1)"
+                          title="Move down"
+                        >
+                          ↓
+                        </button>
+                      </div>
+
+                      <div class="ft-accordion-footer__right">
+                        <button
+                          type="button"
+                          class="btn btn--ghost btn--sm ft-collapse-link"
+                          (click)="toggleCard(todo.id)"
+                        >
+                          <span>▲ Collapse</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 }

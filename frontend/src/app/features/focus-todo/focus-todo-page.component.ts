@@ -41,7 +41,7 @@ export class FocusTodoPageComponent implements OnDestroy {
   readonly selectedPriority = signal<string>('all');
   readonly selectedCategory = signal<string>('all');
   readonly quickAddExpanded = signal<boolean>(false);
-  readonly expandedSubtasks = signal<Record<string, boolean>>({});
+  readonly expandedCards = signal<Record<string, boolean>>({});
   readonly editingId = signal<string | null>(null);
   readonly draggingId = signal<string | null>(null);
 
@@ -190,14 +190,31 @@ export class FocusTodoPageComponent implements OnDestroy {
     this.quickAddExpanded.set(true);
   }
 
-  // --- Subtasks ---
-  isSubtasksOpen(id: string): boolean {
-    return Boolean(this.expandedSubtasks()[id]);
+  // --- Accordion Panel & Subtasks ---
+  isCardExpanded(id: string): boolean {
+    return Boolean(this.expandedCards()[id]);
   }
 
-  toggleSubtasks(id: string): void {
-    this.expandedSubtasks.update((map) => ({ ...map, [id]: !map[id] }));
+  toggleCard(id: string): void {
+    this.expandedCards.update((map) => ({ ...map, [id]: !map[id] }));
   }
+
+  expandAll(): void {
+    const next: Record<string, boolean> = {};
+    for (const t of this.filteredTodos()) {
+      next[t.id] = true;
+    }
+    this.expandedCards.set(next);
+  }
+
+  collapseAll(): void {
+    this.expandedCards.set({});
+  }
+
+  readonly allExpanded = computed(() => {
+    const list = this.filteredTodos();
+    return list.length > 0 && list.every((t) => Boolean(this.expandedCards()[t.id]));
+  });
 
   subtasksProgress(todo: FocusTodoItem): { total: number; done: number; percent: number } {
     const total = todo.subtasks?.length || 0;
@@ -211,8 +228,8 @@ export class FocusTodoPageComponent implements OnDestroy {
     if (!draft) return;
     this.focus.addSubtask(todoId, draft);
     this.subtaskDrafts[todoId] = '';
-    // Ensure expanded
-    this.expandedSubtasks.update((map) => ({ ...map, [todoId]: true }));
+    // Ensure card accordion is expanded
+    this.expandedCards.update((map) => ({ ...map, [todoId]: true }));
   }
 
   // --- Due & Status Helpers ---
