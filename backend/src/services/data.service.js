@@ -5,6 +5,7 @@ const UserSettings = require('../models/UserSettings');
 const UserGrit = require('../models/UserGrit');
 const UserAcademics = require('../models/UserAcademics');
 const UserProgress = require('../models/UserProgress');
+const UserFocusTodo = require('../models/UserFocusTodo');
 const { ACTIVITY_TYPES } = require('../models/Activity');
 const { GOAL_PERIODS } = require('../models/Goal');
 const { THEMES } = require('../models/UserSettings');
@@ -310,8 +311,109 @@ async function saveProgress(userId, payload) {
   return mapProgress(doc);
 }
 
+function sanitizeFocusTodos(payload) {
+  const list = Array.isArray(payload) ? payload : Array.isArray(payload?.todos) ? payload.todos : [];
+  const validStatus = ['pending', 'in_progress', 'completed'];
+  const validPriority = ['urgent', 'high', 'medium', 'low'];
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  const timeRegex = /^\d{2}:\d{2}$/;
+
+  return list.slice(0, 200).map((item, index) => {
+    const rawSubtasks = Array.isArray(item?.subtasks) ? item.subtasks : [];
+    const subtasks = rawSubtasks.slice(0, 50).map((st) => ({
+      id: String(st?.id || require('crypto').randomUUID()).slice(0, 80),
+      title: String(st?.title || '').trim().slice(0, 200) || 'Subtask',
+      done: Boolean(st?.done),
+    }));
+
+    const status = validStatus.includes(item?.status) ? item.status : 'pending';
+    const priority = validPriority.includes(item?.priority) ? item.priority : 'medium';
+    const isPinned = Boolean(item?.isPinned);
+    const dueDate = dateRegex.test(item?.dueDate) ? String(item.dueDate) : '';
+    const dueTime = timeRegex.test(item?.dueTime) ? String(item.dueTime) : '';
+    const estimatedMinutes = Math.min(1440, Math.max(0, Math.round(Number(item?.estimatedMinutes) || 0)));
+    const loggedMinutes = Math.max(0, Math.round(Number(item?.loggedMinutes) || 0));
+    const position = Number.isFinite(Number(item?.position)) ? Math.max(0, Math.round(Number(item.position))) : index;
+
+    return {
+      id: String(item?.id || require('crypto').randomUUID()).slice(0, 80),
+      title: String(item?.title || '').trim().slice(0, 250) || 'Focus Item',
+      notes: String(item?.notes || '').trim().slice(0, 2000),
+      status,
+      priority,
+      isPinned,
+      category: String(item?.category || 'General').trim().slice(0, 80) || 'General',
+      dueDate,
+      dueTime,
+      estimatedMinutes,
+      loggedMinutes,
+      subtasks,
+      completedAt: item?.completedAt ? String(item.completedAt).slice(0, 40) : null,
+      createdAt: item?.createdAt ? String(item.createdAt).slice(0, 40) : new Date().toISOString(),
+      position,
+    };
+  });
+}
+
+async function getFocusTodos(userId) {
+  const doc = await UserFocusTodo.findOne({ user: userId });
+  return doc?.todos
+    ? doc.todos.map((t) => ({
+        id: t.id,
+        title: t.title,
+        notes: t.notes || '',
+        status: t.status,
+        priority: t.priority,
+        isPinned: Boolean(t.isPinned),
+        category: t.category,
+        dueDate: t.dueDate || '',
+        dueTime: t.dueTime || '',
+        estimatedMinutes: t.estimatedMinutes ?? 25,
+        loggedMinutes: t.loggedMinutes || 0,
+        subtasks: (t.subtasks || []).map((s) => ({
+          id: s.id,
+          title: s.title,
+          done: Boolean(s.done),
+        })),
+        completedAt: t.completedAt || null,
+        createdAt: t.createdAt || '',
+        position: t.position || 0,
+      }))
+    : [];
+}
+
+async function saveFocusTodos(userId, todos) {
+  const cleaned = sanitizeFocusTodos(todos);
+  const doc = await UserFocusTodo.findOneAndUpdate(
+    { user: userId },
+    { user: userId, todos: cleaned },
+    { new: true, upsert: true, setDefaultsOnInsert: true },
+  );
+  return doc.todos.map((t) => ({
+    id: t.id,
+    title: t.title,
+    notes: t.notes || '',
+    status: t.status,
+    priority: t.priority,
+    isPinned: Boolean(t.isPinned),
+    category: t.category,
+    dueDate: t.dueDate || '',
+    dueTime: t.dueTime || '',
+    estimatedMinutes: t.estimatedMinutes ?? 25,
+    loggedMinutes: t.loggedMinutes || 0,
+    subtasks: (t.subtasks || []).map((s) => ({
+      id: s.id,
+      title: s.title,
+      done: Boolean(s.done),
+    })),
+    completedAt: t.completedAt || null,
+    createdAt: t.createdAt || '',
+    position: t.position || 0,
+  }));
+}
+
 async function getSnapshot(userId) {
-  const [activities, goals, habits, settingsDoc, grit, academics, progress] = await Promise.all([
+  const [activities, goals, habits, settingsDoc, grit, academics, progress, focusTodos] = await Promise.all([
     Activity.find({ user: userId }).sort({ date: -1, startTime: 1 }),
     Goal.find({ user: userId }).sort({ date: -1 }),
     Habit.find({ user: userId }).sort({ createdAt: 1 }),
@@ -319,6 +421,7 @@ async function getSnapshot(userId) {
     getGrit(userId),
     getAcademics(userId),
     getProgress(userId),
+    getFocusTodos(userId),
   ]);
 
   return {
@@ -329,6 +432,7 @@ async function getSnapshot(userId) {
     grit,
     academics,
     progress,
+    focusTodos,
   };
 }
 
@@ -340,11 +444,12 @@ async function clearAll(userId) {
     UserGrit.deleteMany({ user: userId }),
     UserAcademics.deleteMany({ user: userId }),
     UserProgress.deleteMany({ user: userId }),
+    UserFocusTodo.deleteMany({ user: userId }),
   ]);
 }
 
 async function importSnapshot(userId, payload = {}) {
-  const created = { activities: [], goals: [], habits: [], grit: [], academics: [], progress: null };
+  const created = { activities: [], goals: [], habits: [], grit: [], academics: [], progress: null, focusTodos: [] };
 
   if (Array.isArray(payload.activities) && payload.activities.length) {
     const docs = payload.activities.map((item) => ({
@@ -391,6 +496,13 @@ async function importSnapshot(userId, payload = {}) {
 
   if (payload.progress && typeof payload.progress === 'object') {
     created.progress = await saveProgress(userId, payload.progress);
+  }
+
+  const focusTodosList = Array.isArray(payload.focusTodos)
+    ? payload.focusTodos
+    : payload.focusTodos?.todos;
+  if (Array.isArray(focusTodosList) && focusTodosList.length) {
+    created.focusTodos = await saveFocusTodos(userId, focusTodosList);
   }
 
   return created;
@@ -546,4 +658,6 @@ module.exports = {
   saveAcademics,
   getProgress,
   saveProgress,
+  getFocusTodos,
+  saveFocusTodos,
 };

@@ -38,4 +38,7 @@ router.put('/academics', ctrl.saveAcademics);
 router.get('/progress', ctrl.getProgress);
 router.put('/progress', ctrl.saveProgress);
 
+router.get('/focus-todos', ctrl.getFocusTodos);
+router.put('/focus-todos', ctrl.saveFocusTodos);
+
 module.exports = router;

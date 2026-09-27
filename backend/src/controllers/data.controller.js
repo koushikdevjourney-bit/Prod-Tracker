@@ -201,6 +201,23 @@ async function saveProgress(req, res, next) {
   }
 }
 
+async function getFocusTodos(req, res, next) {
+  try {
+    res.json({ todos: await data.getFocusTodos(userId(req)) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function saveFocusTodos(req, res, next) {
+  try {
+    const todos = Array.isArray(req.body) ? req.body : req.body?.todos;
+    res.json({ todos: await data.saveFocusTodos(userId(req), todos) });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   snapshot,
   clearAll,
@@ -226,4 +243,6 @@ module.exports = {
   saveAcademics,
   getProgress,
   saveProgress,
+  getFocusTodos,
+  saveFocusTodos,
 };
