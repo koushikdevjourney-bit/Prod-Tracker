@@ -218,6 +218,13 @@ export class ProgressService {
     }));
   }
 
+  clearCleared(): void {
+    this.patch((state) => ({
+      ...state,
+      items: reindex(state.items.filter((item) => !item.done)),
+    }));
+  }
+
   private mapItem(id: string, mapper: (item: ProgressItem) => ProgressItem): void {
     this.patch((state) => ({
       ...state,

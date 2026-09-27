@@ -1,105 +1,281 @@
-<div class="prog">
+<div class="prog" [class.prog--zen-active]="zenMode()">
+  <!-- Main Header -->
   <header class="prog-top">
     <a class="prog-back" routerLink="/home">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="m12 19-7-7 7-7" />
         <path d="M19 12H5" />
       </svg>
-      My tracker
+      <span>My tracker</span>
     </a>
-    <p class="prog-top__title">Progress</p>
-    <button type="button" class="btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
-      {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
-    </button>
+    <p class="prog-top__title">Progress & Flow</p>
+    <div class="prog-top__actions">
+      <button
+        type="button"
+        class="btn-nav"
+        [class.btn-nav--active]="zenMode()"
+        (click)="toggleZen()"
+        title="Distraction-free Zen Focus Mode"
+        aria-label="Toggle Zen Focus Mode"
+      >
+        <span class="btn-nav__icon">⛶</span>
+        <span class="btn-nav__text">Zen Mode</span>
+      </button>
+      <button
+        type="button"
+        class="btn-nav btn-nav--icon"
+        (click)="toggleSound()"
+        [title]="soundEnabled() ? 'Mute chimes' : 'Enable chimes'"
+        aria-label="Toggle sound chimes"
+      >
+        {{ soundEnabled() ? '🔔' : '🔕' }}
+      </button>
+      <button
+        type="button"
+        class="btn-nav btn-nav--icon"
+        (click)="toggleTheme()"
+        [title]="theme.resolved() === 'dark' ? 'Light mode' : 'Dark mode'"
+        aria-label="Toggle theme"
+      >
+        {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
+      </button>
+    </div>
   </header>
 
   <div class="prog-body">
+    <!-- Hero Section -->
     <section class="hero">
-      <div>
-        <p class="eyebrow">Current focus</p>
+      <div class="hero__copy">
+        <div class="hero__pill">
+          <span class="hero__dot"></span>
+          <span>Active Flow State</span>
+        </div>
         <h1>What you’re on now</h1>
-        <p class="lede">One thing in front. Queue the rest. Timer and progress save to your account.</p>
+        <p class="lede">Focus on one priority. Queue the rest. Track sessions, milestones, and daily momentum seamlessly.</p>
       </div>
       <div class="hero__ring" aria-hidden="true">
         <svg viewBox="0 0 48 48">
           <circle class="ring-bg" cx="24" cy="24" r="18" />
-          <circle class="ring-fg" cx="24" cy="24" r="18" [attr.stroke-dasharray]="ringC" [attr.stroke-dashoffset]="ringOffset()" />
+          <circle
+            class="ring-fg"
+            cx="24"
+            cy="24"
+            r="18"
+            [attr.stroke-dasharray]="ringC"
+            [attr.stroke-dashoffset]="ringOffset()"
+          />
         </svg>
-        <strong>{{ progress.totals().percent }}%</strong>
+        <div class="hero__ring-label">
+          <strong>{{ progress.totals().percent }}%</strong>
+          <span>overall</span>
+        </div>
       </div>
     </section>
 
-    <section class="stats" aria-label="Today">
-      <article>
-        <strong>{{ progress.totals().open }}</strong>
-        <span>Open</span>
+    <!-- Stat Highlights -->
+    <section class="stats" aria-label="Today summary">
+      <article class="stat-card">
+        <div class="stat-card__val">{{ progress.totals().open }}</div>
+        <div class="stat-card__lbl">Open tasks</div>
       </article>
-      <article>
-        <strong>{{ progress.totals().done }}</strong>
-        <span>Cleared</span>
+      <article class="stat-card">
+        <div class="stat-card__val">{{ progress.totals().done }}</div>
+        <div class="stat-card__lbl">Completed</div>
       </article>
-      <article>
-        <strong>{{ todayMinutes() }}</strong>
-        <span>Focused today</span>
+      <article class="stat-card stat-card--accent">
+        <div class="stat-card__val">{{ todayMinutes() }}</div>
+        <div class="stat-card__lbl">Focused today</div>
       </article>
     </section>
 
+    <!-- Daily Intention Banner -->
     @if (editingIntention()) {
       <form class="intention intention--edit" (submit)="$event.preventDefault(); saveIntention()">
-        <input class="input" [(ngModel)]="intentionDraft" name="intention" placeholder="Today I’m focusing on…" maxlength="200" />
-        <button type="submit" class="btn btn--primary">Save</button>
-        <button type="button" class="btn btn--ghost" (click)="editingIntention.set(false)">Cancel</button>
+        <input
+          class="input"
+          [(ngModel)]="intentionDraft"
+          name="intention"
+          placeholder="Today my main priority is..."
+          maxlength="200"
+          autofocus
+        />
+        <div class="intention__btns">
+          <button type="submit" class="btn btn--primary btn--sm">Save</button>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="editingIntention.set(false)">Cancel</button>
+        </div>
       </form>
     } @else {
-      <button type="button" class="intention" (click)="startIntention()">
+      <button type="button" class="intention" (click)="startIntention()" title="Click to edit daily intention">
+        <span class="intention__icon">🎯</span>
         @if (progress.state().intention) {
-          <span>{{ progress.state().intention }}</span>
+          <span class="intention__text">{{ progress.state().intention }}</span>
         } @else {
-          <span class="muted">Add a one-line intention for today</span>
+          <span class="intention__text muted">Set your one-sentence focus intention for today...</span>
         }
+        <span class="intention__hint">Edit</span>
       </button>
     }
 
+    <!-- Active "Now" Focus Section -->
     @if (progress.now(); as now) {
-      <section class="now" aria-label="Now">
+      <section class="now" aria-label="Current Focus">
         <div class="now__top">
-          <div>
-            <p class="now__kicker">Now</p>
-            <h2>{{ now.title }}</h2>
-            @if (now.source !== 'Custom') {
-              <p class="now__source">{{ now.source }}</p>
+          <div class="now__title-area">
+            <div class="now__kicker-row">
+              <span class="now__kicker">CURRENT FOCUS</span>
+              @if (now.source && now.source !== 'Custom') {
+                <span class="badge badge--source">{{ now.source }}</span>
+              }
+              @if (itemDue(now); as due) {
+                <span class="badge" [class.badge--warn]="due === 'overdue'" [class.badge--now]="due === 'today'">
+                  {{ due === 'overdue' ? '⚠ Overdue' : due === 'today' ? 'Due today' : 'Due ' + now.due }}
+                </span>
+              }
+            </div>
+
+            @if (editingTitle()) {
+              <form class="now__title-edit" (submit)="$event.preventDefault(); saveTitleEdit(now.id)">
+                <input class="input" [(ngModel)]="titleDraft" name="titleDraft" autofocus />
+                <button type="submit" class="btn btn--primary btn--sm">Save</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="editingTitle.set(false)">Cancel</button>
+              </form>
+            } @else {
+              <div class="now__heading-wrap">
+                <h2>{{ now.title }}</h2>
+                <button type="button" class="btn-icon-subtle" (click)="startTitleEdit(now)" title="Rename task">
+                  ✎
+                </button>
+              </div>
             }
           </div>
-          @if (itemDue(now); as due) {
-            <span class="badge" [class.badge--warn]="due === 'overdue'" [class.badge--now]="due === 'today'">
-              {{ due === 'overdue' ? 'Overdue' : due === 'today' ? 'Due today' : 'Due ' + now.due }}
-            </span>
-          }
+
+          <div class="now__quick-tools">
+            <button
+              type="button"
+              class="btn-pill"
+              (click)="logNowToActivity()"
+              title="Save this focus block to your Activity Journal"
+            >
+              <span>⚡</span>
+              <span>Log to Journal</span>
+            </button>
+            <button
+              type="button"
+              class="btn-pill btn-pill--zen"
+              (click)="zenMode.set(true)"
+              title="Full screen Zen Focus"
+            >
+              <span>⛶</span>
+              <span>Zen Focus</span>
+            </button>
+          </div>
         </div>
 
+        <!-- Timer Card -->
         <div class="timer">
-          <div class="timer__clock">{{ running() || remaining() ? clock() : sessionLen() + ':00' }}</div>
-          <div class="timer__lens">
-            @for (n of lengths; track n) {
-              <button type="button" class="chip" [class.chip--on]="sessionLen() === n" (click)="sessionLen.set(n)" [disabled]="running()">
-                {{ n }}m
+          <!-- Timer Modes -->
+          <div class="timer__modes">
+            <button
+              type="button"
+              class="mode-chip"
+              [class.mode-chip--active]="timerMode() === 'focus'"
+              (click)="setTimerMode('focus')"
+            >
+              🎯 Focus
+            </button>
+            <button
+              type="button"
+              class="mode-chip"
+              [class.mode-chip--active]="timerMode() === 'short_break'"
+              (click)="setTimerMode('short_break')"
+            >
+              ☕ Short Break (5m)
+            </button>
+            <button
+              type="button"
+              class="mode-chip"
+              [class.mode-chip--active]="timerMode() === 'long_break'"
+              (click)="setTimerMode('long_break')"
+            >
+              🌴 Long Break (15m)
+            </button>
+          </div>
+
+          <!-- Circular Clock Display -->
+          <div class="timer__display">
+            <div class="timer__circular-wrap">
+              <svg viewBox="0 0 88 88" class="timer__svg">
+                <circle class="timer-ring-bg" cx="44" cy="44" r="34" />
+                <circle
+                  class="timer-ring-fg"
+                  cx="44"
+                  cy="44"
+                  r="34"
+                  [attr.stroke-dasharray]="timerRingC"
+                  [attr.stroke-dashoffset]="timerRingOffset()"
+                />
+              </svg>
+              <div class="timer__clock">
+                <span class="timer__time">{{ running() || remaining() ? clock() : (timerMode() === 'short_break' ? '5:00' : timerMode() === 'long_break' ? '15:00' : sessionLen() + ':00') }}</span>
+                <span class="timer__status-tag">
+                  {{ running() ? 'in session' : remaining() ? 'paused' : 'ready' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Length options (only in focus mode) -->
+            @if (timerMode() === 'focus') {
+              <div class="timer__durations">
+                <span class="timer__durations-label">Duration:</span>
+                @for (n of lengths; track n) {
+                  <button
+                    type="button"
+                    class="chip"
+                    [class.chip--on]="sessionLen() === n"
+                    (click)="sessionLen.set(n); remaining.set(0)"
+                    [disabled]="running()"
+                  >
+                    {{ n }}m
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Timer Controls -->
+          <div class="timer__run">
+            @if (!running()) {
+              <button type="button" class="btn btn--primary btn--start" (click)="startSession()">
+                ▶ {{ remaining() ? 'Resume Session' : (timerMode() === 'focus' ? 'Start Focus (' + sessionLen() + 'm)' : 'Start Break') }}
+              </button>
+            } @else {
+              <button type="button" class="btn btn--secondary" (click)="pauseSession()">
+                ⏸ Pause
+              </button>
+              <button type="button" class="btn btn--ghost" (click)="bumpTimer(300)" title="Add 5 more minutes">
+                +5m
+              </button>
+              <button type="button" class="btn btn--ghost" (click)="stopSession()">
+                ⏹ End Early
               </button>
             }
           </div>
-          <div class="timer__run">
-            @if (!running()) {
-              <button type="button" class="btn btn--primary" (click)="startSession()">Start focus</button>
-            } @else {
-              <button type="button" class="btn btn--ghost" (click)="pauseSession()">Pause</button>
-              <button type="button" class="btn btn--ghost" (click)="stopSession()">Stop</button>
-            }
-          </div>
         </div>
 
-        <div class="now__bar">
-          <span>{{ now.percent }}%</span>
+        <!-- Task Completion & Milestone Sliders -->
+        <div class="now__progress-wrap">
+          <div class="now__bar-info">
+            <span class="now__pct-display">{{ now.percent }}% complete</span>
+            <div class="now__milestone-chips">
+              <button type="button" class="ms-chip" [class.ms-chip--active]="now.percent >= 25" (click)="setMilestone(now.id, 25)">25%</button>
+              <button type="button" class="ms-chip" [class.ms-chip--active]="now.percent >= 50" (click)="setMilestone(now.id, 50)">50%</button>
+              <button type="button" class="ms-chip" [class.ms-chip--active]="now.percent >= 75" (click)="setMilestone(now.id, 75)">75%</button>
+              <button type="button" class="ms-chip ms-chip--done" (click)="setMilestone(now.id, 100)">100% (Done)</button>
+            </div>
+          </div>
           <input
             type="range"
+            class="range-slider"
             min="0"
             max="100"
             step="5"
@@ -109,49 +285,98 @@
             [attr.aria-label]="'Progress for ' + now.title"
           />
         </div>
+
+        <!-- Action Controls -->
         <div class="now__actions">
-          <button type="button" class="btn btn--ghost" (click)="progress.bump(now.id, -10)">−10</button>
-          <button type="button" class="btn btn--ghost" (click)="progress.bump(now.id, 10)">+10</button>
-          <button type="button" class="btn btn--primary" (click)="progress.toggleDone(now.id)">Mark done</button>
+          <div class="now__bump-group">
+            <button type="button" class="btn btn--ghost btn--sm" (click)="progress.bump(now.id, -10)" title="Decrease 10%">−10%</button>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="progress.bump(now.id, 10)" title="Increase 10%">+10%</button>
+          </div>
+          <button type="button" class="btn btn--primary" (click)="markDoneAndNext(now.id)">
+            ✓ Complete & Next
+          </button>
           @if (progress.queue().length) {
-            <button type="button" class="btn btn--ghost" (click)="progress.skip(now.id)">Skip</button>
+            <button type="button" class="btn btn--ghost" (click)="progress.skip(now.id)" title="Send to back of queue">
+              Skip to Next ↷
+            </button>
           }
         </div>
+
+        <!-- Metadata & Next Action Note -->
         <div class="now__meta">
           <label class="due">
-            <span>Due</span>
-            <input class="input" type="date" [ngModel]="now.due" (ngModelChange)="progress.setDue(now.id, $event)" name="nowDue" />
+            <span>Due Date</span>
+            <input
+              class="input"
+              type="date"
+              [ngModel]="now.due"
+              (ngModelChange)="progress.setDue(now.id, $event)"
+              name="nowDue"
+            />
           </label>
           @if (now.minutes) {
-            <p class="muted tiny">{{ now.minutes }}m logged on this</p>
+            <span class="now__logged-tag">⏱ {{ now.minutes }}m focused on this</span>
           }
         </div>
-        @if (editingNote() === now.id) {
-          <form class="note-form" (submit)="$event.preventDefault(); saveNote(now.id)">
-            <textarea class="input" [(ngModel)]="noteDraft" name="nowNote" rows="2" placeholder="Next action — what’s the next 5 minutes?"></textarea>
-            <button type="submit" class="btn btn--ghost">Save</button>
-          </form>
-        } @else {
-          <button type="button" class="note-btn" (click)="startNote(now)">
-            {{ now.note || 'What’s the next action?' }}
-          </button>
-        }
+
+        <div class="now__note-section">
+          <div class="now__note-header">
+            <span class="now__note-label">Next Action / Micro-step</span>
+          </div>
+          @if (editingNote() === now.id) {
+            <form class="note-form" (submit)="$event.preventDefault(); saveNote(now.id)">
+              <textarea
+                class="input"
+                [(ngModel)]="noteDraft"
+                name="nowNote"
+                rows="2"
+                placeholder="What’s the exact next 5-minute action?"
+                autofocus
+              ></textarea>
+              <div class="note-form__actions">
+                <button type="submit" class="btn btn--primary btn--sm">Save Note</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="editingNote.set(null)">Cancel</button>
+              </div>
+            </form>
+          } @else {
+            <button type="button" class="note-btn" (click)="startNote(now)">
+              <span class="note-btn__icon">📝</span>
+              <span class="note-btn__text">{{ now.note || 'Add immediate micro-step or next action to stay in flow...' }}</span>
+            </button>
+          }
+        </div>
       </section>
     } @else {
+      <!-- Empty State -->
       <section class="empty">
-        <h2>Nothing in focus yet</h2>
-        <p class="lede">Add what you’re working on. The first item becomes Now; the rest wait in your queue.</p>
+        <div class="empty__icon">✨</div>
+        <h2>Ready to dive in</h2>
+        <p class="lede">No active focus task right now. Add what you want to conquer, or pick a suggestion below to start your flow.</p>
       </section>
     }
 
-    @if (progress.queue().length) {
-      <section class="queue">
-        <header class="queue__head">
-          <h2>Up next</h2>
-          <p>Drag to set the order</p>
-        </header>
+    <!-- Up Next Queue Section -->
+    <section class="queue">
+      <header class="queue__head">
+        <div class="queue__title-group">
+          <h2>Up next in queue</h2>
+          <span class="queue__counter">{{ progress.queue().length }} waiting</span>
+        </div>
+        @if (progress.queue().length > 3) {
+          <div class="queue__search">
+            <input
+              class="input input--search"
+              [(ngModel)]="queueFilter"
+              name="queueFilter"
+              placeholder="Search queue..."
+            />
+          </div>
+        }
+      </header>
+
+      @if (filteredQueue().length) {
         <ol class="queue__list">
-          @for (item of progress.queue(); track item.id; let i = $index) {
+          @for (item of filteredQueue(); track item.id; let i = $index) {
             <li
               class="row"
               [class.row--dragging]="draggingId() === item.id"
@@ -160,60 +385,109 @@
               (dragover)="allowDrop($event)"
               (drop)="onDrop(item.id, $event)"
             >
+              <span class="row__drag-grip" title="Drag to reorder">⠿</span>
               <span class="row__pos">{{ i + 2 }}</span>
               <div class="row__copy">
-                <strong>{{ item.title }}</strong>
-                <span class="row__bar"><span [style.width.%]="item.percent"></span></span>
-                @if (itemDue(item); as due) {
-                  <span class="badge badge--tiny" [class.badge--warn]="due === 'overdue'" [class.badge--now]="due === 'today'">
-                    {{ due === 'overdue' ? 'Overdue' : due === 'today' ? 'Today' : item.due }}
-                  </span>
+                <div class="row__title-wrap">
+                  <strong>{{ item.title }}</strong>
+                  @if (item.source && item.source !== 'Custom') {
+                    <span class="badge badge--mini-source">{{ item.source }}</span>
+                  }
+                  @if (itemDue(item); as due) {
+                    <span class="badge badge--tiny" [class.badge--warn]="due === 'overdue'" [class.badge--now]="due === 'today'">
+                      {{ due === 'overdue' ? 'Overdue' : due === 'today' ? 'Today' : item.due }}
+                    </span>
+                  }
+                </div>
+                <div class="row__bar">
+                  <span [style.width.%]="item.percent"></span>
+                </div>
+                @if (item.note) {
+                  <p class="row__note-snippet">{{ item.note }}</p>
                 }
               </div>
               <span class="row__pct">{{ item.percent }}%</span>
               <div class="row__ops">
-                <button type="button" class="ghost-mini" (click)="progress.makeNow(item.id)">Now</button>
-                <button type="button" class="ghost-mini" (click)="progress.move(item.id, -1)" aria-label="Move up">↑</button>
-                <button type="button" class="ghost-mini" (click)="progress.move(item.id, 1)" aria-label="Move down">↓</button>
-                <button type="button" class="ghost-mini" (click)="progress.remove(item.id)" aria-label="Remove">×</button>
+                <button type="button" class="btn-tool" (click)="progress.bump(item.id, -10)" title="−10%">−10</button>
+                <button type="button" class="btn-tool" (click)="progress.bump(item.id, 10)" title="+10%">+10</button>
+                <button type="button" class="btn-tool btn-tool--now" (click)="progress.makeNow(item.id)" title="Make this the active focus">Focus Now</button>
+                <button type="button" class="btn-tool" (click)="progress.move(item.id, -1)" aria-label="Move up">↑</button>
+                <button type="button" class="btn-tool" (click)="progress.move(item.id, 1)" aria-label="Move down">↓</button>
+                <button type="button" class="btn-tool btn-tool--del" (click)="progress.remove(item.id)" aria-label="Remove">×</button>
               </div>
             </li>
           }
         </ol>
-      </section>
-    }
+      } @else if (progress.queue().length && queueFilter()) {
+        <p class="muted center-text py-2">No queued items match "{{ queueFilter() }}".</p>
+      } @else {
+        <p class="queue__empty-hint">Queue is clear. Add items below to line up your flow.</p>
+      }
+    </section>
 
+    <!-- Quick Add Form -->
     <section class="add">
       <form class="add__form" (submit)="$event.preventDefault(); addCustom()">
-        <input class="input" [(ngModel)]="newTitle" name="newTitle" placeholder="Add something you’re focusing on" />
-        <button type="submit" class="btn btn--primary" [disabled]="!newTitle.trim()">Add</button>
+        <input
+          class="input add__input"
+          [(ngModel)]="newTitle"
+          name="newTitle"
+          placeholder="What do you want to accomplish next?"
+        />
+        <button type="submit" class="btn btn--primary" [disabled]="!newTitle.trim()">
+          + Add Focus
+        </button>
       </form>
       <label class="check">
         <input type="checkbox" [ngModel]="addAsNow()" (ngModelChange)="addAsNow.set($event)" name="addAsNow" />
-        Add as Now
+        <span>Make this the active "Now" item right away</span>
       </label>
+
       @if (suggestions().length) {
         <div class="chips">
-          <span class="chips__label">Quick add</span>
+          <span class="chips__label">Suggestions based on your tracker & goals:</span>
           @for (item of suggestions(); track item.source + item.title) {
-            <button type="button" class="chip" (click)="addSuggestion(item.title, item.source)">{{ item.title }}</button>
+            <button type="button" class="chip" (click)="addSuggestion(item.title, item.source)">
+              <span class="chip__source-hint">{{ item.source }}:</span>
+              {{ item.title }}
+            </button>
           }
         </div>
       }
     </section>
 
+    <!-- Completed History Section -->
     @if (progress.cleared().length) {
       <section class="cleared">
-        <button type="button" class="cleared__toggle" (click)="showCleared.update((v) => !v)" [attr.aria-expanded]="showCleared()">
-          Cleared · {{ progress.cleared().length }}
-          <span>{{ showCleared() ? 'Hide' : 'Show' }}</span>
-        </button>
+        <div class="cleared__header">
+          <button type="button" class="cleared__toggle" (click)="showCleared.update((v) => !v)" [attr.aria-expanded]="showCleared()">
+            <span class="cleared__title">
+              <span>✓ Cleared focus items</span>
+              <span class="cleared__badge">{{ progress.cleared().length }}</span>
+            </span>
+            <span class="cleared__arrow">{{ showCleared() ? '▲ Hide' : '▼ View history' }}</span>
+          </button>
+          @if (showCleared()) {
+            <button type="button" class="btn-link-danger" (click)="clearAllCleared()">
+              Clear all history
+            </button>
+          }
+        </div>
+
         @if (showCleared()) {
           <ul class="cleared__list">
             @for (item of progress.cleared(); track item.id) {
-              <li>
-                <span>{{ item.title }}</span>
-                <button type="button" class="ghost-mini" (click)="progress.toggleDone(item.id)">Undo</button>
+              <li class="cleared__row">
+                <div class="cleared__info">
+                  <span class="cleared__checkmark">✓</span>
+                  <span class="cleared__task-title">{{ item.title }}</span>
+                  @if (item.minutes) {
+                    <span class="cleared__mins">{{ item.minutes }}m focused</span>
+                  }
+                </div>
+                <button type="button" class="ghost-mini" (click)="progress.toggleDone(item.id)">
+                  Undo
+                </button>
               </li>
             }
           </ul>
@@ -221,4 +495,128 @@
       </section>
     }
   </div>
+
+  <!-- ZEN FOCUS MODE FULLSCREEN MODAL -->
+  @if (zenMode()) {
+    <div class="zen-modal" role="dialog" aria-modal="true" aria-label="Zen Focus Mode">
+      <div class="zen-modal__backdrop" (click)="zenMode.set(false)"></div>
+      <div class="zen-modal__card">
+        <div class="zen-modal__top">
+          <div class="zen-modal__kicker">
+            <span class="zen-dot"></span>
+            <span>ZEN FOCUS MODE</span>
+          </div>
+          <div class="zen-modal__controls">
+            <button type="button" class="btn-tool" (click)="toggleSound()" [title]="soundEnabled() ? 'Mute' : 'Unmute'">
+              {{ soundEnabled() ? '🔔' : '🔕' }}
+            </button>
+            <button type="button" class="btn-zen-close" (click)="zenMode.set(false)" title="Exit Zen mode (Esc)">
+              ✕ Exit (Esc)
+            </button>
+          </div>
+        </div>
+
+        @if (progress.now(); as now) {
+          <div class="zen-modal__content">
+            <div class="zen-modes">
+              <button
+                type="button"
+                class="mode-chip"
+                [class.mode-chip--active]="timerMode() === 'focus'"
+                (click)="setTimerMode('focus')"
+              >
+                🎯 Focus
+              </button>
+              <button
+                type="button"
+                class="mode-chip"
+                [class.mode-chip--active]="timerMode() === 'short_break'"
+                (click)="setTimerMode('short_break')"
+              >
+                ☕ 5m Break
+              </button>
+              <button
+                type="button"
+                class="mode-chip"
+                [class.mode-chip--active]="timerMode() === 'long_break'"
+                (click)="setTimerMode('long_break')"
+              >
+                🌴 15m Break
+              </button>
+            </div>
+
+            <!-- Big Zen Circular Timer -->
+            <div class="zen-timer">
+              <svg viewBox="0 0 88 88" class="zen-timer__svg">
+                <circle class="timer-ring-bg" cx="44" cy="44" r="34" />
+                <circle
+                  class="timer-ring-fg"
+                  cx="44"
+                  cy="44"
+                  r="34"
+                  [attr.stroke-dasharray]="timerRingC"
+                  [attr.stroke-dashoffset]="timerRingOffset()"
+                />
+              </svg>
+              <div class="zen-timer__clock">
+                <div class="zen-timer__digits">{{ running() || remaining() ? clock() : (timerMode() === 'short_break' ? '5:00' : timerMode() === 'long_break' ? '15:00' : sessionLen() + ':00') }}</div>
+                <div class="zen-timer__label">{{ running() ? 'focused' : remaining() ? 'paused' : 'ready' }}</div>
+              </div>
+            </div>
+
+            <!-- Zen Timer Actions -->
+            <div class="zen-timer__actions">
+              @if (!running()) {
+                <button type="button" class="btn btn--primary btn--zen-action" (click)="startSession()">
+                  ▶ {{ remaining() ? 'Resume' : 'Start Focus' }}
+                </button>
+              } @else {
+                <button type="button" class="btn btn--secondary btn--zen-action" (click)="pauseSession()">
+                  ⏸ Pause
+                </button>
+                <button type="button" class="btn btn--ghost" (click)="bumpTimer(300)">
+                  +5m
+                </button>
+                <button type="button" class="btn btn--ghost" (click)="stopSession()">
+                  ⏹ Stop
+                </button>
+              }
+            </div>
+
+            <div class="zen-task">
+              <h2 class="zen-task__title">{{ now.title }}</h2>
+              @if (now.note) {
+                <p class="zen-task__note">Next: {{ now.note }}</p>
+              }
+            </div>
+
+            <!-- Milestone Jumps in Zen Mode -->
+            <div class="zen-milestones">
+              <span class="zen-milestones__label">{{ now.percent }}% done:</span>
+              <button type="button" class="ms-chip" [class.ms-chip--active]="now.percent >= 25" (click)="setMilestone(now.id, 25)">25%</button>
+              <button type="button" class="ms-chip" [class.ms-chip--active]="now.percent >= 50" (click)="setMilestone(now.id, 50)">50%</button>
+              <button type="button" class="ms-chip" [class.ms-chip--active]="now.percent >= 75" (click)="setMilestone(now.id, 75)">75%</button>
+              <button type="button" class="ms-chip ms-chip--done" (click)="markDoneAndNext(now.id)">✓ Complete Task</button>
+            </div>
+
+            <!-- Upcoming item preview -->
+            @if (progress.queue().length) {
+              <div class="zen-up-next">
+                <span class="zen-up-next__lbl">Up Next:</span>
+                <span class="zen-up-next__val">{{ progress.queue()[0].title }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="zen-modal__content center-text">
+            <h2>No task in focus</h2>
+            <p class="lede">Add a task first to enter Zen Focus mode.</p>
+            <button type="button" class="btn btn--primary" (click)="zenMode.set(false)">
+              Back to Progress
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
 </div>

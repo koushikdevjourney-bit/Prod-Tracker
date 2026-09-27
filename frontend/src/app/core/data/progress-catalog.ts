@@ -26,7 +26,7 @@ export const EMPTY_PROGRESS: ProgressState = {
 
 export const FOCUS_PRESETS = ['DSA', 'Coding', 'Project', 'Interview prep', 'Revision'];
 
-export const FOCUS_LENGTHS = [15, 25, 50] as const;
+export const FOCUS_LENGTHS = [15, 25, 45, 50, 60] as const;
 
 export function overallPercent(items: ProgressItem[]): number {
   if (!items.length) return 0;
