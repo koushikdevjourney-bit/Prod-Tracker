@@ -85,7 +85,7 @@
           <form class="create-panel" (submit)="$event.preventDefault(); addSemester()">
             <label class="field">
               <span>Semester Name / Title</span>
-              <input class="input" [(ngModel)]="newTrackName" name="newTrack" placeholder="e.g., Computer Science Sem-6" autofocus />
+              <input class="input" [(ngModel)]="newTrackName" name="newTrack" placeholder="e.g., Computer Science Sem-5" autofocus />
             </label>
             <div class="create-panel__row">
               <button type="submit" class="btn btn--primary" [disabled]="!newTrackName.trim()">Create Semester</button>
@@ -101,11 +101,44 @@
         <!-- Curated Syllabus Packs -->
         <section class="presets-section">
           <div class="presets-section__head">
-            <h3>⚡ Quick-Start Curated Syllabus Packs</h3>
-            <p>1-click setup with subjects and modular units pre-structured</p>
+            <div>
+              <h3>⚡ Syllabus Packs</h3>
+              <p>Pre-structured course modules. Any pack you add will appear right beside Semester 5.</p>
+            </div>
+            <button type="button" class="btn btn--sm btn--primary" (click)="openCreatePack()">
+              + Add A Pack
+            </button>
           </div>
+
+          @if (creatingPack()) {
+            <form class="create-panel pack-create-form" (submit)="$event.preventDefault(); saveNewPack()">
+              <label class="field">
+                <span>Pack Title</span>
+                <input class="input" [(ngModel)]="packName" name="packName" placeholder="e.g., Academics Sem-6" autofocus />
+              </label>
+              <label class="field">
+                <span>Description / Blurb</span>
+                <input class="input" [(ngModel)]="packBlurb" name="packBlurb" placeholder="Brief syllabus summary..." />
+              </label>
+              <div class="field-row">
+                <label class="field flex-1">
+                  <span>Badge Tag</span>
+                  <input class="input" [(ngModel)]="packBadge" name="packBadge" placeholder="Semester" />
+                </label>
+                <label class="field flex-2">
+                  <span>Subjects (comma separated)</span>
+                  <input class="input" [(ngModel)]="packSubjectsRaw" name="packSubjectsRaw" placeholder="Subject 1, Subject 2, Subject 3..." />
+                </label>
+              </div>
+              <div class="create-panel__row">
+                <button type="submit" class="btn btn--primary btn--sm" [disabled]="!packName.trim()">Save Pack</button>
+                <button type="button" class="btn btn--ghost btn--sm" (click)="creatingPack.set(false)">Cancel</button>
+              </div>
+            </form>
+          }
+
           <div class="presets-grid">
-            @for (preset of presets; track preset.id) {
+            @for (preset of presets(); track preset.id) {
               <article class="preset-card">
                 <div class="preset-card__top">
                   <div>
@@ -114,9 +147,16 @@
                     }
                     <h4>{{ preset.name }}</h4>
                   </div>
-                  <button type="button" class="btn btn--sm btn--primary" (click)="usePreset(preset.id)">
-                    Load Pack
-                  </button>
+                  <div class="preset-card__actions">
+                    <button type="button" class="btn btn--sm btn--primary" (click)="usePreset(preset.id)">
+                      Load Pack
+                    </button>
+                    @if (isCustomPack(preset.id)) {
+                      <button type="button" class="sem-tool sem-tool--del" (click)="removePack(preset.id, $event)" title="Delete pack">
+                        ×
+                      </button>
+                    }
+                  </div>
                 </div>
                 <p class="preset-card__blurb">{{ preset.blurb }}</p>
                 <div class="preset-card__preview">
@@ -259,6 +299,9 @@
             </button>
             <button type="button" class="btn-subtle" (click)="duplicateSemester(track.id)" title="Make a duplicate copy">
               Duplicate
+            </button>
+            <button type="button" class="btn-subtle" (click)="saveCurrentTrackAsPack()" title="Save as reusable pack beside Sem-5">
+              💾 Save as Pack
             </button>
           </div>
         </div>

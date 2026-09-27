@@ -111,10 +111,47 @@ export class AcademicService {
   private readonly _tracks = signal<AcademicTrack[]>(
     this.store.get<AcademicTrack[]>(STORAGE_KEYS.academics, []),
   );
+  private readonly _customPacks = signal<AcademicPreset[]>(
+    this.store.get<AcademicPreset[]>(STORAGE_KEYS.academicPacks, []),
+  );
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly tracks = this._tracks.asReadonly();
+  readonly customPacks = this._customPacks.asReadonly();
+  readonly allPacks = computed<AcademicPreset[]>(() => [
+    ...ACADEMIC_PRESETS,
+    ...this._customPacks(),
+  ]);
   readonly activeId = signal<string | null>(null);
+
+  addCustomPack(pack: AcademicPreset): void {
+    this._customPacks.update((list) => [...list, pack]);
+    this.store.set(STORAGE_KEYS.academicPacks, this._customPacks());
+    this.toast.success(`Pack "${pack.name}" created!`);
+  }
+
+  removeCustomPack(packId: string): void {
+    this._customPacks.update((list) => list.filter((p) => p.id !== packId));
+    this.store.set(STORAGE_KEYS.academicPacks, this._customPacks());
+    this.toast.info('Custom pack removed');
+  }
+
+  saveTrackAsPack(trackId: string, badge = 'Custom'): void {
+    const track = this._tracks().find((t) => t.id === trackId);
+    if (!track) return;
+    const pack: AcademicPreset = {
+      id: createId(),
+      name: `${track.name} Pack`,
+      blurb: `Curriculum pack exported from ${track.name} (${track.subjects.length} subjects)`,
+      badge,
+      subjects: track.subjects.map((s) => ({
+        name: s.name,
+        stars: s.stars,
+        units: s.subs.map((u) => u.title),
+      })),
+    };
+    this.addCustomPack(pack);
+  }
 
   readonly activeTrack = computed(() => {
     const list = this._tracks();

@@ -44,6 +44,7 @@ export const STORAGE_KEYS = {
   cloudMigrated: 'pt.cloudMigrated',
   grit: 'pt.grit',
   academics: 'pt.academics',
+  academicPacks: 'pt.academic_packs',
   progress: 'pt.progress',
   focusTodos: 'pt.focusTodos',
 } as const;

@@ -55,57 +55,6 @@ export const ACADEMIC_PRESETS: AcademicPreset[] = [
       },
     ],
   },
-  {
-    id: 'sem-6',
-    name: 'Academics Sem-6',
-    blurb: 'Sixth-semester advanced topics and specialized electives',
-    badge: 'Semester',
-    subjects: [
-      {
-        name: 'Compiler Design',
-        stars: 5,
-        units: ['Lexical Analysis (Lex)', 'Syntax Analysis (Yacc/Bison)', 'Intermediate Code Representation', 'Code Optimization Techniques'],
-      },
-      {
-        name: 'Cloud Computing & DevOps',
-        stars: 4,
-        units: ['Cloud Architecture (AWS/GCP)', 'Docker & Containerization', 'Kubernetes Orchestration', 'Infrastructure as Code'],
-      },
-      {
-        name: 'Information Security & Cryptography',
-        stars: 4,
-        units: ['Classical & Modern Ciphers', 'Public Key Encryption (RSA)', 'Hashes & Digital Signatures', 'Web Security Vulnerabilities'],
-      },
-      {
-        name: 'Distributed Systems',
-        stars: 3,
-        units: ['RPC & Message Passing', 'Consensus Algorithms (Raft/Paxos)', 'Replication & Fault Tolerance'],
-      },
-    ],
-  },
-  {
-    id: 'interview-prep',
-    name: 'Tech Interview & Placement',
-    blurb: 'Comprehensive placement syllabus covering DSA, CS fundamentals, and System Design',
-    badge: 'Career',
-    subjects: [
-      {
-        name: 'Data Structures & Algorithms',
-        stars: 5,
-        units: ['Arrays, Strings & Two Pointers', 'Linked Lists, Stacks & Queues', 'Trees, BST & Heaps', 'Graphs & Shortest Paths', 'Dynamic Programming Patterns'],
-      },
-      {
-        name: 'Core Operating Systems',
-        stars: 4,
-        units: ['Processes, Threads & Concurrency', 'CPU Scheduling Algorithms', 'Deadlocks & Prevention', 'Memory Management & Virtual Memory'],
-      },
-      {
-        name: 'System Design Fundamentals',
-        stars: 5,
-        units: ['Load Balancers & Reverse Proxies', 'Caching Strategies (Redis)', 'Database Sharding & Replication', 'Microservices & Message Queues'],
-      },
-    ],
-  },
 ];
 
 export const PRIMARY_STAR_MIN = 4;

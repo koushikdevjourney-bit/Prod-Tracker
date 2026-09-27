@@ -34,7 +34,7 @@ export class AcademicsPageComponent {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
-  readonly presets = ACADEMIC_PRESETS;
+  readonly presets = this.academics.allPacks;
   readonly starMax = [1, 2, 3, 4, 5];
 
   readonly selectedId = signal<string | null>(null);
@@ -42,6 +42,7 @@ export class AcademicsPageComponent {
   readonly addingSection = signal<SectionKind | null>(null);
   readonly addingNestedId = signal<string | null>(null);
   readonly creating = signal(false);
+  readonly creatingPack = signal(false);
 
   // Search & Filter
   readonly searchQuery = signal<string>('');
@@ -60,6 +61,12 @@ export class AcademicsPageComponent {
   newSubjectName = '';
   newUnitTitle: Record<string, string> = {};
   nestedTitle = '';
+
+  // Custom pack form
+  packName = '';
+  packBlurb = '';
+  packBadge = 'Semester';
+  packSubjectsRaw = '';
 
   readonly ringC = 2 * Math.PI * 18;
 
@@ -221,7 +228,7 @@ export class AcademicsPageComponent {
   }
 
   usePreset(id: string): void {
-    const preset = this.presets.find((item) => item.id === id);
+    const preset = this.presets().find((item) => item.id === id);
     if (!preset) return;
     this.academics.applyPreset(preset);
     const match = this.academics
@@ -229,6 +236,54 @@ export class AcademicsPageComponent {
       .find((track) => track.name.toLowerCase() === preset.name.toLowerCase());
     if (match) this.openSemester(match.id);
     this.toast.success(`Loaded ${preset.name} syllabus`);
+  }
+
+  isCustomPack(packId: string): boolean {
+    return this.academics.customPacks().some((p) => p.id === packId);
+  }
+
+  openCreatePack(): void {
+    this.creatingPack.set(true);
+    this.packName = '';
+    this.packBlurb = '';
+    this.packBadge = 'Semester';
+    this.packSubjectsRaw = '';
+  }
+
+  saveNewPack(): void {
+    const name = this.packName.trim();
+    if (!name) return;
+    const subjects = this.packSubjectsRaw
+      .split(/[,\n]/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((subName) => ({
+        name: subName,
+        stars: 4,
+        units: [],
+      }));
+
+    this.academics.addCustomPack({
+      id: 'pack-' + Date.now(),
+      name,
+      blurb: this.packBlurb.trim() || 'Custom course syllabus pack',
+      badge: this.packBadge.trim() || 'Custom',
+      subjects,
+    });
+    this.creatingPack.set(false);
+  }
+
+  removePack(packId: string, event?: Event): void {
+    event?.stopPropagation();
+    if (!confirm('Remove this custom pack?')) return;
+    this.academics.removeCustomPack(packId);
+  }
+
+  saveCurrentTrackAsPack(): void {
+    const track = this.selected();
+    if (!track) return;
+    this.academics.saveTrackAsPack(track.id);
+    this.toast.success(`Saved "${track.name}" as a reusable pack! Visible beside Semester 5.`);
   }
 
   duplicateSemester(trackId: string, event?: Event): void {
