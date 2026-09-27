@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Activity, ActivityType, AppSettings, Goal, GoalPeriod, Habit } from '../models';
+import { Activity, ActivityType, AppSettings, FocusTodoItem, Goal, GoalPeriod, Habit } from '../models';
 import { GritProgress } from '../data/grit-catalog';
 import { AcademicTrack } from '../data/academic-catalog';
 import { ProgressState } from '../data/progress-catalog';
@@ -45,6 +45,7 @@ export interface TrackerSnapshot {
   grit: GritProgress[];
   academics: AcademicTrack[];
   progress: ProgressState;
+  focusTodos?: FocusTodoItem[];
 }
 
 export interface ImportPayload {
@@ -55,6 +56,7 @@ export interface ImportPayload {
   grit?: GritProgress[];
   academics?: AcademicTrack[];
   progress?: ProgressState;
+  focusTodos?: FocusTodoItem[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -132,5 +134,11 @@ export class TrackerApiService {
 
   saveProgress(state: ProgressState): Observable<ProgressState> {
     return this.http.put<ProgressState>(`${this.base}/progress`, state);
+  }
+
+  saveFocusTodos(todos: FocusTodoItem[]): Observable<FocusTodoItem[]> {
+    return this.http
+      .put<{ todos: FocusTodoItem[] }>(`${this.base}/focus-todos`, { todos })
+      .pipe(map((res) => res.todos ?? todos));
   }
 }

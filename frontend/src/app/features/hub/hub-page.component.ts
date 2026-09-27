@@ -7,7 +7,7 @@ export interface HubSection {
   path: string;
   title: string;
   body: string;
-  icon: 'progress' | 'roles' | 'academic' | 'grit';
+  icon: 'progress' | 'roles' | 'academic' | 'grit' | 'todo';
 }
 
 export interface ProdSection {
@@ -44,6 +44,12 @@ export class HubPageComponent {
       title: 'Current progress tracker',
       body: 'What you are on now, in the order you’ll take it.',
       icon: 'progress',
+    },
+    {
+      path: '/focused-todo',
+      title: 'Current Focused To-Do List',
+      body: 'Pin top priorities, checklist subtasks, focus timer, and tracking.',
+      icon: 'todo',
     },
     {
       path: '/goals',

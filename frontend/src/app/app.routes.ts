@@ -47,6 +47,17 @@ export const routes: Routes = [
       import('./features/progress/progress-page.component').then((m) => m.ProgressPageComponent),
   },
   {
+    path: 'focused-todo',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/focus-todo/focus-todo-page.component').then((m) => m.FocusTodoPageComponent),
+  },
+  {
+    path: 'focus-todo',
+    redirectTo: 'focused-todo',
+    pathMatch: 'full',
+  },
+  {
     path: '',
     component: ShellComponent,
     canActivate: [authGuard],

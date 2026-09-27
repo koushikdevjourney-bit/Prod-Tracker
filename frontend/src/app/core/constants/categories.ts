@@ -45,6 +45,7 @@ export const STORAGE_KEYS = {
   grit: 'pt.grit',
   academics: 'pt.academics',
   progress: 'pt.progress',
+  focusTodos: 'pt.focusTodos',
 } as const;
 
 export const DEFAULT_SLEEP_TARGET_MINUTES = 8 * 60;

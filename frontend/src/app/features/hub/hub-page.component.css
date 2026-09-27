@@ -238,6 +238,12 @@ html[data-theme='light'] .lz-signout {
   flex-shrink: 0;
 }
 
+.lz-card__icon--todo {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
 .lz-card__icon svg {
   width: 1.15rem;
   height: 1.15rem;

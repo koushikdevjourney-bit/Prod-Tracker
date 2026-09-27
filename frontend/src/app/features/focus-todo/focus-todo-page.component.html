@@ -1,0 +1,714 @@
+<div class="ft-page">
+  <!-- Top Navigation Bar -->
+  <header class="ft-header">
+    <a class="ft-back" routerLink="/home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m12 19-7-7 7-7" />
+        <path d="M19 12H5" />
+      </svg>
+      <span>My tracker</span>
+    </a>
+
+    <div class="ft-header__actions">
+      @if (tabCounts().completed > 0) {
+        <button type="button" class="btn btn--ghost btn--sm" (click)="focus.clearCompleted()">
+          Clear completed ({{ tabCounts().completed }})
+        </button>
+      }
+      <button type="button" class="btn btn--ghost btn--icon" (click)="toggleTheme()" aria-label="Toggle theme">
+        {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
+      </button>
+    </div>
+  </header>
+
+  <main class="ft-container">
+    <!-- Hero / Title -->
+    <section class="ft-hero">
+      <div class="ft-hero__copy">
+        <p class="eyebrow">Priority Focus Zone</p>
+        <h1>Current Focused To-Do List</h1>
+        <p class="lede">Lock in what matters right now. Set priority targets, track subtasks, run focus timers, and never miss a beat.</p>
+      </div>
+
+      <!-- Quick Metrics Stats Grid -->
+      <div class="ft-stats-grid">
+        <div class="ft-stat-card">
+          <span class="ft-stat-card__val">{{ tabCounts().active }}</span>
+          <span class="ft-stat-card__lbl">Active Focus</span>
+        </div>
+        <div class="ft-stat-card ft-stat-card--pinned">
+          <span class="ft-stat-card__val">★ {{ tabCounts().pinned }}</span>
+          <span class="ft-stat-card__lbl">Core Focus</span>
+        </div>
+        <div class="ft-stat-card">
+          <span class="ft-stat-card__val">{{ tabCounts().completed }}</span>
+          <span class="ft-stat-card__lbl">Cleared Today</span>
+        </div>
+        <div class="ft-stat-card">
+          <span class="ft-stat-card__val">{{ focus.stats().totalLoggedMinutes }}m</span>
+          <span class="ft-stat-card__lbl">Focus Logged</span>
+        </div>
+      </div>
+
+      <!-- Visual Completion Progress Bar -->
+      <div class="ft-progress-banner">
+        <div class="ft-progress-banner__bar">
+          <div class="ft-progress-banner__fill" [style.width.%]="focus.stats().percent"></div>
+        </div>
+        <div class="ft-progress-banner__info">
+          <span>Overall completion: <strong>{{ focus.stats().percent }}%</strong> ({{ tabCounts().completed }} of {{ tabCounts().all }} tasks)</span>
+          <span>{{ focus.stats().totalEstMinutes }}m planned remaining</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Active Focus Timer Banner (If Active) -->
+    @if (activeTimerTodo(); as currentTimerTodo) {
+      <section class="ft-timer-banner" aria-label="Active Focus Timer">
+        <div class="ft-timer-banner__head">
+          <span class="ft-timer-badge">● Live Focus Session</span>
+          <h2 class="ft-timer-title">{{ currentTimerTodo.title }}</h2>
+          <span class="ft-timer-cat">{{ currentTimerTodo.category }}</span>
+        </div>
+
+        <div class="ft-timer-banner__body">
+          <div class="ft-timer-clock" [class.ft-timer-clock--running]="timerRunning()">
+            {{ timerRunning() || timerRemaining() ? clockDisplay() : timerLength() + ':00' }}
+          </div>
+
+          <div class="ft-timer-presets">
+            @for (len of timerPresets; track len) {
+              <button
+                type="button"
+                class="chip"
+                [class.chip--on]="timerLength() === len"
+                [disabled]="timerRunning()"
+                (click)="openTimer(currentTimerTodo, len)"
+              >
+                {{ len }}m
+              </button>
+            }
+          </div>
+
+          <div class="ft-timer-controls">
+            @if (!timerRunning()) {
+              <button type="button" class="btn btn--primary" (click)="startTimer()">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                Start Timer
+              </button>
+            } @else {
+              <button type="button" class="btn btn--ghost" (click)="pauseTimer()">Pause</button>
+              <button type="button" class="btn btn--primary" (click)="stopTimer(true)">Stop & Log Time</button>
+            }
+            <button type="button" class="btn btn--ghost btn--sm" (click)="stopTimer(false)">Dismiss</button>
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- Quick Add Section -->
+    <section class="ft-add-card">
+      <form (submit)="$event.preventDefault(); submitQuickAdd()">
+        <div class="ft-add-main-row">
+          <input
+            type="text"
+            class="input ft-add-input"
+            [(ngModel)]="newTitle"
+            name="newTitle"
+            placeholder="Add something you need to focus on... (e.g. Solve 3 Graph Problems, Finish API endpoint)"
+            autocomplete="off"
+            maxlength="250"
+          />
+          <button type="button" class="btn btn--ghost ft-add-expand-btn" (click)="toggleQuickAdd()" title="Toggle advanced options">
+            {{ quickAddExpanded() ? '▲ Simple' : '▼ Details' }}
+          </button>
+          <button type="submit" class="btn btn--primary ft-add-submit-btn" [disabled]="!newTitle.trim()">
+            + Add Focus
+          </button>
+        </div>
+
+        <!-- Quick Tag Presets Chips -->
+        <div class="ft-quick-chips">
+          <span class="ft-quick-chips__label">Quick tags:</span>
+          @for (c of categories.slice(0, 6); track c) {
+            <button
+              type="button"
+              class="chip chip--sm"
+              [class.chip--on]="newCategory === c"
+              (click)="setQuickPreset(c)"
+            >
+              {{ c }}
+            </button>
+          }
+          <button
+            type="button"
+            class="chip chip--sm chip--urgent"
+            [class.chip--on]="newPriority === 'urgent'"
+            (click)="newPriority = (newPriority === 'urgent' ? 'medium' : 'urgent')"
+          >
+            🔥 Urgent
+          </button>
+        </div>
+
+        <!-- Advanced Form Drawer -->
+        @if (quickAddExpanded()) {
+          <div class="ft-add-advanced">
+            <div class="ft-grid-3">
+              <label class="ft-field">
+                <span>Priority</span>
+                <select class="input select" [(ngModel)]="newPriority" name="newPriority">
+                  <option value="urgent">🔥 Urgent</option>
+                  <option value="high">🟠 High</option>
+                  <option value="medium">🔵 Medium</option>
+                  <option value="low">⚪ Low</option>
+                </select>
+              </label>
+
+              <label class="ft-field">
+                <span>Category</span>
+                <select class="input select" [(ngModel)]="newCategory" name="newCategory">
+                  @for (cat of categories; track cat) {
+                    <option [value]="cat">{{ cat }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="ft-field">
+                <span>Est. Minutes</span>
+                <input
+                  type="number"
+                  class="input"
+                  [(ngModel)]="newEstimatedMinutes"
+                  name="newEstimatedMinutes"
+                  min="5"
+                  max="480"
+                  step="5"
+                />
+              </label>
+            </div>
+
+            <div class="ft-grid-2">
+              <label class="ft-field">
+                <span>Due Date</span>
+                <input type="date" class="input" [(ngModel)]="newDueDate" name="newDueDate" />
+              </label>
+
+              <label class="ft-field">
+                <span>Due Time (optional)</span>
+                <input type="time" class="input" [(ngModel)]="newDueTime" name="newDueTime" />
+              </label>
+            </div>
+
+            <label class="ft-field">
+              <span>Context & Notes (optional)</span>
+              <textarea
+                class="input"
+                [(ngModel)]="newNotes"
+                name="newNotes"
+                rows="2"
+                placeholder="Key requirements, links, or breakdown steps..."
+                maxlength="2000"
+              ></textarea>
+            </label>
+
+            <div class="ft-add-bottom-row">
+              <label class="ft-checkbox-label">
+                <input type="checkbox" [(ngModel)]="newIsPinned" name="newIsPinned" />
+                <span>★ Pin to Core Focus (Today's Non-Negotiables)</span>
+              </label>
+            </div>
+          </div>
+        }
+      </form>
+    </section>
+
+    <!-- Filters, Search & View Controls -->
+    <section class="ft-controls">
+      <!-- Tabs -->
+      <div class="ft-tabs" role="tablist">
+        <button
+          type="button"
+          class="ft-tab"
+          [class.ft-tab--active]="activeTab() === 'active'"
+          (click)="activeTab.set('active')"
+        >
+          Active
+          <span class="ft-tab__badge">{{ tabCounts().active }}</span>
+        </button>
+        <button
+          type="button"
+          class="ft-tab"
+          [class.ft-tab--active]="activeTab() === 'pinned'"
+          (click)="activeTab.set('pinned')"
+        >
+          ★ Core Focus
+          <span class="ft-tab__badge">{{ tabCounts().pinned }}</span>
+        </button>
+        <button
+          type="button"
+          class="ft-tab"
+          [class.ft-tab--active]="activeTab() === 'due'"
+          (click)="activeTab.set('due')"
+        >
+          ⏰ Due Today / Overdue
+          <span class="ft-tab__badge" [class.ft-tab__badge--alert]="tabCounts().due > 0">{{ tabCounts().due }}</span>
+        </button>
+        <button
+          type="button"
+          class="ft-tab"
+          [class.ft-tab--active]="activeTab() === 'completed'"
+          (click)="activeTab.set('completed')"
+        >
+          ✓ Cleared
+          <span class="ft-tab__badge">{{ tabCounts().completed }}</span>
+        </button>
+        <button
+          type="button"
+          class="ft-tab"
+          [class.ft-tab--active]="activeTab() === 'all'"
+          (click)="activeTab.set('all')"
+        >
+          All
+          <span class="ft-tab__badge">{{ tabCounts().all }}</span>
+        </button>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="ft-filter-row">
+        <div class="ft-search-box">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="search"
+            class="input ft-search-input"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+            placeholder="Search focus tasks, subtasks, notes..."
+          />
+        </div>
+
+        <select
+          class="input select ft-filter-select"
+          [ngModel]="selectedPriority()"
+          (ngModelChange)="selectedPriority.set($event)"
+          aria-label="Filter by priority"
+        >
+          <option value="all">All Priorities</option>
+          <option value="urgent">🔥 Urgent</option>
+          <option value="high">🟠 High</option>
+          <option value="medium">🔵 Medium</option>
+          <option value="low">⚪ Low</option>
+        </select>
+
+        <select
+          class="input select ft-filter-select"
+          [ngModel]="selectedCategory()"
+          (ngModelChange)="selectedCategory.set($event)"
+          aria-label="Filter by category"
+        >
+          <option value="all">All Categories</option>
+          @for (c of categories; track c) {
+            <option [value]="c">{{ c }}</option>
+          }
+        </select>
+      </div>
+    </section>
+
+    <!-- Core Focus Highlight Box (Show when in active or all tab and pinned items exist) -->
+    @if ((activeTab() === 'active' || activeTab() === 'all') && focus.pinnedTodos().length > 0 && selectedPriority() === 'all' && selectedCategory() === 'all' && !searchQuery()) {
+      <div class="ft-spotlight">
+        <div class="ft-spotlight__head">
+          <div class="ft-spotlight__title">
+            <span class="ft-spotlight__icon">★</span>
+            <strong>Today’s Core Focus (Non-Negotiables)</strong>
+          </div>
+          <span class="ft-spotlight__badge">{{ focus.pinnedTodos().length }} Pinned</span>
+        </div>
+        <p class="ft-spotlight__lede">High leverage tasks locked for today. Tackle these first before shifting to the queue.</p>
+      </div>
+    }
+
+    <!-- Focus To-Do Items List -->
+    <section class="ft-list-section">
+      @if (filteredTodos().length > 0) {
+        <ul class="ft-list">
+          @for (todo of filteredTodos(); track todo.id; let idx = $index) {
+            <li
+              class="ft-item"
+              [class.ft-item--completed]="todo.status === 'completed'"
+              [class.ft-item--pinned]="todo.isPinned"
+              [class.ft-item--urgent]="todo.priority === 'urgent'"
+              [class.ft-item--dragging]="draggingId() === todo.id"
+              draggable="true"
+              (dragstart)="onDragStart(todo.id, $event)"
+              (dragover)="allowDrop($event)"
+              (drop)="onDrop(todo.id, $event)"
+            >
+              <!-- Editing Drawer -->
+              @if (editingId() === todo.id) {
+                <form class="ft-edit-form" (submit)="$event.preventDefault(); saveEdit(todo.id)">
+                  <div class="ft-edit-header">
+                    <strong>Edit Focus Item</strong>
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="cancelEdit()">Cancel</button>
+                  </div>
+
+                  <input
+                    type="text"
+                    class="input"
+                    [(ngModel)]="editTitle"
+                    name="editTitle"
+                    placeholder="Focus item title"
+                    maxlength="250"
+                  />
+
+                  <div class="ft-grid-3">
+                    <label class="ft-field">
+                      <span>Priority</span>
+                      <select class="input select" [(ngModel)]="editPriority" name="editPriority">
+                        <option value="urgent">🔥 Urgent</option>
+                        <option value="high">🟠 High</option>
+                        <option value="medium">🔵 Medium</option>
+                        <option value="low">⚪ Low</option>
+                      </select>
+                    </label>
+
+                    <label class="ft-field">
+                      <span>Category</span>
+                      <select class="input select" [(ngModel)]="editCategory" name="editCategory">
+                        @for (c of categories; track c) {
+                          <option [value]="c">{{ c }}</option>
+                        }
+                      </select>
+                    </label>
+
+                    <label class="ft-field">
+                      <span>Est. Minutes</span>
+                      <input
+                        type="number"
+                        class="input"
+                        [(ngModel)]="editEstimatedMinutes"
+                        name="editEstimatedMinutes"
+                        min="5"
+                        max="480"
+                        step="5"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="ft-grid-2">
+                    <label class="ft-field">
+                      <span>Due Date</span>
+                      <input type="date" class="input" [(ngModel)]="editDueDate" name="editDueDate" />
+                    </label>
+
+                    <label class="ft-field">
+                      <span>Due Time</span>
+                      <input type="time" class="input" [(ngModel)]="editDueTime" name="editDueTime" />
+                    </label>
+                  </div>
+
+                  <label class="ft-field">
+                    <span>Notes & Details</span>
+                    <textarea
+                      class="input"
+                      [(ngModel)]="editNotes"
+                      name="editNotes"
+                      rows="3"
+                      placeholder="Context, links, next steps..."
+                    ></textarea>
+                  </label>
+
+                  <div class="ft-edit-actions">
+                    <label class="ft-checkbox-label">
+                      <input type="checkbox" [(ngModel)]="editIsPinned" name="editIsPinned" />
+                      <span>★ Core Focus (Pinned)</span>
+                    </label>
+
+                    <div class="ft-actions-right">
+                      <button type="button" class="btn btn--ghost" (click)="cancelEdit()">Cancel</button>
+                      <button type="submit" class="btn btn--primary">Save Changes</button>
+                    </div>
+                  </div>
+                </form>
+              } @else {
+                <!-- Standard Item View -->
+                <div class="ft-item-row">
+                  <!-- Checkbox -->
+                  <button
+                    type="button"
+                    class="ft-checkbox"
+                    [class.ft-checkbox--checked]="todo.status === 'completed'"
+                    (click)="focus.toggleComplete(todo.id)"
+                    [attr.aria-label]="todo.status === 'completed' ? 'Mark as incomplete' : 'Mark as complete'"
+                  >
+                    @if (todo.status === 'completed') {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    }
+                  </button>
+
+                  <!-- Pin Toggle Button -->
+                  <button
+                    type="button"
+                    class="ft-pin-btn"
+                    [class.ft-pin-btn--pinned]="todo.isPinned"
+                    (click)="focus.togglePin(todo.id)"
+                    [title]="todo.isPinned ? 'Unpin from Core Focus' : 'Pin to Core Focus'"
+                    aria-label="Toggle pin"
+                  >
+                    ★
+                  </button>
+
+                  <!-- Main Content -->
+                  <div class="ft-item-body">
+                    <div class="ft-item-top">
+                      <span class="ft-item-title" [class.ft-item-title--done]="todo.status === 'completed'">
+                        {{ todo.title }}
+                      </span>
+
+                      <!-- Badges -->
+                      <div class="ft-badges">
+                        <!-- Priority Badge -->
+                        <span class="ft-badge ft-badge--{{ todo.priority }}">
+                          @switch (todo.priority) {
+                            @case ('urgent') { 🔥 Urgent }
+                            @case ('high') { 🟠 High }
+                            @case ('medium') { 🔵 Medium }
+                            @case ('low') { ⚪ Low }
+                          }
+                        </span>
+
+                        <!-- Category Badge -->
+                        <span class="ft-badge ft-badge--cat">{{ todo.category }}</span>
+
+                        <!-- Due Date Badge -->
+                        @if (todo.dueDate) {
+                          <span
+                            class="ft-badge"
+                            [class.ft-badge--overdue]="isOverdue(todo)"
+                            [class.ft-badge--due-today]="isDueToday(todo)"
+                            [class.ft-badge--due]="!isOverdue(todo) && !isDueToday(todo)"
+                          >
+                            ⏰ {{ dueLabel(todo) }}
+                          </span>
+                        }
+
+                        <!-- Estimated / Logged Minutes Badge -->
+                        <span class="ft-badge ft-badge--time" title="Estimated vs Logged focus time">
+                          ⏱ {{ todo.estimatedMinutes }}m est
+                          @if (todo.loggedMinutes > 0) {
+                            · <strong>{{ todo.loggedMinutes }}m logged</strong>
+                          }
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Notes Preview -->
+                    @if (todo.notes) {
+                      <p class="ft-item-notes">{{ todo.notes }}</p>
+                    }
+
+                    <!-- Subtask Summary Pill -->
+                    @if (todo.subtasks.length > 0) {
+                      <div class="ft-subtasks-summary" (click)="toggleSubtasks(todo.id)">
+                        <div class="ft-subtasks-bar">
+                          <div class="ft-subtasks-fill" [style.width.%]="subtasksProgress(todo).percent"></div>
+                        </div>
+                        <span class="ft-subtasks-count">
+                          {{ subtasksProgress(todo).done }}/{{ subtasksProgress(todo).total }} subtasks ({{ subtasksProgress(todo).percent }}%)
+                        </span>
+                        <span class="ft-subtasks-toggle">
+                          {{ isSubtasksOpen(todo.id) ? '▲ Hide' : '▼ Show Checklist' }}
+                        </span>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Quick Action Buttons -->
+                  <div class="ft-item-ops">
+                    <!-- Start Focus Timer Button -->
+                    @if (todo.status !== 'completed') {
+                      <button
+                        type="button"
+                        class="btn btn--ghost btn--sm ft-action-btn ft-action-btn--focus"
+                        (click)="openTimer(todo, todo.estimatedMinutes || 25)"
+                        title="Start focus timer session for this task"
+                      >
+                        <span class="ft-ops-icon">▶</span>
+                        <span>Focus</span>
+                      </button>
+                    }
+
+                    <!-- Subtasks Toggle -->
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm ft-action-btn"
+                      (click)="toggleSubtasks(todo.id)"
+                      title="Add or manage checklist subtasks"
+                    >
+                      <span>+ Subtasks</span>
+                    </button>
+
+                    <!-- Log to Activity Journal Button -->
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm ft-action-btn"
+                      (click)="logAsActivity(todo)"
+                      title="Log as a completed activity in Pulse activity journal"
+                    >
+                      <span>Log Activity</span>
+                    </button>
+
+                    <!-- Edit Item -->
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--icon-sm"
+                      (click)="startEdit(todo)"
+                      title="Edit task details"
+                      aria-label="Edit"
+                    >
+                      ✎
+                    </button>
+
+                    <!-- Move Up / Down -->
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--icon-sm"
+                      (click)="focus.move(todo.id, -1)"
+                      title="Move up"
+                      aria-label="Move up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--icon-sm"
+                      (click)="focus.move(todo.id, 1)"
+                      title="Move down"
+                      aria-label="Move down"
+                    >
+                      ↓
+                    </button>
+
+                    <!-- Delete -->
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--icon-sm ft-delete-btn"
+                      (click)="focus.delete(todo.id)"
+                      title="Delete focus item"
+                      aria-label="Delete"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Subtasks Checklist Section (Expanded) -->
+                @if (isSubtasksOpen(todo.id)) {
+                  <div class="ft-subtasks-panel">
+                    <h3 class="ft-subtasks-title">Checklist Breakdown</h3>
+
+                    <!-- Subtasks List -->
+                    @if (todo.subtasks.length > 0) {
+                      <ul class="ft-subtasks-list">
+                        @for (st of todo.subtasks; track st.id) {
+                          <li class="ft-subtask-row">
+                            <label class="ft-subtask-checkbox-label">
+                              <input
+                                type="checkbox"
+                                [checked]="st.done"
+                                (change)="focus.toggleSubtask(todo.id, st.id)"
+                              />
+                              <span [class.ft-subtask-title--done]="st.done">{{ st.title }}</span>
+                            </label>
+                            <button
+                              type="button"
+                              class="btn btn--ghost btn--icon-xs ft-subtask-del"
+                              (click)="focus.deleteSubtask(todo.id, st.id)"
+                              title="Delete subtask"
+                            >
+                              ×
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    }
+
+                    <!-- Add Subtask Inline Input -->
+                    <div class="ft-subtask-add-row">
+                      <input
+                        type="text"
+                        class="input ft-subtask-input"
+                        [(ngModel)]="subtaskDrafts[todo.id]"
+                        (keydown.enter)="$event.preventDefault(); handleAddSubtask(todo.id)"
+                        placeholder="Add a step (e.g. Write edge cases, Push git branch)..."
+                        maxlength="200"
+                      />
+                      <button
+                        type="button"
+                        class="btn btn--primary btn--sm"
+                        (click)="handleAddSubtask(todo.id)"
+                        [disabled]="!subtaskDrafts[todo.id]?.trim()"
+                      >
+                        + Add Step
+                      </button>
+                    </div>
+                  </div>
+                }
+              }
+            </li>
+          }
+        </ul>
+      } @else {
+        <!-- Empty State -->
+        <div class="ft-empty-state">
+          <div class="ft-empty-state__icon">🎯</div>
+          <h2>
+            @if (searchQuery()) {
+              No tasks match "{{ searchQuery() }}"
+            } @else if (activeTab() === 'pinned') {
+              No core focus items pinned yet
+            } @else if (activeTab() === 'due') {
+              Nothing due today or overdue
+            } @else if (activeTab() === 'completed') {
+              No completed tasks yet
+            } @else {
+              Your Focus To-Do List is clear!
+            }
+          </h2>
+          <p class="ft-empty-state__lede">
+            @if (searchQuery()) {
+              Try clearing your search keyword or switching filter categories.
+            } @else if (activeTab() === 'pinned') {
+              Click the ★ icon on any task to lock it into your Core Focus banner.
+            } @else {
+              Add your immediate priorities above so nothing slips through the cracks.
+            }
+          </p>
+
+          @if (!searchQuery() && activeTab() !== 'completed') {
+            <div class="ft-empty-presets">
+              <span>Quick add popular focus tracks:</span>
+              <div class="ft-empty-presets__chips">
+                <button type="button" class="chip" (click)="setQuickPreset('DSA', 'Solve LeetCode Daily Challenge', 'high')">
+                  + DSA Daily Problem
+                </button>
+                <button type="button" class="chip" (click)="setQuickPreset('Development', 'Implement core feature milestone', 'urgent')">
+                  + Feature Milestone
+                </button>
+                <button type="button" class="chip" (click)="setQuickPreset('Academics', 'Complete topic revision & notes', 'medium')">
+                  + Topic Revision
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  </main>
+</div>

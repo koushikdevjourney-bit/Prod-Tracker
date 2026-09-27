@@ -54,13 +54,19 @@
 
   <div class="lz-tracker__grid">
     @for (s of sections; track s.title) {
-      <a class="lz-card" [routerLink]="s.path" [class.lz-card--featured]="s.icon === 'progress'">
-        <span class="lz-card__icon" aria-hidden="true">
+      <a class="lz-card" [routerLink]="s.path" [class.lz-card--featured]="s.icon === 'progress' || s.icon === 'todo'">
+        <span class="lz-card__icon" [class.lz-card__icon--todo]="s.icon === 'todo'" aria-hidden="true">
           @switch (s.icon) {
             @case ('progress') {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="8" />
                 <circle cx="12" cy="12" r="3" />
+              </svg>
+            }
+            @case ('todo') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
               </svg>
             }
             @case ('roles') {

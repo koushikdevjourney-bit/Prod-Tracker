@@ -12,6 +12,7 @@ import { GoalService } from './goal.service';
 import { GritService } from './grit.service';
 import { HabitService } from './habit.service';
 import { ProgressService } from './progress.service';
+import { FocusTodoService } from './focus-todo.service';
 import { LocalStoreService } from './local-store.service';
 import { SettingsService } from './settings.service';
 import { ThemeService } from './theme.service';
@@ -29,6 +30,7 @@ export class DataSyncService {
   private readonly grit = inject(GritService);
   private readonly academics = inject(AcademicService);
   private readonly progress = inject(ProgressService);
+  private readonly focusTodos = inject(FocusTodoService);
   private readonly settings = inject(SettingsService);
   private readonly theme = inject(ThemeService);
   private readonly toast = inject(ToastService);
@@ -56,6 +58,7 @@ export class DataSyncService {
     this.grit.resetLocal();
     this.academics.resetLocal();
     this.progress.resetLocal();
+    this.focusTodos.resetLocal();
     this.settings.resetLocal();
   }
 
@@ -83,6 +86,7 @@ export class DataSyncService {
     if (Array.isArray(snap.grit)) this.grit.hydrate(snap.grit);
     if (Array.isArray(snap.academics)) this.academics.hydrate(snap.academics);
     if (snap.progress) this.progress.hydrate(snap.progress);
+    if (Array.isArray(snap.focusTodos)) this.focusTodos.hydrate(snap.focusTodos);
     this.settings.hydrate(snap.settings);
     const theme = snap.settings?.theme;
     if (theme) this.theme.setMode(theme);
