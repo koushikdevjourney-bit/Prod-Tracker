@@ -128,6 +128,10 @@ export interface AppSettings {
   sleepTargetMinutes: number;
   displayName: string;
   theme: 'light' | 'dark' | 'system';
+  hourlyEmailReminders?: boolean;
+  reminderEmail?: string;
+  reminderStartHour?: number;
+  reminderEndHour?: number;
 }
 
 export interface DateSelection {

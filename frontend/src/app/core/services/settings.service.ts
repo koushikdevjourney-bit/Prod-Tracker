@@ -10,6 +10,10 @@ const DEFAULTS: AppSettings = {
   sleepTargetMinutes: DEFAULT_SLEEP_TARGET_MINUTES,
   displayName: 'You',
   theme: 'system',
+  hourlyEmailReminders: true,
+  reminderEmail: 'koushiksai242@gmail.com',
+  reminderStartHour: 8,
+  reminderEndHour: 23,
 };
 
 @Injectable({ providedIn: 'root' })
@@ -56,6 +60,12 @@ export class SettingsService {
   setSleepTargetHours(hours: number): void {
     const mins = Math.round(Math.min(14, Math.max(4, hours)) * 60);
     this.update({ sleepTargetMinutes: mins });
+  }
+
+  sendTestReminder(email?: string, name?: string) {
+    const toEmail = email || this.settings().reminderEmail || 'koushiksai242@gmail.com';
+    const toName = name || this.settings().displayName || 'Koushik';
+    return this.api.sendTestReminder(toEmail, toName);
   }
 
   private hasSession(): boolean {

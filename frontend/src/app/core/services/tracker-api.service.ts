@@ -141,4 +141,12 @@ export class TrackerApiService {
       .put<{ todos: FocusTodoItem[] }>(`${this.base}/focus-todos`, { todos })
       .pipe(map((res) => res.todos ?? todos));
   }
+
+  sendTestReminder(email?: string, name?: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.base}/reminders/send-test`, { email, name });
+  }
+
+  getReminderStatus(): Observable<{ configured: boolean; senderEmail: string }> {
+    return this.http.get<{ configured: boolean; senderEmail: string }>(`${this.base}/reminders/status`);
+  }
 }

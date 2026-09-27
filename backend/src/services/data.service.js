@@ -615,6 +615,16 @@ async function upsertSettings(userId, body = {}) {
       ? body.displayName.trim()
       : current.displayName || 'You';
   const theme = THEMES.includes(body.theme) ? body.theme : current.theme || 'system';
+  const hourlyEmailReminders =
+    body.hourlyEmailReminders != null ? Boolean(body.hourlyEmailReminders) : current.hourlyEmailReminders ?? true;
+  const reminderEmail =
+    typeof body.reminderEmail === 'string' && body.reminderEmail.trim()
+      ? body.reminderEmail.trim().toLowerCase()
+      : current.reminderEmail || 'koushiksai242@gmail.com';
+  const reminderStartHour =
+    body.reminderStartHour != null ? Number(body.reminderStartHour) : current.reminderStartHour ?? 8;
+  const reminderEndHour =
+    body.reminderEndHour != null ? Number(body.reminderEndHour) : current.reminderEndHour ?? 23;
 
   if (!Number.isFinite(sleepTargetMinutes) || sleepTargetMinutes < 240 || sleepTargetMinutes > 840) {
     throw httpError('Sleep target must be between 4 and 14 hours');
@@ -627,6 +637,10 @@ async function upsertSettings(userId, body = {}) {
       sleepTargetMinutes: Math.round(sleepTargetMinutes),
       displayName,
       theme,
+      hourlyEmailReminders,
+      reminderEmail,
+      reminderStartHour,
+      reminderEndHour,
     },
     { new: true, upsert: true, setDefaultsOnInsert: true }
   );

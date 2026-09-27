@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const app = require('./app');
 const { connectDB } = require('./config/db');
+const { startReminderScheduler } = require('./services/reminder.scheduler');
 
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -30,6 +31,7 @@ async function start() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`API listening on port ${PORT}`);
+    startReminderScheduler();
   });
 }
 

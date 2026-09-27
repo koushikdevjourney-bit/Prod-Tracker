@@ -13,6 +13,10 @@ const userSettingsSchema = new mongoose.Schema(
     sleepTargetMinutes: { type: Number, min: 240, max: 840, default: 480 },
     displayName: { type: String, trim: true, maxlength: 80, default: 'You' },
     theme: { type: String, enum: THEMES, default: 'system' },
+    hourlyEmailReminders: { type: Boolean, default: true },
+    reminderEmail: { type: String, trim: true, lowercase: true, default: 'koushiksai242@gmail.com' },
+    reminderStartHour: { type: Number, min: 0, max: 23, default: 8 },
+    reminderEndHour: { type: Number, min: 0, max: 23, default: 23 },
   },
   { timestamps: true }
 );
