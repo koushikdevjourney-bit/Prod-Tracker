@@ -64,8 +64,8 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api', dataRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api', dataRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
