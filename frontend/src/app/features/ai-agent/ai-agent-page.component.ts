@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AiAgentService } from '../../core/services/ai-agent.service';
 import { ToastService } from '../../core/services/toast.service';
-import { AiMessage, AiProvider, DateRangeContext } from '../../core/models/ai-agent.models';
+import { AiMessage, DateRangeContext } from '../../core/models/ai-agent.models';
 
 @Component({
   selector: 'app-ai-agent-page',
@@ -20,13 +20,6 @@ export class AiAgentPageComponent {
   @ViewChild('chatScroll') private readonly chatScroll?: ElementRef<HTMLDivElement>;
 
   readonly inputText = signal('');
-  readonly showConfigModal = signal(false);
-
-  // Configuration modal state
-  readonly configProvider = signal<AiProvider>('gemini');
-  readonly configApiKey = signal('');
-  readonly configModel = signal('gemini-2.5-flash');
-  readonly showApiKey = signal(false);
 
   constructor() {
     afterNextRender(() => {
@@ -76,39 +69,6 @@ export class AiAgentPageComponent {
     this.ai.setRange(range);
   }
 
-  openConfig(): void {
-    const current = this.ai.settings();
-    this.configProvider.set(current.provider);
-    this.configApiKey.set(current.apiKey || '');
-    this.configModel.set(current.model || (current.provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini'));
-    this.showApiKey.set(false);
-    this.showConfigModal.set(true);
-  }
-
-  closeConfig(): void {
-    this.showConfigModal.set(false);
-  }
-
-  onProviderChange(p: AiProvider): void {
-    this.configProvider.set(p);
-    if (p === 'gemini') {
-      this.configModel.set('gemini-2.5-flash');
-    } else if (p === 'openai') {
-      this.configModel.set('gpt-4o-mini');
-    } else if (p === 'groq') {
-      this.configModel.set('llama-3.1-70b-versatile');
-    }
-  }
-
-  saveConfig(): void {
-    this.ai.saveSettings({
-      provider: this.configProvider(),
-      apiKey: this.configApiKey().trim(),
-      model: this.configModel().trim(),
-    });
-    this.showConfigModal.set(false);
-  }
-
   copyMessage(content: string): void {
     navigator.clipboard.writeText(content).then(() => {
       this.toast.success('Report copied to clipboard!');
@@ -126,23 +86,6 @@ export class AiAgentPageComponent {
     link.click();
     URL.revokeObjectURL(url);
     this.toast.success('Report downloaded as Markdown');
-  }
-
-  exportAllMarkdown(): void {
-    const md = this.ai.exportConversationMarkdown();
-    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `pulse-ai-reports-${new Date().toISOString().slice(0, 10)}.md`;
-    link.click();
-    URL.revokeObjectURL(url);
-    this.toast.success('All reports exported to Markdown');
-  }
-
-  clearHistory(): void {
-    if (!confirm('Are you sure you want to clear your AI report chat history?')) return;
-    this.ai.clearHistory();
   }
 
   scrollToBottom(): void {

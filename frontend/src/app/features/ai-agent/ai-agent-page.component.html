@@ -1,38 +1,9 @@
 <section class="page ai-page">
   <!-- Page Header -->
-  <header class="page-header page-header--row">
-    <div>
-      <p class="eyebrow">Productivity Intelligence</p>
-      <h1>✨ AI Productivity Agent</h1>
-      <p class="lede">Analyze your logged activities, focus blocks, habits, and goals to generate actionable executive reports.</p>
-    </div>
-
-    <div class="header-actions">
-      <!-- Engine Status Pill -->
-      <button
-        type="button"
-        class="engine-badge"
-        [class.engine-badge--connected]="ai.hasApiKey()"
-        (click)="openConfig()"
-        title="Click to configure AI Provider & API Key"
-      >
-        <span class="engine-indicator">●</span>
-        <span>{{ ai.hasApiKey() ? 'API Key Active (' + ai.settings().provider + ')' : 'Built-in Smart Analyzer' }}</span>
-        <span class="engine-key-icon">⚙️</span>
-      </button>
-
-      <button type="button" class="btn btn--secondary btn--sm" (click)="openConfig()" title="Configure API Key">
-        🔑 Configure API Key
-      </button>
-
-      <button type="button" class="btn btn--ghost btn--sm" (click)="exportAllMarkdown()" title="Export reports as Markdown">
-        📋 Export (.md)
-      </button>
-
-      <button type="button" class="btn btn--ghost btn--sm" (click)="clearHistory()" title="Clear chat history">
-        🗑️ Clear
-      </button>
-    </div>
+  <header class="page-header">
+    <p class="eyebrow">Productivity Intelligence</p>
+    <h1>✨ AI Productivity Agent</h1>
+    <p class="lede">Analyze your logged activities, focus blocks, habits, and goals to generate actionable executive reports.</p>
   </header>
 
   <!-- Date Range Filter Context Strip -->
@@ -129,6 +100,13 @@
   <div class="console-panel panel">
     <!-- Messages Scroll Area -->
     <div class="chat-feed" #chatScroll>
+      @if (ai.messages().length === 0 && !ai.isAnalyzing()) {
+        <div class="empty-feed">
+          <span class="empty-feed__icon">✨</span>
+          <p class="empty-feed__text">Select any report above or ask anything to analyze your logs.</p>
+        </div>
+      }
+
       @for (msg of ai.messages(); track msg.id) {
         <div class="chat-row" [class.chat-row--user]="msg.role === 'user'" [class.chat-row--ai]="msg.role === 'assistant'">
           <!-- Avatar -->
@@ -232,109 +210,7 @@
       </div>
       <div class="input-helper">
         <span class="helper-text">💡 Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for newline</span>
-        <button type="button" class="api-key-link" (click)="openConfig()">
-          {{ ai.hasApiKey() ? '⚡ Using ' + ai.settings().provider : '⚙️ Connect API Key (Optional)' }}
-        </button>
       </div>
     </div>
   </div>
-
-  <!-- API Key Configuration Modal -->
-  @if (showConfigModal()) {
-    <div class="modal-backdrop" (click)="closeConfig()">
-      <div class="modal-dialog panel" (click)="$event.stopPropagation()">
-        <header class="modal-header">
-          <div class="modal-title-group">
-            <span class="modal-icon">🔑</span>
-            <div>
-              <h3>AI Agent Configuration</h3>
-              <p class="modal-subtitle">Connect your preferred LLM provider or use the built-in local analyzer.</p>
-            </div>
-          </div>
-          <button type="button" class="btn-close" (click)="closeConfig()">✕</button>
-        </header>
-
-        <div class="modal-body form-grid">
-          <!-- Provider Picker -->
-          <label class="field">
-            <span>AI Provider</span>
-            <select
-              class="input"
-              [ngModel]="configProvider()"
-              (ngModelChange)="onProviderChange($event)"
-            >
-              <option value="gemini">Google Gemini (Recommended — Generous Free Tier)</option>
-              <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
-              <option value="groq">Groq (Ultra-fast Llama 3)</option>
-              <option value="anthropic">Anthropic Claude</option>
-              <option value="custom">Custom OpenAI-Compatible Endpoint</option>
-            </select>
-          </label>
-
-          <!-- Free Tier Guide Callout -->
-          @if (configProvider() === 'gemini') {
-            <div class="info-callout">
-              <strong>💡 Free Gemini API Key:</strong>
-              <span>
-                You can generate a 100% free Gemini API key from
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>.
-                It gives thousands of free requests per day without requiring a credit card.
-              </span>
-            </div>
-          }
-
-          <!-- API Key Input -->
-          <label class="field">
-            <span>API Key</span>
-            <div class="key-input-wrap">
-              <input
-                class="input key-input"
-                [type]="showApiKey() ? 'text' : 'password'"
-                placeholder="Paste your API key here (e.g., AIzaSy... or sk-...)"
-                [ngModel]="configApiKey()"
-                (ngModelChange)="configApiKey.set($event)"
-              />
-              <button
-                type="button"
-                class="toggle-key-btn"
-                (click)="showApiKey.set(!showApiKey())"
-                title="Toggle key visibility"
-              >
-                {{ showApiKey() ? 'Hide' : 'Show' }}
-              </button>
-            </div>
-            <span class="field-hint">
-              Your API key is saved locally in your browser and used strictly for your own productivity queries.
-            </span>
-          </label>
-
-          <!-- Model Name -->
-          <label class="field">
-            <span>Model Name</span>
-            <input
-              class="input"
-              type="text"
-              [ngModel]="configModel()"
-              (ngModelChange)="configModel.set($event)"
-              placeholder="e.g. gemini-1.5-flash or gpt-4o-mini"
-            />
-          </label>
-
-          <div class="status-summary">
-            <span class="status-dot" [class.status-dot--green]="configApiKey().trim().length > 0"></span>
-            <span>
-              {{ configApiKey().trim().length > 0 ? 'Ready to use with ' + configProvider() : 'No key provided — Built-in Smart Analyzer will be active.' }}
-            </span>
-          </div>
-        </div>
-
-        <footer class="modal-footer">
-          <button type="button" class="btn btn--ghost" (click)="closeConfig()">Cancel</button>
-          <button type="button" class="btn btn--primary" (click)="saveConfig()">
-            Save Configuration
-          </button>
-        </footer>
-      </div>
-    </div>
-  }
 </section>

@@ -39,9 +39,12 @@ export class AiAgentService {
     this.store.get<AiSettings>(STORAGE_KEYS.aiSettings, DEFAULT_SETTINGS),
   );
 
-  readonly messages = signal<AiMessage[]>(
-    this.store.get<AiMessage[]>(STORAGE_KEYS.aiChatHistory, this.getInitialMessages()),
-  );
+  private initMessages(): AiMessage[] {
+    const list = this.store.get<AiMessage[]>(STORAGE_KEYS.aiChatHistory, []);
+    return list.filter((m) => m.id !== 'welcome_1');
+  }
+
+  readonly messages = signal<AiMessage[]>(this.initMessages());
 
   readonly isAnalyzing = signal(false);
   readonly selectedRange = signal<DateRangeContext>('last7days');
@@ -62,9 +65,8 @@ export class AiAgentService {
   }
 
   clearHistory(): void {
-    const welcome = this.getInitialMessages();
-    this.messages.set(welcome);
-    this.store.set(STORAGE_KEYS.aiChatHistory, welcome);
+    this.messages.set([]);
+    this.store.set(STORAGE_KEYS.aiChatHistory, []);
     this.toast.success('Chat history cleared');
   }
 
@@ -704,27 +706,6 @@ ${JSON.stringify(ctx, null, 2)}
   }
 
   private getInitialMessages(): AiMessage[] {
-    return [
-      {
-        id: 'welcome_1',
-        role: 'assistant',
-        content: `👋 **Welcome to your Pulse AI Productivity Agent!**
-
-I have direct access to your **Activities, Focus Tasks, Habits, Goals, and Academic Trackers**.
-
-### What I can do for you:
-- **Analyze your real time logs** and identify where your hours actually go.
-- **Calculate deep work & productivity scores** across any date range.
-- **Generate comprehensive executive audits** (Weekly, Daily, Academics, Goals, Burnout).
-- **Answer questions** like *"How much time did I spend on DSA this week?"* or *"What was my most productive day?"*
-
-Click one of the **Quick Reports** above, or ask me anything below! 🚀`,
-        timestamp: 'Just now',
-        metrics: [
-          { label: 'Agent Status', value: 'Ready', icon: '✨', tone: 'positive' },
-          { label: 'Logs Synchronized', value: 'Live', icon: '🔄', tone: 'accent' },
-        ],
-      },
-    ];
+    return [];
   }
 }
