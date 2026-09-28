@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AiAgentService } from '../../core/services/ai-agent.service';
 import { ToastService } from '../../core/services/toast.service';
-import { AiMessage, DateRangeContext } from '../../core/models/ai-agent.models';
+import { AiChatSession, AiMessage, DateRangeContext } from '../../core/models/ai-agent.models';
 
 @Component({
   selector: 'app-ai-agent-page',
@@ -22,6 +22,7 @@ export class AiAgentPageComponent {
 
   readonly inputText = signal('');
   readonly inputFocused = signal(false);
+  readonly historyOpen = signal(false);
 
   constructor() {
     afterNextRender(() => {
@@ -78,10 +79,27 @@ export class AiAgentPageComponent {
   }
 
   clearChat(): void {
-    if (confirm('Start a new chat session and clear previous messages?')) {
-      this.ai.clearHistory();
-      this.focusInput();
-    }
+    this.ai.startNewChat();
+    this.focusInput();
+  }
+
+  toggleHistory(): void {
+    this.historyOpen.update((v) => !v);
+  }
+
+  closeHistory(): void {
+    this.historyOpen.set(false);
+  }
+
+  loadSession(s: AiChatSession): void {
+    this.ai.loadSession(s);
+    this.closeHistory();
+    this.scrollToBottom();
+  }
+
+  deleteSession(e: Event, id: string): void {
+    e.stopPropagation();
+    this.ai.deleteSession(id);
   }
 
   setRange(range: DateRangeContext): void {

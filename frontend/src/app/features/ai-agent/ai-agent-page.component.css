@@ -137,6 +137,42 @@ html[data-theme='light'] .scope-btn--active {
   color: #ffffff;
 }
 
+.history-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.history-btn:hover,
+.history-btn--active {
+  color: var(--text);
+  border-color: var(--accent);
+  background: rgba(45, 212, 191, 0.08);
+}
+
+.history-count {
+  background: var(--accent);
+  color: #042f2e;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+html[data-theme='light'] .history-count {
+  color: #ffffff;
+}
+
 .new-chat-btn {
   display: inline-flex;
   align-items: center;
@@ -785,3 +821,187 @@ html[data-theme='light'] .dock-send-btn {
     padding-right: 0.75rem;
   }
 }
+
+/* =========================================================
+   SLIDE-OVER HISTORY DRAWER
+   ========================================================= */
+.history-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+.history-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(380px, 90vw);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.25s ease;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.history-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.drawer-icon {
+  font-size: 1.1rem;
+}
+
+.drawer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--font-display);
+}
+
+.drawer-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.drawer-close-btn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.history-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.empty-history {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.empty-history__icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.empty-history p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.empty-history small {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  opacity: 0.8;
+}
+
+.sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.session-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 10px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.session-card:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
+  transform: translateX(-2px);
+}
+
+.session-card__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.session-card__title {
+  font-size: 0.86rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.session-card__badge {
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.session-card__del {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+}
+
+.session-card__del:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  opacity: 1;
+}
+

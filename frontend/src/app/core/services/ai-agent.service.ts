@@ -10,6 +10,7 @@ import { ToastService } from './toast.service';
 import { STORAGE_KEYS } from '../constants/categories';
 import {
   AggregatedLogsContext,
+  AiChatSession,
   AiMessage,
   AiMetricHighlight,
   AiSettings,
@@ -45,6 +46,9 @@ export class AiAgentService {
   }
 
   readonly messages = signal<AiMessage[]>(this.initMessages());
+  readonly sessions = signal<AiChatSession[]>(
+    this.store.get<AiChatSession[]>(STORAGE_KEYS.aiChatSessions, []),
+  );
 
   readonly isAnalyzing = signal(false);
   readonly selectedRange = signal<DateRangeContext>('last7days');
@@ -64,10 +68,61 @@ export class AiAgentService {
     this.selectedRange.set(range);
   }
 
-  clearHistory(): void {
+  /**
+   * Starts a new conversation. If current chat has messages,
+   * automatically archives it into saved history so it is never lost!
+   */
+  startNewChat(): void {
+    const current = this.messages();
+    if (current.length > 0) {
+      const firstUserMsg = current.find((m) => m.role === 'user');
+      const title = firstUserMsg
+        ? (firstUserMsg.content.length > 40 ? firstUserMsg.content.slice(0, 40) + '...' : firstUserMsg.content)
+        : 'Productivity Audit';
+
+      const session: AiChatSession = {
+        id: 'session_' + Date.now(),
+        title,
+        createdAt: new Date().toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        dateRangeContext: this.selectedRange(),
+        messages: [...current],
+      };
+
+      this.sessions.update((list) => [session, ...list]);
+      this.store.set(STORAGE_KEYS.aiChatSessions, this.sessions());
+    }
+
     this.messages.set([]);
     this.store.set(STORAGE_KEYS.aiChatHistory, []);
-    this.toast.success('Chat history cleared');
+    this.toast.success('Started a new chat. Previous conversation saved to History!');
+  }
+
+  /**
+   * Restore a previously archived conversation session.
+   */
+  loadSession(session: AiChatSession): void {
+    this.messages.set(session.messages);
+    if (session.dateRangeContext) {
+      this.selectedRange.set(session.dateRangeContext);
+    }
+    this.persistMessages();
+    this.toast.success(`Restored chat: "${session.title}"`);
+  }
+
+  /**
+   * Remove a single archived session from history.
+   */
+  deleteSession(sessionId: string): void {
+    this.sessions.update((list) => list.filter((s) => s.id !== sessionId));
+    this.store.set(STORAGE_KEYS.aiChatSessions, this.sessions());
+    this.toast.success('Session removed from history');
+  }
+
+  /**
+   * Completely clear active chat messages.
+   */
+  clearHistory(): void {
+    this.startNewChat();
   }
 
   /**

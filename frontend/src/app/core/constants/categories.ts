@@ -49,6 +49,7 @@ export const STORAGE_KEYS = {
   focusTodos: 'pt.focusTodos',
   aiSettings: 'pt.aiSettings',
   aiChatHistory: 'pt.aiChatHistory',
+  aiChatSessions: 'pt.aiChatSessions',
 } as const;
 
 export const DEFAULT_SLEEP_TARGET_MINUTES = 8 * 60;

@@ -54,12 +54,27 @@
         </button>
       </div>
 
+      <!-- History Button -->
+      <button
+        type="button"
+        class="history-btn"
+        (click)="toggleHistory()"
+        [class.history-btn--active]="historyOpen()"
+        title="View saved past conversations"
+      >
+        <span class="btn-icon">🕓</span>
+        <span class="btn-text">History</span>
+        @if (ai.sessions().length > 0) {
+          <span class="history-count">{{ ai.sessions().length }}</span>
+        }
+      </button>
+
       <!-- New Chat Button -->
       <button
         type="button"
         class="new-chat-btn"
         (click)="clearChat()"
-        title="Start a new chat session"
+        title="Save current chat and start fresh"
       >
         <span class="btn-icon">＋</span>
         <span class="btn-text">New Chat</span>
@@ -278,4 +293,55 @@
       </div>
     </div>
   </footer>
+
+  <!-- Slide-over History Drawer -->
+  @if (historyOpen()) {
+    <div class="history-scrim" (click)="closeHistory()" aria-hidden="true"></div>
+    <aside class="history-drawer" role="dialog" aria-label="Conversation History">
+      <div class="history-drawer__header">
+        <div class="drawer-title-row">
+          <span class="drawer-icon">🕓</span>
+          <strong class="drawer-title">Saved Chats ({{ ai.sessions().length }})</strong>
+        </div>
+        <button type="button" class="drawer-close-btn" (click)="closeHistory()" title="Close history">✕</button>
+      </div>
+
+      <div class="history-drawer__body">
+        @if (ai.sessions().length === 0) {
+          <div class="empty-history">
+            <span class="empty-history__icon">🗂️</span>
+            <p><strong>No saved chats yet</strong></p>
+            <small>Whenever you click "New Chat", your conversation is automatically archived here so you can review previous reports anytime.</small>
+          </div>
+        } @else {
+          <div class="sessions-list">
+            @for (s of ai.sessions(); track s.id) {
+              <div class="session-card" (click)="loadSession(s)" title="Click to view and continue this conversation">
+                <div class="session-card__info">
+                  <strong class="session-card__title">{{ s.title }}</strong>
+                  <div class="session-card__meta">
+                    <span class="session-card__time">{{ s.createdAt }}</span>
+                    <span>·</span>
+                    <span>{{ s.messages.length }} msgs</span>
+                    @if (s.dateRangeContext) {
+                      <span class="session-card__badge">{{ s.dateRangeContext }}</span>
+                    }
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="session-card__del"
+                  (click)="deleteSession($event, s.id)"
+                  title="Delete this saved chat"
+                >
+                  ✕
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </aside>
+  }
 </div>
+

@@ -29,6 +29,14 @@ export interface AiMessage {
   isAnalyzing?: boolean;
 }
 
+export interface AiChatSession {
+  id: string;
+  title: string;
+  createdAt: string;
+  dateRangeContext: DateRangeContext;
+  messages: AiMessage[];
+}
+
 export interface AggregatedLogsContext {
   range: DateRangeContext;
   rangeLabel: string;
