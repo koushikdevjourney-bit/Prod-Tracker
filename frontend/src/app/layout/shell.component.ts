@@ -47,6 +47,7 @@ export class ShellComponent {
     { path: '/goals', label: 'Goals', icon: '★' },
     { path: '/habits', label: 'Habits', icon: '↻' },
     { path: '/analytics', label: 'Analytics', icon: '◔' },
+    { path: '/ai-agent', label: 'AI Agent', icon: '✨' },
     { path: '/settings', label: 'Settings', icon: '⚙' },
   ];
 

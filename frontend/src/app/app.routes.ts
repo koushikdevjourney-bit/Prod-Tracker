@@ -93,6 +93,16 @@ export const routes: Routes = [
           import('./features/analytics/analytics-page.component').then((m) => m.AnalyticsPageComponent),
       },
       {
+        path: 'ai-agent',
+        loadComponent: () =>
+          import('./features/ai-agent/ai-agent-page.component').then((m) => m.AiAgentPageComponent),
+      },
+      {
+        path: 'ai',
+        redirectTo: 'ai-agent',
+        pathMatch: 'full',
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/settings-page.component').then((m) => m.SettingsPageComponent),

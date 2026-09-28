@@ -1,16 +1,18 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { SettingsService } from '../../core/services/settings.service';
 import { ThemeService, ThemeMode } from '../../core/services/theme.service';
 import { SampleDataService } from '../../core/services/sample-data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
+import { AiAgentService } from '../../core/services/ai-agent.service';
 import { DEFAULT_SLEEP_TARGET_MINUTES } from '../../core/constants/categories';
 
 @Component({
   selector: 'app-settings-page',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `
     <section class="page">
       <header class="page-header">
@@ -117,6 +119,37 @@ import { DEFAULT_SLEEP_TARGET_MINUTES } from '../../core/constants/categories';
         </section>
 
         <section class="panel form-grid">
+          <h3>✨ AI Productivity Agent</h3>
+          <p class="muted tiny">Configure your LLM Provider and API Key for generative productivity reasoning, or use the built-in smart analyzer.</p>
+
+          <label class="field">
+            <span>Provider</span>
+            <select class="input" [ngModel]="ai.settings().provider" (ngModelChange)="onAiProvider($event)">
+              <option value="gemini">Google Gemini (Recommended — Generous Free Tier)</option>
+              <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+              <option value="groq">Groq (Llama 3)</option>
+              <option value="anthropic">Anthropic Claude</option>
+              <option value="custom">Custom OpenAI-compatible</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>API Key</span>
+            <input
+              class="input"
+              type="password"
+              [ngModel]="ai.settings().apiKey || ''"
+              (ngModelChange)="onAiApiKey($event)"
+              placeholder="Paste your Gemini or OpenAI API Key"
+            />
+          </label>
+
+          <div class="form-actions">
+            <a routerLink="/ai-agent" class="btn btn--primary btn--sm">Open AI Agent Console →</a>
+          </div>
+        </section>
+
+        <section class="panel form-grid">
           <h3>Demo data</h3>
           <p class="muted">Start empty by default. Optionally load one sample day — never shown as fake live stats.</p>
           <div class="form-actions">
@@ -143,6 +176,7 @@ export class SettingsPageComponent {
   readonly settings = inject(SettingsService);
   readonly theme = inject(ThemeService);
   readonly auth = inject(AuthService);
+  readonly ai = inject(AiAgentService);
   private readonly sample = inject(SampleDataService);
   private readonly toast = inject(ToastService);
 
@@ -214,6 +248,14 @@ export class SettingsPageComponent {
   clearData(): void {
     if (!confirm('Clear all activities, goals, habits, grit, academic, and current progress from your account?')) return;
     this.sample.clearAllData();
+  }
+
+  onAiProvider(provider: any): void {
+    this.ai.saveSettings({ provider });
+  }
+
+  onAiApiKey(apiKey: string): void {
+    this.ai.saveSettings({ apiKey: apiKey.trim() });
   }
 
   logout(): void {

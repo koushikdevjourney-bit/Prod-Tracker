@@ -35,6 +35,7 @@ export class HubPageComponent {
     { path: '/goals', title: 'Goals', body: 'Duration targets from real logged time.' },
     { path: '/habits', title: 'Habits', body: 'Check off habits and keep streaks.' },
     { path: '/analytics', title: 'Analytics', body: 'Daily, weekly, and monthly trends.' },
+    { path: '/ai-agent', title: 'AI Agent & Reports', body: 'Analyze logs, audit productivity & generate reports.' },
     { path: '/settings', title: 'Settings', body: 'Theme, sleep target, and account.' },
   ];
 

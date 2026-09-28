@@ -47,6 +47,8 @@ export const STORAGE_KEYS = {
   academicPacks: 'pt.academic_packs',
   progress: 'pt.progress',
   focusTodos: 'pt.focusTodos',
+  aiSettings: 'pt.aiSettings',
+  aiChatHistory: 'pt.aiChatHistory',
 } as const;
 
 export const DEFAULT_SLEEP_TARGET_MINUTES = 8 * 60;

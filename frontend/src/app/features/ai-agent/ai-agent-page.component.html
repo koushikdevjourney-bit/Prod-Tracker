@@ -1,0 +1,340 @@
+<section class="page ai-page">
+  <!-- Page Header -->
+  <header class="page-header page-header--row">
+    <div>
+      <p class="eyebrow">Productivity Intelligence</p>
+      <h1>✨ AI Productivity Agent</h1>
+      <p class="lede">Analyze your logged activities, focus blocks, habits, and goals to generate actionable executive reports.</p>
+    </div>
+
+    <div class="header-actions">
+      <!-- Engine Status Pill -->
+      <button
+        type="button"
+        class="engine-badge"
+        [class.engine-badge--connected]="ai.hasApiKey()"
+        (click)="openConfig()"
+        title="Click to configure AI Provider & API Key"
+      >
+        <span class="engine-indicator">●</span>
+        <span>{{ ai.hasApiKey() ? 'API Key Active (' + ai.settings().provider + ')' : 'Built-in Smart Analyzer' }}</span>
+        <span class="engine-key-icon">⚙️</span>
+      </button>
+
+      <button type="button" class="btn btn--secondary btn--sm" (click)="openConfig()" title="Configure API Key">
+        🔑 Configure API Key
+      </button>
+
+      <button type="button" class="btn btn--ghost btn--sm" (click)="exportAllMarkdown()" title="Export reports as Markdown">
+        📋 Export (.md)
+      </button>
+
+      <button type="button" class="btn btn--ghost btn--sm" (click)="clearHistory()" title="Clear chat history">
+        🗑️ Clear
+      </button>
+    </div>
+  </header>
+
+  <!-- Date Range Filter Context Strip -->
+  <div class="context-strip panel">
+    <div class="context-label">
+      <span class="context-icon">📅</span>
+      <span>Log Context Range:</span>
+    </div>
+    <div class="range-chips">
+      <button
+        type="button"
+        class="range-chip"
+        [class.range-chip--active]="ai.selectedRange() === 'today'"
+        (click)="setRange('today')"
+      >
+        Today
+      </button>
+      <button
+        type="button"
+        class="range-chip"
+        [class.range-chip--active]="ai.selectedRange() === 'last7days'"
+        (click)="setRange('last7days')"
+      >
+        Last 7 Days
+      </button>
+      <button
+        type="button"
+        class="range-chip"
+        [class.range-chip--active]="ai.selectedRange() === 'last30days'"
+        (click)="setRange('last30days')"
+      >
+        Last 30 Days
+      </button>
+      <button
+        type="button"
+        class="range-chip"
+        [class.range-chip--active]="ai.selectedRange() === 'all'"
+        (click)="setRange('all')"
+      >
+        All Time Logs
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick Report Launchpad Cards -->
+  <div class="launchpad-grid">
+    <button type="button" class="launchpad-card" (click)="sendPreset('weekly')" [disabled]="ai.isAnalyzing()">
+      <div class="launchpad-card__icon">📊</div>
+      <div class="launchpad-card__body">
+        <strong>Weekly Audit</strong>
+        <span>7-day deep breakdown, focus scores & leakage</span>
+      </div>
+      <span class="launchpad-card__arrow">›</span>
+    </button>
+
+    <button type="button" class="launchpad-card" (click)="sendPreset('daily')" [disabled]="ai.isAnalyzing()">
+      <div class="launchpad-card__icon">⚡</div>
+      <div class="launchpad-card__body">
+        <strong>Today's Standup</strong>
+        <span>Daily time logged, productive ratio & next tasks</span>
+      </div>
+      <span class="launchpad-card__arrow">›</span>
+    </button>
+
+    <button type="button" class="launchpad-card" (click)="sendPreset('goals')" [disabled]="ai.isAnalyzing()">
+      <div class="launchpad-card__icon">🎯</div>
+      <div class="launchpad-card__body">
+        <strong>Goals & Habits</strong>
+        <span>Target hours, habit streaks & consistency</span>
+      </div>
+      <span class="launchpad-card__arrow">›</span>
+    </button>
+
+    <button type="button" class="launchpad-card" (click)="sendPreset('academics')" [disabled]="ai.isAnalyzing()">
+      <div class="launchpad-card__icon">📚</div>
+      <div class="launchpad-card__body">
+        <strong>Academic & DSA</strong>
+        <span>Coding hours, syllabus units & placement prep</span>
+      </div>
+      <span class="launchpad-card__arrow">›</span>
+    </button>
+
+    <button type="button" class="launchpad-card" (click)="sendPreset('burnout')" [disabled]="ai.isAnalyzing()">
+      <div class="launchpad-card__icon">🧠</div>
+      <div class="launchpad-card__body">
+        <strong>Energy & Rest</strong>
+        <span>Work-rest ratio, marathon blocks & fatigue check</span>
+      </div>
+      <span class="launchpad-card__arrow">›</span>
+    </button>
+  </div>
+
+  <!-- Main AI Chat & Report Console -->
+  <div class="console-panel panel">
+    <!-- Messages Scroll Area -->
+    <div class="chat-feed" #chatScroll>
+      @for (msg of ai.messages(); track msg.id) {
+        <div class="chat-row" [class.chat-row--user]="msg.role === 'user'" [class.chat-row--ai]="msg.role === 'assistant'">
+          <!-- Avatar -->
+          <div class="chat-avatar">
+            @if (msg.role === 'user') {
+              <span class="avatar-badge avatar-badge--user">👤</span>
+            } @else {
+              <span class="avatar-badge avatar-badge--ai">✨</span>
+            }
+          </div>
+
+          <!-- Message Container -->
+          <div class="chat-bubble" [class.chat-bubble--ai]="msg.role === 'assistant'">
+            <div class="chat-bubble__meta">
+              <strong class="author-name">{{ msg.role === 'user' ? 'You' : 'Pulse AI Coach' }}</strong>
+              <span class="meta-time">{{ msg.timestamp }}</span>
+              @if (msg.dateRangeContext) {
+                <span class="meta-context">Scope: {{ msg.dateRangeContext }}</span>
+              }
+            </div>
+
+            <!-- Key Metric Highlight Cards (if present) -->
+            @if (msg.metrics && msg.metrics.length > 0) {
+              <div class="metrics-grid">
+                @for (m of msg.metrics; track m.label) {
+                  <div class="metric-card" [attr.data-tone]="m.tone || 'neutral'">
+                    <span class="metric-card__icon">{{ m.icon }}</span>
+                    <div class="metric-card__info">
+                      <span class="metric-card__label">{{ m.label }}</span>
+                      <strong class="metric-card__value">{{ m.value }}</strong>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Rendered Message / Report Content -->
+            <div class="chat-bubble__content" [innerHTML]="formatMarkdown(msg.content)"></div>
+
+            <!-- AI Message Action Toolbar -->
+            @if (msg.role === 'assistant') {
+              <div class="chat-bubble__actions">
+                <button type="button" class="action-btn" (click)="copyMessage(msg.content)" title="Copy report text">
+                  📋 Copy Report
+                </button>
+                <button type="button" class="action-btn" (click)="downloadReport(msg)" title="Download as .md file">
+                  💾 Download .md
+                </button>
+                @if (msg.reportType) {
+                  <button type="button" class="action-btn" (click)="reAnalyze(msg)" [disabled]="ai.isAnalyzing()" title="Re-run analysis with latest logs">
+                    🔄 Re-analyze
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Analyzing Spinner -->
+      @if (ai.isAnalyzing()) {
+        <div class="chat-row chat-row--ai">
+          <div class="chat-avatar">
+            <span class="avatar-badge avatar-badge--ai pulse-spin">✨</span>
+          </div>
+          <div class="chat-bubble chat-bubble--ai analyzing-box">
+            <div class="spinner-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+            <span class="analyzing-text">
+              Synthesizing activity logs, focus sessions, and calculating metrics for {{ ai.selectedRange() }}...
+            </span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Input Bar -->
+    <div class="chat-input-bar">
+      <div class="input-container">
+        <textarea
+          class="chat-textarea"
+          placeholder="Ask Pulse AI anything about your logs, request a report, or ask for study coaching... (Press Enter to send)"
+          [ngModel]="inputText()"
+          (ngModelChange)="inputText.set($event)"
+          (keydown)="onKeyDown($event)"
+          rows="1"
+          [disabled]="ai.isAnalyzing()"
+        ></textarea>
+        <button
+          type="button"
+          class="btn-send"
+          (click)="send()"
+          [disabled]="!inputText().trim() || ai.isAnalyzing()"
+          title="Send message"
+        >
+          ➤
+        </button>
+      </div>
+      <div class="input-helper">
+        <span class="helper-text">💡 Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for newline</span>
+        <button type="button" class="api-key-link" (click)="openConfig()">
+          {{ ai.hasApiKey() ? '⚡ Using ' + ai.settings().provider : '⚙️ Connect API Key (Optional)' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Key Configuration Modal -->
+  @if (showConfigModal()) {
+    <div class="modal-backdrop" (click)="closeConfig()">
+      <div class="modal-dialog panel" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <span class="modal-icon">🔑</span>
+            <div>
+              <h3>AI Agent Configuration</h3>
+              <p class="modal-subtitle">Connect your preferred LLM provider or use the built-in local analyzer.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close" (click)="closeConfig()">✕</button>
+        </header>
+
+        <div class="modal-body form-grid">
+          <!-- Provider Picker -->
+          <label class="field">
+            <span>AI Provider</span>
+            <select
+              class="input"
+              [ngModel]="configProvider()"
+              (ngModelChange)="onProviderChange($event)"
+            >
+              <option value="gemini">Google Gemini (Recommended — Generous Free Tier)</option>
+              <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+              <option value="groq">Groq (Ultra-fast Llama 3)</option>
+              <option value="anthropic">Anthropic Claude</option>
+              <option value="custom">Custom OpenAI-Compatible Endpoint</option>
+            </select>
+          </label>
+
+          <!-- Free Tier Guide Callout -->
+          @if (configProvider() === 'gemini') {
+            <div class="info-callout">
+              <strong>💡 Free Gemini API Key:</strong>
+              <span>
+                You can generate a 100% free Gemini API key from
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>.
+                It gives thousands of free requests per day without requiring a credit card.
+              </span>
+            </div>
+          }
+
+          <!-- API Key Input -->
+          <label class="field">
+            <span>API Key</span>
+            <div class="key-input-wrap">
+              <input
+                class="input key-input"
+                [type]="showApiKey() ? 'text' : 'password'"
+                placeholder="Paste your API key here (e.g., AIzaSy... or sk-...)"
+                [ngModel]="configApiKey()"
+                (ngModelChange)="configApiKey.set($event)"
+              />
+              <button
+                type="button"
+                class="toggle-key-btn"
+                (click)="showApiKey.set(!showApiKey())"
+                title="Toggle key visibility"
+              >
+                {{ showApiKey() ? 'Hide' : 'Show' }}
+              </button>
+            </div>
+            <span class="field-hint">
+              Your API key is saved locally in your browser and used strictly for your own productivity queries.
+            </span>
+          </label>
+
+          <!-- Model Name -->
+          <label class="field">
+            <span>Model Name</span>
+            <input
+              class="input"
+              type="text"
+              [ngModel]="configModel()"
+              (ngModelChange)="configModel.set($event)"
+              placeholder="e.g. gemini-1.5-flash or gpt-4o-mini"
+            />
+          </label>
+
+          <div class="status-summary">
+            <span class="status-dot" [class.status-dot--green]="configApiKey().trim().length > 0"></span>
+            <span>
+              {{ configApiKey().trim().length > 0 ? 'Ready to use with ' + configProvider() : 'No key provided — Built-in Smart Analyzer will be active.' }}
+            </span>
+          </div>
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn btn--ghost" (click)="closeConfig()">Cancel</button>
+          <button type="button" class="btn btn--primary" (click)="saveConfig()">
+            Save Configuration
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+</section>
