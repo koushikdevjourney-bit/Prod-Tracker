@@ -69,8 +69,8 @@ export const routes: Routes = [
       },
       {
         path: 'timeline',
-        loadComponent: () =>
-          import('./features/timeline/timeline-page.component').then((m) => m.TimelinePageComponent),
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
       },
       {
         path: 'activities',
@@ -79,13 +79,13 @@ export const routes: Routes = [
       },
       {
         path: 'goals',
-        loadComponent: () =>
-          import('./features/goals/goals-page.component').then((m) => m.GoalsPageComponent),
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
       },
       {
         path: 'habits',
-        loadComponent: () =>
-          import('./features/habits/habits-page.component').then((m) => m.HabitsPageComponent),
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
       },
       {
         path: 'analytics',

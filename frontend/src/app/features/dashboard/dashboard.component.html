@@ -86,37 +86,7 @@
       }
     </section>
 
-    <section class="panel">
-      <div class="panel-block__head">
-        <h3>Daily goals</h3>
-      </div>
-      @if (goalRows().length === 0) {
-        <p class="muted">No goals yet. Add some on the Goals page.</p>
-      } @else {
-        @for (g of goalRows(); track g.goal._id) {
-          <app-goal-progress
-            [name]="g.goal.name"
-            [category]="g.goal.category || ''"
-            [targetMinutes]="g.goal.targetMinutes"
-            [loggedMinutes]="g.loggedMinutes"
-            [progressPercent]="g.progressPercent"
-          />
-        }
-      }
-    </section>
-
-    <app-sleep-card [summary]="sleepSummary()" />
-
-    <section class="panel">
-      <div class="panel-block__head">
-        <h3>Habits</h3>
-      </div>
-      @if (habitRows().length === 0) {
-        <p class="muted">No habits yet. Create them under Habits.</p>
-      } @else {
-        <app-habit-list [rows]="habitRows()" (toggle)="toggleHabit($event)" />
-      }
-    </section>
+    <app-sleep-card class="panel--wide" [summary]="sleepSummary()" />
 
     <section class="panel panel--wide">
       <div class="panel-block__head">

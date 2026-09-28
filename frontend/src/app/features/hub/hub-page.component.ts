@@ -30,10 +30,7 @@ export class HubPageComponent {
 
   readonly prodSections: ProdSection[] = [
     { path: '/dashboard', title: 'Dashboard', body: 'Today’s metrics, sleep, and insights.' },
-    { path: '/timeline', title: 'Timeline', body: 'Walk through the day block by block.' },
     { path: '/activities', title: 'Activities', body: 'Search, edit, and manage your log.' },
-    { path: '/goals', title: 'Goals', body: 'Duration targets from real logged time.' },
-    { path: '/habits', title: 'Habits', body: 'Check off habits and keep streaks.' },
     { path: '/analytics', title: 'Analytics', body: 'Daily, weekly, and monthly trends.' },
     { path: '/ai-agent', title: 'AI Agent & Reports', body: 'Analyze logs, audit productivity & generate reports.' },
     { path: '/settings', title: 'Settings', body: 'Theme, sleep target, and account.' },

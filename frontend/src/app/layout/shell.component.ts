@@ -40,12 +40,8 @@ export class ShellComponent {
 
   readonly nav: NavItem[] = [
     { path: '/home', label: 'My Tracker', icon: '◈' },
-    { path: '/focused-todo', label: 'Focused To-Do', icon: '☑' },
     { path: '/dashboard', label: 'Dashboard', icon: '▦' },
-    { path: '/timeline', label: 'Timeline', icon: '☰' },
     { path: '/activities', label: 'Activities', icon: '◎' },
-    { path: '/goals', label: 'Goals', icon: '★' },
-    { path: '/habits', label: 'Habits', icon: '↻' },
     { path: '/analytics', label: 'Analytics', icon: '◔' },
     { path: '/ai-agent', label: 'AI Agent', icon: '✨' },
     { path: '/settings', label: 'Settings', icon: '⚙' },
