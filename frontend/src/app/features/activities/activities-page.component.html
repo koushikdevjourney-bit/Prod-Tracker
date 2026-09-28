@@ -4,23 +4,125 @@
       <p class="eyebrow">Activities</p>
       <h1>Activity log</h1>
     </div>
-    <button type="button" class="btn btn--primary" (click)="add()">+ Add Activity</button>
+    <div class="header-actions">
+      <!-- View Mode Switcher -->
+      <div class="view-toggle" role="group" aria-label="View mode">
+        <button
+          type="button"
+          class="view-toggle__btn"
+          [class.view-toggle__btn--active]="viewMode() === 'grouped'"
+          (click)="setViewMode('grouped')"
+          title="Group activities date-wise"
+        >
+          <span class="icon">📅</span> Date-wise
+        </button>
+        <button
+          type="button"
+          class="view-toggle__btn"
+          [class.view-toggle__btn--active]="viewMode() === 'table'"
+          (click)="setViewMode('table')"
+          title="Classic flat table"
+        >
+          <span class="icon">📋</span> Table
+        </button>
+      </div>
+
+      <button type="button" class="btn btn--primary" (click)="add()">
+        + Add Activity
+      </button>
+    </div>
   </header>
 
+  <!-- Date Navigation & Quick Filters Strip -->
+  <div class="date-strip panel">
+    <div class="date-strip__header">
+      <span class="strip-label"><span class="strip-icon">📅</span> Filter by Date:</span>
+      <div class="date-picker-wrap">
+        <input
+          class="input date-input"
+          type="date"
+          [ngModel]="dateFilter()"
+          (ngModelChange)="setDateFilter($event)"
+          title="Select a specific date to filter"
+        />
+        @if (dateFilter()) {
+          <button
+            type="button"
+            class="btn-date-clear"
+            (click)="clearDateFilter()"
+            title="Clear date filter to show all dates"
+          >
+            ✕
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Quick Date Preset Chips -->
+    <div class="date-chips">
+      <button
+        type="button"
+        class="date-chip"
+        [class.date-chip--active]="!dateFilter()"
+        (click)="clearDateFilter()"
+      >
+        All Dates ({{ allActivities().length }})
+      </button>
+
+      <button
+        type="button"
+        class="date-chip"
+        [class.date-chip--active]="dateFilter() === todayStr"
+        (click)="selectToday()"
+      >
+        Today
+      </button>
+
+      <button
+        type="button"
+        class="date-chip"
+        [class.date-chip--active]="dateFilter() === yesterdayStr"
+        (click)="selectYesterday()"
+      >
+        Yesterday
+      </button>
+
+      @for (p of availableDatePills(); track p.date) {
+        @if (p.date !== todayStr && p.date !== yesterdayStr) {
+          <button
+            type="button"
+            class="date-chip"
+            [class.date-chip--active]="dateFilter() === p.date"
+            (click)="setDateFilter(p.date)"
+            [title]="p.date"
+          >
+            {{ p.label }} <span class="chip-count">{{ p.count }}</span>
+          </button>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- Search & Category / Type Toolbar -->
   <div class="toolbar panel">
-    <input
-      class="input"
-      type="search"
-      placeholder="Search name, category, notes…"
-      [ngModel]="search()"
-      (ngModelChange)="search.set($event); page.set(1)"
-    />
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input
+        class="input search-input"
+        type="search"
+        placeholder="Search name, category, notes…"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event); page.set(1)"
+      />
+    </div>
+
     <select class="input" [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event); page.set(1)">
       <option value="">All categories</option>
       @for (c of categories; track c.name) {
         <option [value]="c.name">{{ c.name }}</option>
       }
     </select>
+
     <select class="input" [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event); page.set(1)">
       <option value="">All types</option>
       <option value="productive">Productive</option>
@@ -28,55 +130,260 @@
       <option value="unproductive">Unproductive</option>
       <option value="sleep">Sleep</option>
     </select>
+
+    @if (search() || categoryFilter() || typeFilter() || dateFilter()) {
+      <button type="button" class="btn btn--ghost btn--sm clear-all-btn" (click)="clearAllFilters()" title="Reset all search and filter options">
+        Reset filters
+      </button>
+    }
   </div>
 
-  @if (filtered().length === 0) {
-    <app-empty-state
-      title="No activities"
-      message="Add your first block of time, or clear filters if you're filtering too tightly."
-      actionLabel="+ Add Activity"
-      (action)="add()"
-    />
-  } @else {
-    <div class="table-wrap panel">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th><button type="button" class="th-btn" (click)="setSort('date')">Date</button></th>
-            <th><button type="button" class="th-btn" (click)="setSort('name')">Name</button></th>
-            <th><button type="button" class="th-btn" (click)="setSort('category')">Category</button></th>
-            <th>Time</th>
-            <th><button type="button" class="th-btn" (click)="setSort('duration')">Duration</button></th>
-            <th>Type</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (a of pageItems(); track a._id) {
-            <tr>
-              <td>{{ a.date }}</td>
-              <td>
-                <button type="button" class="linkish" (click)="edit(a)">{{ a.name }}</button>
-              </td>
-              <td>{{ a.category }}</td>
-              <td>{{ a.startTime }}–{{ a.endTime }}</td>
-              <td>{{ a.durationMinutes | duration }}</td>
-              <td><span class="badge" [attr.data-type]="a.type">{{ a.type }}</span></td>
-              <td class="actions">
-                <button type="button" class="btn btn--ghost btn--sm" (click)="edit(a)">Edit</button>
-                <button type="button" class="btn btn--ghost btn--sm" (click)="duplicate(a)">Duplicate</button>
-                <button type="button" class="btn btn--ghost btn--sm btn--danger" (click)="remove(a)">Delete</button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+  <!-- Active Date Filter Callout -->
+  @if (dateFilter()) {
+    <div class="active-filter-banner panel">
+      <div class="active-filter-content">
+        <span class="active-filter-badge">Date Filter Active</span>
+        <span class="active-filter-text">
+          Showing only activities for <strong>{{ selectedDateDisplay() }}</strong>
+          ({{ filtered().length }} {{ filtered().length === 1 ? 'activity' : 'activities' }} · {{ summary().totalMinutes | duration }})
+        </span>
+      </div>
+      <div class="active-filter-actions">
+        <button type="button" class="btn btn--secondary btn--sm" (click)="add(dateFilter())">
+          + Add for this date
+        </button>
+        <button type="button" class="btn btn--ghost btn--sm" (click)="clearDateFilter()">
+          Show All Dates ✕
+        </button>
+      </div>
     </div>
+  }
 
-    <div class="pager">
-      <button type="button" class="btn btn--ghost" [disabled]="page() <= 1" (click)="prevPage()">Prev</button>
-      <span class="muted">Page {{ page() }} / {{ totalPages() }} · {{ filtered().length }} items</span>
-      <button type="button" class="btn btn--ghost" [disabled]="page() >= totalPages()" (click)="nextPage()">Next</button>
+  <!-- Empty State -->
+  @if (filtered().length === 0) {
+    <div class="empty-wrap">
+      <app-empty-state
+        [title]="dateFilter() ? 'No activities for ' + selectedDateDisplay() : 'No activities found'"
+        [message]="dateFilter() ? 'No activities have been logged for this date yet. Log one now or clear the date filter.' : 'Add your first block of time, or clear filters if you are filtering too tightly.'"
+        [actionLabel]="'+ Add Activity'"
+        (action)="add(dateFilter())"
+      />
+      @if (dateFilter() || search() || categoryFilter() || typeFilter()) {
+        <div class="empty-actions">
+          <button type="button" class="btn btn--secondary" (click)="clearAllFilters()">
+            Clear All Filters
+          </button>
+        </div>
+      }
     </div>
+  } @else {
+    <!-- DATE-WISE GROUPED VIEW -->
+    @if (viewMode() === 'grouped') {
+      <div class="groups-meta-bar">
+        <div class="meta-counts">
+          <span class="count-pill count-pill--highlight">{{ dayGroups().length }} {{ dayGroups().length === 1 ? 'Day' : 'Days' }}</span>
+          <span class="count-pill">{{ summary().count }} Activities</span>
+          <span class="count-pill">⏱ {{ summary().totalMinutes | duration }} Logged</span>
+          @if (summary().productiveMinutes > 0) {
+            <span class="count-pill count-pill--prod">⚡ {{ summary().productiveMinutes | duration }} ({{ summary().productivePercent }}% productive)</span>
+          }
+        </div>
+        <div class="groups-collapse-ctrls">
+          <button type="button" class="btn btn--ghost btn--sm" (click)="expandAllDays()">
+            Expand All
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="collapseAllDays()">
+            Collapse All
+          </button>
+        </div>
+      </div>
+
+      <div class="day-groups">
+        @for (group of dayGroups(); track group.date) {
+          <div class="day-group panel">
+            <!-- Day Group Header -->
+            <div
+              class="day-group__header"
+              [class.day-group__header--collapsed]="isDayCollapsed(group.date)"
+              (click)="toggleDayCollapse(group.date)"
+            >
+              <div class="day-group__title-area">
+                <button
+                  type="button"
+                  class="chevron-btn"
+                  [attr.aria-expanded]="!isDayCollapsed(group.date)"
+                  (click)="$event.stopPropagation(); toggleDayCollapse(group.date)"
+                  title="Toggle day visibility"
+                >
+                  <span class="chevron-icon" [class.chevron-icon--rotated]="isDayCollapsed(group.date)">▼</span>
+                </button>
+
+                <div class="date-header-info">
+                  <h3 class="date-title">{{ group.formattedDate }}</h3>
+                  @if (group.relativeTag) {
+                    <span class="tag-relative" [class.tag-relative--today]="group.relativeTag === 'Today'">
+                      {{ group.relativeTag }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <!-- Day Summary Stats & Actions -->
+              <div class="day-group__meta-area" (click)="$event.stopPropagation()">
+                <div class="day-stats">
+                  <span class="day-stat" title="Total logged time">
+                    <span class="stat-symbol">⏱</span> {{ group.totalMinutes | duration }}
+                  </span>
+                  @if (group.productiveMinutes > 0) {
+                    <span class="day-stat day-stat--prod" title="Productive time">
+                      <span class="stat-symbol">⚡</span> {{ group.productiveMinutes | duration }} ({{ group.productivePercent }}%)
+                    </span>
+                  }
+                  <span class="day-stat day-stat--count">
+                    {{ group.itemCount }} {{ group.itemCount === 1 ? 'log' : 'logs' }}
+                  </span>
+                </div>
+
+                <div class="day-ctrls">
+                  @if (!dateFilter()) {
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm filter-date-btn"
+                      (click)="setDateFilter(group.date)"
+                      title="Filter whole page to only this date"
+                    >
+                      🎯 Only this date
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="btn btn--secondary btn--sm add-day-btn"
+                    (click)="add(group.date)"
+                    title="Add activity for this date"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Day Group Activities Table -->
+            @if (!isDayCollapsed(group.date)) {
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th class="th-time">Time</th>
+                      <th>Activity Name</th>
+                      <th>Category</th>
+                      <th class="th-duration">Duration</th>
+                      <th class="th-type">Type</th>
+                      <th class="th-actions">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (a of group.activities; track a._id) {
+                      <tr>
+                        <td class="td-time">
+                          <span class="time-range">{{ a.startTime }}–{{ a.endTime }}</span>
+                        </td>
+                        <td class="td-name">
+                          <div class="activity-identity">
+                            <button type="button" class="linkish activity-name" (click)="edit(a)">
+                              {{ a.name }}
+                            </button>
+                            @if (a.notes) {
+                              <span class="activity-note" [title]="a.notes">
+                                <span class="note-bubble">💬</span> {{ a.notes }}
+                              </span>
+                            }
+                          </div>
+                        </td>
+                        <td class="td-category">
+                          <span class="category-pill">{{ a.category }}</span>
+                        </td>
+                        <td class="td-duration">
+                          <strong>{{ a.durationMinutes | duration }}</strong>
+                        </td>
+                        <td class="td-type">
+                          <span class="badge" [attr.data-type]="a.type">{{ a.type }}</span>
+                        </td>
+                        <td class="actions td-actions">
+                          <button type="button" class="btn btn--ghost btn--sm" (click)="edit(a)">Edit</button>
+                          <button type="button" class="btn btn--ghost btn--sm" (click)="duplicate(a)">Duplicate</button>
+                          <button type="button" class="btn btn--ghost btn--sm btn--danger" (click)="remove(a)">Delete</button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <!-- FLAT TABLE VIEW (Optional mode) -->
+      <div class="table-wrap panel">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th><button type="button" class="th-btn" (click)="setSort('date')">Date</button></th>
+              <th><button type="button" class="th-btn" (click)="setSort('name')">Name</button></th>
+              <th><button type="button" class="th-btn" (click)="setSort('category')">Category</button></th>
+              <th>Time</th>
+              <th><button type="button" class="th-btn" (click)="setSort('duration')">Duration</button></th>
+              <th>Type</th>
+              <th class="th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of pageItems(); track a._id) {
+              <tr>
+                <td>
+                  <button
+                    type="button"
+                    class="date-link"
+                    (click)="setDateFilter(a.date)"
+                    title="Click to filter by {{ a.date }}"
+                  >
+                    📅 {{ a.date }}
+                  </button>
+                </td>
+                <td>
+                  <div class="activity-identity">
+                    <button type="button" class="linkish activity-name" (click)="edit(a)">
+                      {{ a.name }}
+                    </button>
+                    @if (a.notes) {
+                      <span class="activity-note" [title]="a.notes">
+                        <span class="note-bubble">💬</span> {{ a.notes }}
+                      </span>
+                    }
+                  </div>
+                </td>
+                <td><span class="category-pill">{{ a.category }}</span></td>
+                <td>{{ a.startTime }}–{{ a.endTime }}</td>
+                <td><strong>{{ a.durationMinutes | duration }}</strong></td>
+                <td><span class="badge" [attr.data-type]="a.type">{{ a.type }}</span></td>
+                <td class="actions td-actions">
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="edit(a)">Edit</button>
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="duplicate(a)">Duplicate</button>
+                  <button type="button" class="btn btn--ghost btn--sm btn--danger" (click)="remove(a)">Delete</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (totalPages() > 1) {
+        <div class="pager">
+          <button type="button" class="btn btn--ghost" [disabled]="page() <= 1" (click)="prevPage()">Prev</button>
+          <span class="muted">Page {{ page() }} / {{ totalPages() }} · {{ filtered().length }} items</span>
+          <button type="button" class="btn btn--ghost" [disabled]="page() >= totalPages()" (click)="nextPage()">Next</button>
+        </div>
+      }
+    }
   }
 </section>
