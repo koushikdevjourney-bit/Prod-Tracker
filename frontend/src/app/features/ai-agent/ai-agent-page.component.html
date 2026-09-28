@@ -1,216 +1,194 @@
-<section class="page ai-page">
-  <!-- Page Header -->
-  <header class="page-header">
-    <p class="eyebrow">Productivity Intelligence</p>
-    <h1>✨ AI Productivity Agent</h1>
-    <p class="lede">Analyze your logged activities, focus blocks, habits, and goals to generate actionable executive reports.</p>
+<section class="ai-container">
+  <!-- Minimal Hero Header -->
+  <header class="ai-hero">
+    <div class="ai-hero__badge">✨ Pulse Intelligence</div>
+    <h1 class="ai-hero__title">AI Productivity Agent</h1>
+    <p class="ai-hero__sub">Ask questions about your logs, analyze your focus, or run instant audits.</p>
   </header>
 
-  <!-- Date Range Filter Context Strip -->
-  <div class="context-strip panel">
-    <div class="context-label">
-      <span class="context-icon">📅</span>
-      <span>Log Context Range:</span>
+  <!-- Centered Minimal Input Box -->
+  <div class="ai-input-card">
+    <div class="ai-input-wrap">
+      <input
+        type="text"
+        class="ai-input"
+        placeholder="Ask anything about your logs, DSA hours, or request a report..."
+        [ngModel]="inputText()"
+        (ngModelChange)="inputText.set($event)"
+        (keydown)="onKeyDown($event)"
+        [disabled]="ai.isAnalyzing()"
+        autofocus
+      />
+      <button
+        type="button"
+        class="ai-send-btn"
+        (click)="send()"
+        [disabled]="!inputText().trim() || ai.isAnalyzing()"
+        title="Send prompt"
+      >
+        ➤
+      </button>
     </div>
-    <div class="range-chips">
-      <button
-        type="button"
-        class="range-chip"
-        [class.range-chip--active]="ai.selectedRange() === 'today'"
-        (click)="setRange('today')"
-      >
-        Today
-      </button>
-      <button
-        type="button"
-        class="range-chip"
-        [class.range-chip--active]="ai.selectedRange() === 'last7days'"
-        (click)="setRange('last7days')"
-      >
-        Last 7 Days
-      </button>
-      <button
-        type="button"
-        class="range-chip"
-        [class.range-chip--active]="ai.selectedRange() === 'last30days'"
-        (click)="setRange('last30days')"
-      >
-        Last 30 Days
-      </button>
-      <button
-        type="button"
-        class="range-chip"
-        [class.range-chip--active]="ai.selectedRange() === 'all'"
-        (click)="setRange('all')"
-      >
-        All Time Logs
-      </button>
+
+    <!-- Minimal Controls Bar: Scope & Quick Presets -->
+    <div class="ai-controls-bar">
+      <!-- Date Scope Pills -->
+      <div class="scope-group">
+        <span class="ctrl-label">Scope:</span>
+        <button
+          type="button"
+          class="pill-chip"
+          [class.pill-chip--active]="ai.selectedRange() === 'last7days'"
+          (click)="setRange('last7days')"
+        >
+          7 Days
+        </button>
+        <button
+          type="button"
+          class="pill-chip"
+          [class.pill-chip--active]="ai.selectedRange() === 'today'"
+          (click)="setRange('today')"
+        >
+          Today
+        </button>
+        <button
+          type="button"
+          class="pill-chip"
+          [class.pill-chip--active]="ai.selectedRange() === 'last30days'"
+          (click)="setRange('last30days')"
+        >
+          30 Days
+        </button>
+        <button
+          type="button"
+          class="pill-chip"
+          [class.pill-chip--active]="ai.selectedRange() === 'all'"
+          (click)="setRange('all')"
+        >
+          All
+        </button>
+      </div>
+
+      <!-- Quick Action Pills -->
+      <div class="presets-group">
+        <button
+          type="button"
+          class="preset-chip"
+          (click)="sendPreset('weekly')"
+          [disabled]="ai.isAnalyzing()"
+        >
+          📊 Weekly Audit
+        </button>
+        <button
+          type="button"
+          class="preset-chip"
+          (click)="sendPreset('daily')"
+          [disabled]="ai.isAnalyzing()"
+        >
+          ⚡ Today's Standup
+        </button>
+        <button
+          type="button"
+          class="preset-chip"
+          (click)="sendPreset('goals')"
+          [disabled]="ai.isAnalyzing()"
+        >
+          🎯 Goals & Habits
+        </button>
+        <button
+          type="button"
+          class="preset-chip"
+          (click)="sendPreset('academics')"
+          [disabled]="ai.isAnalyzing()"
+        >
+          📚 DSA & Study
+        </button>
+        <button
+          type="button"
+          class="preset-chip"
+          (click)="sendPreset('burnout')"
+          [disabled]="ai.isAnalyzing()"
+        >
+          🧠 Rest & Energy
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Quick Report Launchpad Cards -->
-  <div class="launchpad-grid">
-    <button type="button" class="launchpad-card" (click)="sendPreset('weekly')" [disabled]="ai.isAnalyzing()">
-      <div class="launchpad-card__icon">📊</div>
-      <div class="launchpad-card__body">
-        <strong>Weekly Audit</strong>
-        <span>7-day deep breakdown, focus scores & leakage</span>
-      </div>
-      <span class="launchpad-card__arrow">›</span>
-    </button>
-
-    <button type="button" class="launchpad-card" (click)="sendPreset('daily')" [disabled]="ai.isAnalyzing()">
-      <div class="launchpad-card__icon">⚡</div>
-      <div class="launchpad-card__body">
-        <strong>Today's Standup</strong>
-        <span>Daily time logged, productive ratio & next tasks</span>
-      </div>
-      <span class="launchpad-card__arrow">›</span>
-    </button>
-
-    <button type="button" class="launchpad-card" (click)="sendPreset('goals')" [disabled]="ai.isAnalyzing()">
-      <div class="launchpad-card__icon">🎯</div>
-      <div class="launchpad-card__body">
-        <strong>Goals & Habits</strong>
-        <span>Target hours, habit streaks & consistency</span>
-      </div>
-      <span class="launchpad-card__arrow">›</span>
-    </button>
-
-    <button type="button" class="launchpad-card" (click)="sendPreset('academics')" [disabled]="ai.isAnalyzing()">
-      <div class="launchpad-card__icon">📚</div>
-      <div class="launchpad-card__body">
-        <strong>Academic & DSA</strong>
-        <span>Coding hours, syllabus units & placement prep</span>
-      </div>
-      <span class="launchpad-card__arrow">›</span>
-    </button>
-
-    <button type="button" class="launchpad-card" (click)="sendPreset('burnout')" [disabled]="ai.isAnalyzing()">
-      <div class="launchpad-card__icon">🧠</div>
-      <div class="launchpad-card__body">
-        <strong>Energy & Rest</strong>
-        <span>Work-rest ratio, marathon blocks & fatigue check</span>
-      </div>
-      <span class="launchpad-card__arrow">›</span>
-    </button>
-  </div>
-
-  <!-- Main AI Chat & Report Console -->
-  <div class="console-panel panel">
-    <!-- Messages Scroll Area -->
-    <div class="chat-feed" #chatScroll>
-      @if (ai.messages().length === 0 && !ai.isAnalyzing()) {
-        <div class="empty-feed">
-          <span class="empty-feed__icon">✨</span>
-          <p class="empty-feed__text">Select any report above or ask anything to analyze your logs.</p>
-        </div>
-      }
-
-      @for (msg of ai.messages(); track msg.id) {
-        <div class="chat-row" [class.chat-row--user]="msg.role === 'user'" [class.chat-row--ai]="msg.role === 'assistant'">
-          <!-- Avatar -->
-          <div class="chat-avatar">
-            @if (msg.role === 'user') {
-              <span class="avatar-badge avatar-badge--user">👤</span>
-            } @else {
-              <span class="avatar-badge avatar-badge--ai">✨</span>
-            }
+  <!-- Messages & Reports Stream (Natural flow, no heavy 680px constrained box) -->
+  <div class="ai-stream" #chatScroll>
+    @for (msg of ai.messages(); track msg.id) {
+      <div class="stream-item" [class.stream-item--user]="msg.role === 'user'" [class.stream-item--ai]="msg.role === 'assistant'">
+        <!-- User Bubble -->
+        @if (msg.role === 'user') {
+          <div class="user-bubble">
+            <p class="user-bubble__text">{{ msg.content }}</p>
+            <span class="user-bubble__time">{{ msg.timestamp }}</span>
           </div>
+        }
 
-          <!-- Message Container -->
-          <div class="chat-bubble" [class.chat-bubble--ai]="msg.role === 'assistant'">
-            <div class="chat-bubble__meta">
-              <strong class="author-name">{{ msg.role === 'user' ? 'You' : 'Pulse AI Coach' }}</strong>
-              <span class="meta-time">{{ msg.timestamp }}</span>
-              @if (msg.dateRangeContext) {
-                <span class="meta-context">Scope: {{ msg.dateRangeContext }}</span>
-              }
+        <!-- AI Report Card -->
+        @if (msg.role === 'assistant') {
+          <div class="ai-report-card">
+            <!-- Header with avatar, title, and copy action -->
+            <div class="report-header">
+              <div class="report-title-group">
+                <span class="ai-avatar">✨</span>
+                <div>
+                  <strong class="report-author">Pulse AI Coach</strong>
+                  <span class="report-time">{{ msg.timestamp }} · Scope: {{ msg.dateRangeContext || ai.selectedRange() }}</span>
+                </div>
+              </div>
+              <div class="report-actions">
+                <button type="button" class="btn-action" (click)="copyMessage(msg.content)" title="Copy report text">
+                  📋 Copy
+                </button>
+                <button type="button" class="btn-action" (click)="downloadReport(msg)" title="Download as .md file">
+                  💾 .md
+                </button>
+                @if (msg.reportType) {
+                  <button type="button" class="btn-action" (click)="reAnalyze(msg)" [disabled]="ai.isAnalyzing()" title="Re-run analysis">
+                    🔄 Refresh
+                  </button>
+                }
+              </div>
             </div>
 
-            <!-- Key Metric Highlight Cards (if present) -->
+            <!-- Metric Highlights -->
             @if (msg.metrics && msg.metrics.length > 0) {
-              <div class="metrics-grid">
+              <div class="metrics-strip">
                 @for (m of msg.metrics; track m.label) {
-                  <div class="metric-card" [attr.data-tone]="m.tone || 'neutral'">
-                    <span class="metric-card__icon">{{ m.icon }}</span>
-                    <div class="metric-card__info">
-                      <span class="metric-card__label">{{ m.label }}</span>
-                      <strong class="metric-card__value">{{ m.value }}</strong>
+                  <div class="mini-metric" [attr.data-tone]="m.tone || 'neutral'">
+                    <span class="mini-metric__icon">{{ m.icon }}</span>
+                    <div>
+                      <span class="mini-metric__label">{{ m.label }}</span>
+                      <strong class="mini-metric__value">{{ m.value }}</strong>
                     </div>
                   </div>
                 }
               </div>
             }
 
-            <!-- Rendered Message / Report Content -->
-            <div class="chat-bubble__content" [innerHTML]="formatMarkdown(msg.content)"></div>
-
-            <!-- AI Message Action Toolbar -->
-            @if (msg.role === 'assistant') {
-              <div class="chat-bubble__actions">
-                <button type="button" class="action-btn" (click)="copyMessage(msg.content)" title="Copy report text">
-                  📋 Copy Report
-                </button>
-                <button type="button" class="action-btn" (click)="downloadReport(msg)" title="Download as .md file">
-                  💾 Download .md
-                </button>
-                @if (msg.reportType) {
-                  <button type="button" class="action-btn" (click)="reAnalyze(msg)" [disabled]="ai.isAnalyzing()" title="Re-run analysis with latest logs">
-                    🔄 Re-analyze
-                  </button>
-                }
-              </div>
-            }
+            <!-- Report Body -->
+            <div class="report-content" [innerHTML]="formatMarkdown(msg.content)"></div>
           </div>
-        </div>
-      }
-
-      <!-- Analyzing Spinner -->
-      @if (ai.isAnalyzing()) {
-        <div class="chat-row chat-row--ai">
-          <div class="chat-avatar">
-            <span class="avatar-badge avatar-badge--ai pulse-spin">✨</span>
-          </div>
-          <div class="chat-bubble chat-bubble--ai analyzing-box">
-            <div class="spinner-dots">
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-            </div>
-            <span class="analyzing-text">
-              Synthesizing activity logs, focus sessions, and calculating metrics for {{ ai.selectedRange() }}...
-            </span>
-          </div>
-        </div>
-      }
-    </div>
-
-    <!-- Input Bar -->
-    <div class="chat-input-bar">
-      <div class="input-container">
-        <textarea
-          class="chat-textarea"
-          placeholder="Ask Pulse AI anything about your logs, request a report, or ask for study coaching... (Press Enter to send)"
-          [ngModel]="inputText()"
-          (ngModelChange)="inputText.set($event)"
-          (keydown)="onKeyDown($event)"
-          rows="1"
-          [disabled]="ai.isAnalyzing()"
-        ></textarea>
-        <button
-          type="button"
-          class="btn-send"
-          (click)="send()"
-          [disabled]="!inputText().trim() || ai.isAnalyzing()"
-          title="Send message"
-        >
-          ➤
-        </button>
+        }
       </div>
-      <div class="input-helper">
-        <span class="helper-text">💡 Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for newline</span>
+    }
+
+    <!-- Analyzing State Indicator -->
+    @if (ai.isAnalyzing()) {
+      <div class="analyzing-indicator">
+        <span class="ai-avatar pulse-glow">✨</span>
+        <div class="analyzing-content">
+          <div class="loading-wave">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <span class="analyzing-msg">Analyzing activity logs and calculating metrics for {{ ai.selectedRange() }}...</span>
+        </div>
       </div>
-    </div>
+    }
   </div>
 </section>
