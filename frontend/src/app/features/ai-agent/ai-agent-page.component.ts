@@ -18,22 +18,33 @@ export class AiAgentPageComponent {
   private readonly sanitizer = inject(DomSanitizer);
 
   @ViewChild('chatScroll') private readonly chatScroll?: ElementRef<HTMLDivElement>;
+  @ViewChild('promptInput') private readonly promptInput?: ElementRef<HTMLTextAreaElement>;
 
   readonly inputText = signal('');
+  readonly inputFocused = signal(false);
 
   constructor() {
     afterNextRender(() => {
       this.scrollToBottom();
+      this.focusInput();
     });
+  }
+
+  onInputChange(val: string): void {
+    this.inputText.set(val);
+    this.adjustTextareaHeight();
   }
 
   send(): void {
     const text = this.inputText().trim();
     if (!text || this.ai.isAnalyzing()) return;
     this.inputText.set('');
+    this.resetTextareaHeight();
+
     this.ai.sendMessage(text).then(() => {
       this.scrollToBottom();
     });
+    this.scrollToBottom();
   }
 
   onKeyDown(event: KeyboardEvent): void {
@@ -48,6 +59,7 @@ export class AiAgentPageComponent {
     this.ai.generatePresetReport(type).then(() => {
       this.scrollToBottom();
     });
+    this.scrollToBottom();
   }
 
   reAnalyze(msg: AiMessage): void {
@@ -62,6 +74,13 @@ export class AiAgentPageComponent {
       this.sendPreset(msg.reportType);
     } else {
       this.ai.sendMessage(`Please re-analyze my latest logs for ${this.ai.selectedRange()}`);
+    }
+  }
+
+  clearChat(): void {
+    if (confirm('Start a new chat session and clear previous messages?')) {
+      this.ai.clearHistory();
+      this.focusInput();
     }
   }
 
@@ -82,7 +101,7 @@ export class AiAgentPageComponent {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `productivity-report-${new Date().toISOString().slice(0, 10)}.md`;
+    link.download = `pulse-ai-report-${new Date().toISOString().slice(0, 10)}.md`;
     link.click();
     URL.revokeObjectURL(url);
     this.toast.success('Report downloaded as Markdown');
@@ -93,43 +112,150 @@ export class AiAgentPageComponent {
       if (this.chatScroll?.nativeElement) {
         this.chatScroll.nativeElement.scrollTop = this.chatScroll.nativeElement.scrollHeight;
       }
-    }, 50);
+    }, 60);
+  }
+
+  private focusInput(): void {
+    setTimeout(() => {
+      this.promptInput?.nativeElement?.focus();
+    }, 100);
+  }
+
+  private adjustTextareaHeight(): void {
+    if (!this.promptInput?.nativeElement) return;
+    const el = this.promptInput.nativeElement;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  }
+
+  private resetTextareaHeight(): void {
+    if (!this.promptInput?.nativeElement) return;
+    const el = this.promptInput.nativeElement;
+    el.style.height = 'auto';
   }
 
   formatMarkdown(content: string): SafeHtml {
     if (!content) return '';
 
-    let html = content
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    const lines = content.split('\n');
+    const out: string[] = [];
+    let inList = false;
+    let listType: 'ul' | 'ol' = 'ul';
 
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h4 class="md-h4">$1</h4>');
-    html = html.replace(/^## (.*$)/gim, '<h3 class="md-h3">$1</h3>');
-    html = html.replace(/^# (.*$)/gim, '<h2 class="md-h2">$1</h2>');
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
 
-    // Bold & Italics
-    html = html.replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em>$1</em></strong>');
-    html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
-    html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
+      // Escape raw HTML tags
+      line = line
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 
-    // Inline Code
-    html = html.replace(/`([^`]+)`/gim, '<code class="inline-code">$1</code>');
+      // Horizontal Divider
+      if (/^---+$/.test(line.trim())) {
+        if (inList) {
+          out.push(listType === 'ul' ? '</ul>' : '</ol>');
+          inList = false;
+        }
+        out.push('<hr class="md-hr" />');
+        continue;
+      }
 
-    // Blockquote
-    html = html.replace(/^\> (.*$)/gim, '<blockquote class="md-quote">$1</blockquote>');
+      // Headers
+      if (/^### (.*$)/.test(line)) {
+        if (inList) {
+          out.push(listType === 'ul' ? '</ul>' : '</ol>');
+          inList = false;
+        }
+        const text = line.replace(/^### /, '');
+        out.push(`<h4 class="md-h4">${this.inlineFormat(text)}</h4>`);
+        continue;
+      }
+      if (/^## (.*$)/.test(line)) {
+        if (inList) {
+          out.push(listType === 'ul' ? '</ul>' : '</ol>');
+          inList = false;
+        }
+        const text = line.replace(/^## /, '');
+        out.push(`<h3 class="md-h3">${this.inlineFormat(text)}</h3>`);
+        continue;
+      }
+      if (/^# (.*$)/.test(line)) {
+        if (inList) {
+          out.push(listType === 'ul' ? '</ul>' : '</ol>');
+          inList = false;
+        }
+        const text = line.replace(/^# /, '');
+        out.push(`<h2 class="md-h2">${this.inlineFormat(text)}</h2>`);
+        continue;
+      }
 
-    // Bullet Lists
-    html = html.replace(/^[-*] (.*$)/gim, '<li class="md-li">$1</li>');
+      // Blockquotes
+      if (/^&gt; (.*$)/.test(line)) {
+        if (inList) {
+          out.push(listType === 'ul' ? '</ul>' : '</ol>');
+          inList = false;
+        }
+        const text = line.replace(/^&gt; /, '');
+        out.push(`<blockquote class="md-quote">${this.inlineFormat(text)}</blockquote>`);
+        continue;
+      }
 
-    // Horizontal Rule
-    html = html.replace(/^---$/gim, '<hr class="md-hr" />');
+      // Unordered lists (- or *)
+      if (/^[-*]\s+(.*$)/.test(line)) {
+        const text = line.replace(/^[-*]\s+/, '');
+        if (!inList || listType !== 'ul') {
+          if (inList) out.push(listType === 'ul' ? '</ul>' : '</ol>');
+          out.push('<ul class="md-ul">');
+          inList = true;
+          listType = 'ul';
+        }
+        out.push(`<li class="md-li">${this.inlineFormat(text)}</li>`);
+        continue;
+      }
 
-    // Paragraphs
-    html = html.replace(/\n\n/g, '</p><p class="md-p">');
-    html = html.replace(/\n/g, '<br />');
+      // Ordered lists (1. , 2. )
+      if (/^\d+\.\s+(.*$)/.test(line)) {
+        const text = line.replace(/^\d+\.\s+/, '');
+        if (!inList || listType !== 'ol') {
+          if (inList) out.push(listType === 'ul' ? '</ul>' : '</ol>');
+          out.push('<ol class="md-ol">');
+          inList = true;
+          listType = 'ol';
+        }
+        out.push(`<li class="md-li">${this.inlineFormat(text)}</li>`);
+        continue;
+      }
 
-    return this.sanitizer.bypassSecurityTrustHtml(`<div class="markdown-body"><p class="md-p">${html}</p></div>`);
+      // Empty line closes active list
+      if (!line.trim()) {
+        if (inList) {
+          out.push(listType === 'ul' ? '</ul>' : '</ol>');
+          inList = false;
+        }
+        continue;
+      }
+
+      // Paragraph line
+      if (inList) {
+        out.push(listType === 'ul' ? '</ul>' : '</ol>');
+        inList = false;
+      }
+      out.push(`<p class="md-p">${this.inlineFormat(line)}</p>`);
+    }
+
+    if (inList) {
+      out.push(listType === 'ul' ? '</ul>' : '</ol>');
+    }
+
+    return this.sanitizer.bypassSecurityTrustHtml(`<div class="markdown-body">${out.join('')}</div>`);
+  }
+
+  private inlineFormat(str: string): string {
+    return str
+      .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
   }
 }
