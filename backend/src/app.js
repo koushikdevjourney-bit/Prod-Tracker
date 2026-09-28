@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const authRoutes = require('./routes/auth.routes');
 const dataRoutes = require('./routes/data.routes');
 const reminderRoutes = require('./routes/reminder.routes');
+const aiRoutes = require('./routes/ai.routes');
 const { notFound, errorHandler } = require('./middleware/error.middleware');
 
 const app = express();
@@ -65,6 +66,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/ai', aiRoutes);
 app.use('/api', dataRoutes);
 
 app.use(notFound);

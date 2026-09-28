@@ -25,7 +25,7 @@ export class AiAgentPageComponent {
   // Configuration modal state
   readonly configProvider = signal<AiProvider>('gemini');
   readonly configApiKey = signal('');
-  readonly configModel = signal('gemini-1.5-flash');
+  readonly configModel = signal('gemini-2.5-flash');
   readonly showApiKey = signal(false);
 
   constructor() {
@@ -92,7 +92,7 @@ export class AiAgentPageComponent {
   onProviderChange(p: AiProvider): void {
     this.configProvider.set(p);
     if (p === 'gemini') {
-      this.configModel.set('gemini-1.5-flash');
+      this.configModel.set('gemini-2.5-flash');
     } else if (p === 'openai') {
       this.configModel.set('gpt-4o-mini');
     } else if (p === 'groq') {

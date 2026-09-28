@@ -17,9 +17,11 @@ import {
 } from '../models/ai-agent.models';
 import { addDays, formatDuration, todayKey } from '../utils/stats.utils';
 
+import { environment } from '../../../environments/environment';
+
 const DEFAULT_SETTINGS: AiSettings = {
   provider: 'gemini',
-  model: 'gemini-1.5-flash',
+  model: 'gemini-2.5-flash',
   apiKey: '',
 };
 
@@ -210,17 +212,44 @@ export class AiAgentService {
       let responseText = '';
       let metrics: AiMetricHighlight[] = [];
 
-      // Check if real API key is configured
+      // 1. Check if user configured their own API key in browser
       if (this.hasApiKey()) {
         const result = await this.callExternalLlm(trimmed, context, reportType);
         responseText = result.text;
         metrics = result.metrics;
       } else {
-        // Use our high-precision Built-in Local Smart Analyzer
-        await this.simulateDeliberation();
-        const localResult = this.generateLocalAnalysis(trimmed, context, reportType);
-        responseText = localResult.text;
-        metrics = localResult.metrics;
+        // 2. Try calling backend server API (which has GEMINI_API_KEY configured)
+        let backendSucceeded = false;
+        try {
+          const serverRes = await fetch(`${environment.apiUrl}/ai/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: trimmed, context }),
+          });
+          if (serverRes.ok) {
+            const data = await serverRes.json();
+            if (data?.success && data?.text) {
+              responseText = data.text;
+              metrics = [
+                { label: 'Total Time', value: formatDuration(context.totalDurationMinutes), icon: '⏱️', tone: 'neutral' },
+                { label: 'Productivity', value: `${context.productivityScore}%`, icon: '⚡', tone: 'positive' },
+                { label: 'Top Focus', value: context.topCategories[0]?.name || 'N/A', icon: '🎯', tone: 'accent' },
+                { label: 'Provider', value: 'Gemini (Cloud)', icon: '🤖', tone: 'accent' },
+              ];
+              backendSucceeded = true;
+            }
+          }
+        } catch {
+          backendSucceeded = false;
+        }
+
+        // 3. If server endpoint is sleeping or not yet reachable, use high-precision local analyzer
+        if (!backendSucceeded) {
+          await this.simulateDeliberation();
+          const localResult = this.generateLocalAnalysis(trimmed, context, reportType);
+          responseText = localResult.text;
+          metrics = localResult.metrics;
+        }
       }
 
       const assistantMessage: AiMessage = {
@@ -583,7 +612,7 @@ ${JSON.stringify(ctx, null, 2)}
 
     // Google Gemini API
     if (cfg.provider === 'gemini') {
-      const model = cfg.model || 'gemini-1.5-flash';
+      const model = cfg.model || 'gemini-2.5-flash';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
       const body = {
