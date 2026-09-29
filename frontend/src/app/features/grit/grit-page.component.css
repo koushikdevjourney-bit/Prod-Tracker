@@ -684,10 +684,14 @@ html[data-theme='light'] .climb__target button.on {
   background: transparent;
   color: var(--text-muted);
   border-radius: 999px;
-  padding: 0.38rem 0.75rem;
+  padding: 0.35rem 0.75rem;
   font-size: 0.78rem;
   font-weight: 650;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
 }
 
 .view-tabs button.on {
@@ -699,39 +703,23 @@ html[data-theme='light'] .view-tabs button.on {
   color: #fff;
 }
 
-.grit-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.grit-chip {
-  border: 0;
+.view-tabs__count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.42rem;
   border-radius: 999px;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
   color: var(--text-muted);
-  padding: 0.32rem 0.7rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid var(--border);
 }
 
-.grit-chip[data-result='gold'] {
-  color: var(--gold);
-  border-color: color-mix(in srgb, var(--gold) 40%, var(--border));
+.view-tabs button.on .view-tabs__count {
+  background: color-mix(in srgb, #000 20%, transparent);
+  color: inherit;
 }
 
-.grit-chip[data-result='silver'] {
-  color: var(--silver);
-}
-
-.grit-chip[data-result='retry'] {
-  color: var(--retry);
-}
-
-.grit-chip:hover {
-  color: var(--text);
+html[data-theme='light'] .view-tabs button.on .view-tabs__count {
+  background: color-mix(in srgb, #fff 25%, transparent);
+  color: #fff;
 }
 
 .grit-empty {

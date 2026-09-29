@@ -37,15 +37,15 @@ export class GritPageComponent {
   readonly labels = GRIT_RESULT_LABEL;
   readonly markResults: GritResult[] = ['gold', 'silver', 'retry'];
   readonly views: Array<{ id: GritView; label: string }> = [
+    { id: 'all', label: 'All' },
     { id: 'open', label: 'To do' },
     { id: 'cleared', label: 'Cleared' },
-    { id: 'all', label: 'All' },
   ];
 
   readonly pick: Record<number, string> = { 1: '', 2: '' };
   readonly draggingId = signal<string | null>(null);
   readonly activeLevel = signal(1);
-  readonly view = signal<GritView>('open');
+  readonly view = signal<GritView>('all');
   query = '';
 
   readonly ringC = 2 * Math.PI * 18;
@@ -162,9 +162,7 @@ export class GritPageComponent {
       this.toast.info(`${subject} is open again`);
       return;
     }
-    if (after === 'gold' || after === 'silver') {
-      this.progress.removeByTitle(subject);
-    }
+    this.progress.removeByTitle(subject);
     const miles = def ? milesForResult(def, after) : 0;
     const kind = after === 'retry' ? 'warning' : 'success';
     this.toast.show(`${this.labels[after]} on ${subject} · +${miles} miles`, kind);

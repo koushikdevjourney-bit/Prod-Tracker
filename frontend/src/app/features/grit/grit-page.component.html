@@ -231,20 +231,15 @@
       </label>
       <div class="view-tabs" role="tablist" aria-label="Subject filter">
         @for (v of views; track v.id) {
-          <button type="button" role="tab" [class.on]="view() === v.id" (click)="view.set(v.id)">{{ v.label }}</button>
-        }
-      </div>
-    </div>
-
-    @if (view() === 'open' && done(level).length) {
-      <div class="grit-chips" aria-label="Undo cleared subjects">
-        @for (s of done(level); track s.subject) {
-          <button type="button" class="grit-chip" [attr.data-result]="s.result" (click)="reset(level.level, s.subject)" title="Undo to show this subject again">
-            ↺ {{ s.subject }} · {{ labels[s.result] }}
+          <button type="button" role="tab" [class.on]="view() === v.id" (click)="view.set(v.id)">
+            <span>{{ v.label }}</span>
+            <span class="view-tabs__count">
+              {{ v.id === 'all' ? level.subjects.length : v.id === 'open' ? open(level).length : done(level).length }}
+            </span>
           </button>
         }
       </div>
-    }
+    </div>
 
     @if (shown(level).length === 0) {
       <p class="grit-empty">
@@ -253,7 +248,7 @@
         } @else if (view() === 'cleared') {
           Nothing cleared on this level yet. Mark Gold or Silver on a subject to finish it.
         } @else {
-          Every subject on this level is cleared. Switch to Cleared to undo one.
+          Every subject on this level is cleared. Switch to All or Cleared to view them.
         }
       </p>
     } @else {

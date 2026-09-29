@@ -36,7 +36,7 @@ export class GritService {
       for (const subject of level.subjects) {
         const result = this.resultOf(level.level, subject.subject);
         miles += milesForResult(subject, result);
-        if (result === 'gold' || result === 'silver') cleared++;
+        if (result !== 'none') cleared++;
         if (result === 'gold') gold++;
       }
     }
@@ -99,7 +99,7 @@ export class GritService {
     for (const s of subjects) {
       const result = this.resultOf(level, s.subject);
       miles += milesForResult(s, result);
-      if (result === 'gold' || result === 'silver') cleared++;
+      if (result !== 'none') cleared++;
     }
     return { miles, cleared, total: subjects.length };
   }

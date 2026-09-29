@@ -62,7 +62,7 @@ export class ProgressPageComponent implements OnDestroy {
       const completedGrit = new Set(
         this.grit
           .rows()
-          .filter((r) => r.result === 'gold' || r.result === 'silver')
+          .filter((r) => r.result !== 'none')
           .map((r) => r.subject.trim().toLowerCase()),
       );
       if (completedGrit.size === 0) return;
