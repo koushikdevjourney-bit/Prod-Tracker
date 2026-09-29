@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, afterNextRender, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, afterNextRender, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AiAgentService } from '../../core/services/ai-agent.service';
@@ -12,7 +12,7 @@ import { AiChatSession, AiMessage, DateRangeContext } from '../../core/models/ai
   templateUrl: './ai-agent-page.component.html',
   styleUrl: './ai-agent-page.component.css',
 })
-export class AiAgentPageComponent {
+export class AiAgentPageComponent implements OnInit, OnDestroy {
   readonly ai = inject(AiAgentService);
   private readonly toast = inject(ToastService);
   private readonly sanitizer = inject(DomSanitizer);
@@ -29,6 +29,26 @@ export class AiAgentPageComponent {
       this.scrollToBottom();
       this.focusInput();
     });
+  }
+
+  ngOnInit(): void {
+    // Whenever visiting or opening the AI Agent page, ensure we start fresh on the welcome screen
+    if (this.ai.messages().length > 0) {
+      this.ai.startNewChat(false);
+    }
+  }
+
+  @HostListener('window:beforeunload')
+  onBeforeUnload(): void {
+    if (this.ai.messages().length > 0) {
+      this.ai.startNewChat(false);
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.ai.messages().length > 0) {
+      this.ai.startNewChat(false);
+    }
   }
 
   onInputChange(val: string): void {

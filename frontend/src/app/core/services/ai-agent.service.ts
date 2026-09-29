@@ -41,8 +41,13 @@ export class AiAgentService {
   );
 
   private initMessages(): AiMessage[] {
-    const list = this.store.get<AiMessage[]>(STORAGE_KEYS.aiChatHistory, []);
-    return list.filter((m) => m.id !== 'welcome_1');
+    const leftover = this.store.get<AiMessage[]>(STORAGE_KEYS.aiChatHistory, []);
+    const validLeftover = leftover.filter((m) => m.id !== 'welcome_1');
+    if (validLeftover.length > 0) {
+      this.archiveMessages(validLeftover);
+      this.store.set(STORAGE_KEYS.aiChatHistory, []);
+    }
+    return [];
   }
 
   readonly messages = signal<AiMessage[]>(this.initMessages());
@@ -69,32 +74,58 @@ export class AiAgentService {
   }
 
   /**
-   * Starts a new conversation. If current chat has messages,
-   * automatically archives it into saved history so it is never lost!
+   * Safely archives messages into saved history sessions.
+   * If the current conversation is already in history, updates it with new messages.
    */
-  startNewChat(): void {
-    const current = this.messages();
-    if (current.length > 0) {
-      const firstUserMsg = current.find((m) => m.role === 'user');
-      const title = firstUserMsg
-        ? (firstUserMsg.content.length > 40 ? firstUserMsg.content.slice(0, 40) + '...' : firstUserMsg.content)
-        : 'Productivity Audit';
+  archiveMessages(msgs: AiMessage[]): void {
+    if (!msgs || msgs.length === 0) return;
+    const firstUserMsg = msgs.find((m) => m.role === 'user');
+    const title = firstUserMsg
+      ? (firstUserMsg.content.length > 40 ? firstUserMsg.content.slice(0, 40) + '...' : firstUserMsg.content)
+      : 'Productivity Audit';
 
+    const existing = this.sessions();
+    const firstCurrentId = msgs[0]?.id;
+    const matchIndex = existing.findIndex((s) => s.messages[0]?.id === firstCurrentId);
+
+    if (matchIndex >= 0) {
+      const updated = [...existing];
+      updated[matchIndex] = {
+        ...updated[matchIndex],
+        title,
+        dateRangeContext: this.selectedRange(),
+        messages: [...msgs],
+      };
+      this.sessions.set(updated);
+      this.store.set(STORAGE_KEYS.aiChatSessions, updated);
+    } else {
       const session: AiChatSession = {
         id: 'session_' + Date.now(),
         title,
         createdAt: new Date().toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
         dateRangeContext: this.selectedRange(),
-        messages: [...current],
+        messages: [...msgs],
       };
-
       this.sessions.update((list) => [session, ...list]);
       this.store.set(STORAGE_KEYS.aiChatSessions, this.sessions());
+    }
+  }
+
+  /**
+   * Starts a new conversation. Archives current conversation into History
+   * and resets active messages so the welcome screen is displayed.
+   */
+  startNewChat(showToast = true): void {
+    const current = this.messages();
+    if (current.length > 0) {
+      this.archiveMessages(current);
     }
 
     this.messages.set([]);
     this.store.set(STORAGE_KEYS.aiChatHistory, []);
-    this.toast.success('Started a new chat. Previous conversation saved to History!');
+    if (showToast) {
+      this.toast.success('Started a new chat. Previous conversation saved to History!');
+    }
   }
 
   /**
@@ -105,7 +136,6 @@ export class AiAgentService {
     if (session.dateRangeContext) {
       this.selectedRange.set(session.dateRangeContext);
     }
-    this.persistMessages();
     this.toast.success(`Restored chat: "${session.title}"`);
   }
 
@@ -821,7 +851,11 @@ ${JSON.stringify(ctx, null, 2)}
   }
 
   private persistMessages(): void {
-    this.store.set(STORAGE_KEYS.aiChatHistory, this.messages());
+    const current = this.messages();
+    if (current.length > 0) {
+      this.archiveMessages(current);
+    }
+    this.store.set(STORAGE_KEYS.aiChatHistory, []);
   }
 
   private getInitialMessages(): AiMessage[] {
