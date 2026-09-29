@@ -218,6 +218,38 @@ export class ProgressService {
     }));
   }
 
+  removeByTitle(title: string): void {
+    const trimmed = title.trim().toLowerCase();
+    if (!trimmed) return;
+    this.patch((state) => ({
+      ...state,
+      items: reindex(
+        state.items.filter((item) => {
+          const itemTitle = item.title.trim().toLowerCase();
+          if (itemTitle === trimmed) return false;
+          if (item.source?.startsWith('Grit') && itemTitle.includes(trimmed)) return false;
+          return true;
+        }),
+      ),
+    }));
+  }
+
+  removeByTitles(titles: string[]): void {
+    if (!titles.length) return;
+    const set = new Set(titles.map((t) => t.trim().toLowerCase()));
+    this.patch((state) => ({
+      ...state,
+      items: reindex(
+        state.items.filter((item) => {
+          const itemTitle = item.title.trim().toLowerCase();
+          if (set.has(itemTitle)) return false;
+          if (item.source?.startsWith('Grit') && [...set].some((t) => itemTitle.includes(t))) return false;
+          return true;
+        }),
+      ),
+    }));
+  }
+
   clearCleared(): void {
     this.patch((state) => ({
       ...state,

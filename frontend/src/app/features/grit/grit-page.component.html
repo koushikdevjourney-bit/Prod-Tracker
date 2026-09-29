@@ -162,13 +162,43 @@
               <span class="climb__grip" aria-hidden="true"></span>
               <span class="climb__num">{{ i + 1 }}</span>
               <div class="climb__copy">
-                <strong>{{ row.subject }}</strong>
+                <div class="climb__title-wrap">
+                  <strong [class.climb__subject--done]="row.result !== 'none'">{{ row.subject }}</strong>
+                  @if (row.result !== 'none') {
+                    <span class="climb__done-badge" [attr.data-result]="row.result">
+                      ✓ {{ labels[row.result] }}
+                    </span>
+                  }
+                </div>
                 <span>{{ targetMiles(row) }} miles if you hit {{ row.target }}</span>
               </div>
               <div class="climb__target" role="group" [attr.aria-label]="'Target for ' + row.subject">
+                <span class="climb__target-tag">Aim:</span>
                 <button type="button" [class.on]="row.target === 'gold'" (click)="setTarget(row, 'gold')">Gold</button>
                 <button type="button" [class.on]="row.target === 'silver'" (click)="setTarget(row, 'silver')">Silver</button>
               </div>
+              <button
+                type="button"
+                class="climb__done-btn"
+                [class.climb__done-btn--done]="row.result !== 'none'"
+                [attr.data-result]="row.result"
+                (click)="toggleClimbDone(level.level, row)"
+                [title]="row.result === 'none' ? 'Mark as done (' + row.target + ')' : labels[row.result] + ' completed · Click to reopen'"
+                [attr.aria-label]="row.result === 'none' ? 'Mark ' + row.subject + ' as done' : 'Reopen ' + row.subject"
+              >
+                @if (row.result !== 'none') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="climb__done-icon" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span>{{ labels[row.result] }}</span>
+                } @else {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="climb__done-icon" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" />
+                    <polyline points="16 10 11 15 8 12" />
+                  </svg>
+                  <span>Mark done</span>
+                }
+              </button>
               <div class="climb__move">
                 <button type="button" (click)="moveClimb(level.level, row, -1)" [disabled]="first" aria-label="Move up">↑</button>
                 <button type="button" (click)="moveClimb(level.level, row, 1)" [disabled]="last" aria-label="Move down">↓</button>

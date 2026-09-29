@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
@@ -56,6 +56,24 @@ export class ProgressPageComponent implements OnDestroy {
 
   readonly ringC = 2 * Math.PI * 18;
   readonly timerRingC = 2 * Math.PI * 34;
+
+  constructor() {
+    effect(() => {
+      const completedGrit = new Set(
+        this.grit
+          .rows()
+          .filter((r) => r.result === 'gold' || r.result === 'silver')
+          .map((r) => r.subject.trim().toLowerCase()),
+      );
+      if (completedGrit.size === 0) return;
+      const matched = this.progress
+        .items()
+        .filter((item) => completedGrit.has(item.title.trim().toLowerCase()));
+      if (matched.length > 0) {
+        this.progress.removeByTitles(matched.map((m) => m.title));
+      }
+    });
+  }
 
   @HostListener('document:keydown.escape')
   onEscape(): void {

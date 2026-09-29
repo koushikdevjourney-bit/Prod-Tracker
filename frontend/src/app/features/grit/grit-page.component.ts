@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
 import { GritService } from '../../core/services/grit.service';
 import { ToastService } from '../../core/services/toast.service';
+import { ProgressService } from '../../core/services/progress.service';
 import {
   GRIT_LEVELS,
   GRIT_RESULT_LABEL,
@@ -29,6 +30,7 @@ type GritView = 'open' | 'cleared' | 'all';
 export class GritPageComponent {
   readonly theme = inject(ThemeService);
   readonly grit = inject(GritService);
+  readonly progress = inject(ProgressService);
   private readonly toast = inject(ToastService);
 
   readonly levels = GRIT_LEVELS;
@@ -138,6 +140,20 @@ export class GritPageComponent {
     this.grit.setTarget(row.level, row.subject, target);
   }
 
+  toggleClimbDone(level: number, row: GritProgress): void {
+    if (row.result === 'none') {
+      const targetResult: GritResult = row.target || 'gold';
+      const def = findGritSubject(level, row.subject);
+      this.grit.mark(level, row.subject, targetResult);
+      this.progress.removeByTitle(row.subject);
+      const miles = def ? milesForResult(def, targetResult) : 0;
+      this.toast.show(`✓ ${this.labels[targetResult]} on ${row.subject} · +${miles} miles`, 'success');
+    } else {
+      this.grit.mark(level, row.subject, row.result);
+      this.toast.info(`${row.subject} reopened`);
+    }
+  }
+
   mark(level: number, subject: string, result: GritResult): void {
     const def = findGritSubject(level, subject);
     this.grit.mark(level, subject, result);
@@ -145,6 +161,9 @@ export class GritPageComponent {
     if (after === 'none') {
       this.toast.info(`${subject} is open again`);
       return;
+    }
+    if (after === 'gold' || after === 'silver') {
+      this.progress.removeByTitle(subject);
     }
     const miles = def ? milesForResult(def, after) : 0;
     const kind = after === 'retry' ? 'warning' : 'success';

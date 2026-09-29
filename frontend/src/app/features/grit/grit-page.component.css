@@ -494,10 +494,44 @@ html[data-theme='light'] .grit {
   flex: 1 1 8.5rem;
   min-width: 0;
   display: grid;
+  gap: 0.15rem;
+}
+
+.climb__title-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .climb__copy strong {
   font-size: 0.92rem;
+}
+
+.climb__subject--done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.climb__done-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+
+.climb__done-badge[data-result='silver'] {
+  background: var(--silver);
+  color: var(--silver-ink);
+}
+
+.climb__done-badge[data-result='retry'] {
+  background: var(--retry);
+  color: var(--retry-ink);
 }
 
 .climb__copy span {
@@ -508,10 +542,61 @@ html[data-theme='light'] .grit {
 .climb__target,
 .climb__move {
   display: flex;
+  align-items: center;
   border: 1px solid var(--border);
   border-radius: 999px;
   overflow: hidden;
   background: var(--bg);
+}
+
+.climb__target-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0.32rem 0.2rem 0.32rem 0.55rem;
+  user-select: none;
+}
+
+.climb__done-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.climb__done-btn:hover {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  transform: translateY(-1px);
+}
+
+.climb__done-btn--done {
+  border-color: transparent;
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+
+.climb__done-btn--done[data-result='silver'] {
+  background: var(--silver);
+  color: var(--silver-ink);
+}
+
+.climb__done-btn--done[data-result='retry'] {
+  background: var(--retry);
+  color: var(--retry-ink);
+}
+
+.climb__done-icon {
+  width: 0.88rem;
+  height: 0.88rem;
 }
 
 .climb__target button,
