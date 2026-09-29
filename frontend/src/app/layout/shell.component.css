@@ -259,51 +259,6 @@
   }
 }
 
-.floating-ai-btn {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  background: var(--surface-2);
-  border: 1px solid rgba(45, 212, 191, 0.45);
-  color: var(--accent);
-  padding: 0.5rem 0.95rem;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(8px);
-  z-index: 90;
-  transition: all 0.2s ease;
-}
-
-.floating-ai-btn:hover {
-  background: var(--accent);
-  color: #042f2e;
-  transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 6px 20px rgba(45, 212, 191, 0.4);
-}
-
-html[data-theme='light'] .floating-ai-btn:hover {
-  color: #ffffff;
-}
-
-@media (max-width: 600px) {
-  .floating-ai-btn {
-    bottom: 4.5rem;
-    right: 1rem;
-    padding: 0.4rem 0.75rem;
-    font-size: 0.8rem;
-  }
-}
-
-.floating-ai-btn.floating-ai-btn--active {
-  display: none !important;
-}
-
 /* AI Agent Full-Height Chat Layout */
 .shell:has(app-ai-agent-page) .shell__main {
   height: 100dvh;
