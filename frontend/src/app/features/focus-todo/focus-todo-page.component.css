@@ -882,14 +882,21 @@
   font-weight: 650;
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
-  padding: 0.15rem 0.55rem;
+  padding: 0.2rem 0.65rem;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: all 0.2s ease;
+}
+
+.ft-accordion-progress-badge--complete {
+  color: #059669;
+  background: color-mix(in srgb, #10b981 16%, transparent);
+  border-color: color-mix(in srgb, #10b981 35%, transparent);
 }
 
 .ft-accordion-progress-bar {
   width: 100%;
-  height: 6px;
+  height: 7px;
   background: color-mix(in srgb, var(--border) 75%, transparent);
   border-radius: 999px;
   overflow: hidden;
@@ -897,96 +904,229 @@
 
 .ft-accordion-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2, #06b6d4) 100%);
   border-radius: 999px;
-  transition: width 0.3s ease;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ft-accordion-progress-fill--complete {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
 }
 
 /* Subtasks List */
 .ft-subtasks-list {
   list-style: none;
-  margin: 0;
+  margin: 0.25rem 0 0.5rem;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
 .ft-subtask-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.45rem 0.75rem;
-  border-radius: var(--radius-sm);
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 9px;
   background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  transition: border-color 0.15s ease, background 0.15s ease;
+  border: 1.5px solid color-mix(in srgb, var(--border) 80%, transparent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
 }
 
 .ft-subtask-row:hover {
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
-  background: color-mix(in srgb, var(--accent) 2%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 3%, var(--surface));
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+}
+
+.ft-subtask-row--done {
+  background: color-mix(in srgb, var(--surface) 65%, var(--surface-2, transparent));
+  border-color: color-mix(in srgb, var(--border) 50%, transparent);
+  box-shadow: none;
+}
+
+.ft-subtask-row--done:hover {
+  transform: none;
+  background: color-mix(in srgb, var(--surface) 75%, var(--surface-2, transparent));
 }
 
 .ft-subtask-checkbox-label {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  font-size: 0.88rem;
-  color: var(--text);
   cursor: pointer;
   flex: 1;
   user-select: none;
+  position: relative;
 }
 
-.ft-subtask-checkbox-label input[type='checkbox'] {
-  width: 1rem;
-  height: 1rem;
-  accent-color: var(--accent);
+.ft-subtask-native-check {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.ft-subtask-custom-check {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 6px;
+  border: 1.8px solid color-mix(in srgb, var(--border) 90%, var(--text-muted));
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.ft-subtask-checkbox-label:hover .ft-subtask-custom-check {
+  border-color: var(--accent);
+  transform: scale(1.06);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.ft-subtask-native-check:checked + .ft-subtask-custom-check {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2, #06b6d4) 100%);
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.ft-check-svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  stroke: #ffffff;
+  stroke-width: 2.4;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ft-subtask-native-check:checked + .ft-subtask-custom-check .ft-check-svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ft-subtask-index {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  opacity: 0.7;
+  font-feature-settings: 'tnum';
+  min-width: 1.2rem;
+}
+
+.ft-subtask-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.4;
+  transition: all 0.2s ease;
+  word-break: break-word;
 }
 
 .ft-subtask-title--done {
   text-decoration: line-through;
   color: var(--text-muted);
+  opacity: 0.65;
 }
 
-.btn--icon-xs {
-  width: 1.5rem;
-  height: 1.5rem;
+.ft-subtask-del {
+  width: 1.65rem;
+  height: 1.65rem;
   padding: 0;
-  font-size: 0.9rem;
   display: grid;
   place-items: center;
   color: var(--text-muted);
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: 0.35rem;
+  border-radius: 6px;
+  opacity: 0.35;
+  transition: all 0.18s ease;
 }
 
-.btn--icon-xs:hover {
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 15%, transparent);
+.ft-subtask-row:hover .ft-subtask-del {
+  opacity: 0.85;
 }
 
+.ft-subtask-del:hover {
+  opacity: 1 !important;
+  color: #ef4444;
+  background: color-mix(in srgb, #ef4444 14%, transparent);
+  transform: scale(1.08);
+}
+
+/* Input Row */
 .ft-subtask-add-row {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  margin-top: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.ft-subtask-input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.ft-subtask-input-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 .ft-subtask-input {
-  font-size: 0.86rem;
-  padding: 0.5rem 0.85rem;
-  flex: 1;
+  font-size: 0.88rem;
+  padding: 0.55rem 4.8rem 0.55rem 2.25rem;
+  width: 100%;
+  border-radius: 8px;
+  border: 1.5px solid color-mix(in srgb, var(--border) 80%, transparent);
+  transition: all 0.2s ease;
+}
+
+.ft-subtask-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.ft-subtask-enter-hint {
+  position: absolute;
+  right: 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--border) 55%, transparent);
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
 
 .ft-subtask-add-btn {
   white-space: nowrap;
   font-weight: 650;
-  padding: 0.5rem 0.95rem;
+  height: 2.35rem;
+  padding: 0 0.95rem;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 /* Accordion Footer Actions */

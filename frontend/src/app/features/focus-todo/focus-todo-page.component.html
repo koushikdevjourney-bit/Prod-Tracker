@@ -614,45 +614,67 @@
                     <div class="ft-accordion-section ft-accordion-section--checklist">
                       <div class="ft-accordion-checklist-head">
                         <div class="ft-accordion-section-title">
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 11 12 14 22 4" />
                             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                           </svg>
                           Checklist Breakdown
                         </div>
                         @if (todo.subtasks.length > 0) {
-                          <span class="ft-accordion-progress-badge">
-                            {{ subtasksProgress(todo).done }} of {{ subtasksProgress(todo).total }} completed ({{ subtasksProgress(todo).percent }}%)
+                          <span
+                            class="ft-accordion-progress-badge"
+                            [class.ft-accordion-progress-badge--complete]="subtasksProgress(todo).percent === 100"
+                          >
+                            @if (subtasksProgress(todo).percent === 100) {
+                              ✓ All {{ subtasksProgress(todo).total }} completed!
+                            } @else {
+                              {{ subtasksProgress(todo).done }} of {{ subtasksProgress(todo).total }} completed ({{ subtasksProgress(todo).percent }}%)
+                            }
                           </span>
                         }
                       </div>
 
                       @if (todo.subtasks.length > 0) {
                         <div class="ft-accordion-progress-bar">
-                          <div class="ft-accordion-progress-fill" [style.width.%]="subtasksProgress(todo).percent"></div>
+                          <div
+                            class="ft-accordion-progress-fill"
+                            [class.ft-accordion-progress-fill--complete]="subtasksProgress(todo).percent === 100"
+                            [style.width.%]="subtasksProgress(todo).percent"
+                          ></div>
                         </div>
                       }
 
                       <!-- Subtasks List -->
                       @if (todo.subtasks.length > 0) {
                         <ul class="ft-subtasks-list">
-                          @for (st of todo.subtasks; track st.id) {
-                            <li class="ft-subtask-row">
+                          @for (st of todo.subtasks; track st.id; let idx = $index) {
+                            <li class="ft-subtask-row" [class.ft-subtask-row--done]="st.done">
                               <label class="ft-subtask-checkbox-label">
                                 <input
                                   type="checkbox"
+                                  class="ft-subtask-native-check"
                                   [checked]="st.done"
                                   (change)="focus.toggleSubtask(todo.id, st.id)"
                                 />
-                                <span [class.ft-subtask-title--done]="st.done">{{ st.title }}</span>
+                                <span class="ft-subtask-custom-check" aria-hidden="true">
+                                  <svg viewBox="0 0 12 10" class="ft-check-svg">
+                                    <polyline points="1.5 5 4.5 8 10.5 2" />
+                                  </svg>
+                                </span>
+                                <span class="ft-subtask-index">{{ idx + 1 }}.</span>
+                                <span class="ft-subtask-title" [class.ft-subtask-title--done]="st.done">{{ st.title }}</span>
                               </label>
                               <button
                                 type="button"
-                                class="btn btn--ghost btn--icon-xs ft-subtask-del"
+                                class="btn ft-subtask-del"
                                 (click)="focus.deleteSubtask(todo.id, st.id)"
-                                title="Delete subtask"
+                                title="Delete step"
+                                aria-label="Delete step"
                               >
-                                ×
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                  <line x1="18" y1="6" x2="6" y2="18" />
+                                  <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
                               </button>
                             </li>
                           }
@@ -661,21 +683,34 @@
 
                       <!-- Add Subtask Inline Input -->
                       <div class="ft-subtask-add-row">
-                        <input
-                          type="text"
-                          class="input ft-subtask-input"
-                          [(ngModel)]="subtaskDrafts[todo.id]"
-                          (keydown.enter)="$event.preventDefault(); handleAddSubtask(todo.id)"
-                          placeholder="Add a step (e.g. Write edge cases, Push git branch)..."
-                          maxlength="200"
-                        />
+                        <div class="ft-subtask-input-wrap">
+                          <span class="ft-subtask-input-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <line x1="12" y1="5" x2="12" y2="19" />
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                          </span>
+                          <input
+                            type="text"
+                            class="input ft-subtask-input"
+                            [(ngModel)]="subtaskDrafts[todo.id]"
+                            (keydown.enter)="$event.preventDefault(); handleAddSubtask(todo.id)"
+                            placeholder="Add next checklist step (e.g. Write edge cases, Push git branch)..."
+                            maxlength="200"
+                          />
+                          <span class="ft-subtask-enter-hint" aria-hidden="true">↵ Enter</span>
+                        </div>
                         <button
                           type="button"
                           class="btn btn--primary btn--sm ft-subtask-add-btn"
                           (click)="handleAddSubtask(todo.id)"
                           [disabled]="!subtaskDrafts[todo.id]?.trim()"
                         >
-                          + Add Step
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                          Add Step
                         </button>
                       </div>
                     </div>
