@@ -103,7 +103,7 @@
           type="button"
           class="level-tab"
           [class.level-tab--on]="activeLevel() === level.level"
-          (click)="activeLevel.set(level.level)"
+          (click)="selectLevel(level.level)"
         >
           <span class="level-tab__name">Level {{ level.level }}</span>
           <span class="level-tab__meta">{{ stats(level).cleared }}/{{ stats(level).total }} cleared · {{ stats(level).miles }} mi</span>

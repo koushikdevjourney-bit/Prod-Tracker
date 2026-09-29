@@ -45,10 +45,15 @@ export class GritPageComponent {
   readonly pick: Record<number, string> = { 1: '', 2: '' };
   readonly draggingId = signal<string | null>(null);
   readonly activeLevel = signal(1);
-  readonly view = signal<GritView>('all');
+  readonly view = signal<GritView>('open');
   query = '';
 
   readonly ringC = 2 * Math.PI * 18;
+
+  selectLevel(level: number): void {
+    this.activeLevel.set(level);
+    this.view.set('open');
+  }
 
   toggleTheme(): void {
     this.theme.toggleLightDark();
