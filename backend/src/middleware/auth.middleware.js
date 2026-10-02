@@ -28,7 +28,7 @@ async function protect(req, res, next) {
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Session expired — please log in again' });
+      return res.status(401).json({ message: 'Session expired — please log in again', code: 'TOKEN_EXPIRED' });
     }
     if (err.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Not authorized — invalid token' });

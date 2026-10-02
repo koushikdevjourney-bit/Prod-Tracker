@@ -24,14 +24,39 @@ export class AuthService {
 
   private readonly _token = signal<string | null>(null);
   private readonly _user = signal<AuthUser | null>(null);
+  private expirationTimer: ReturnType<typeof setTimeout> | null = null;
+  private isHandlingExpiry = false;
 
   readonly token = this._token.asReadonly();
   readonly user = this._user.asReadonly();
-  readonly isAuthenticated = computed(() => this.isJwt(this._token()));
+  readonly isAuthenticated = computed(() => this.isJwt(this._token()) && !this.isTokenExpired(this._token()));
 
   constructor() {
     this.restoreSession();
-    if (this._token()) this.dataSync.hydrate().subscribe();
+    this.setupExpiryListeners();
+    if (this.isAuthenticated()) this.dataSync.hydrate().subscribe();
+  }
+
+  private setupExpiryListeners(): void {
+    if (typeof window === 'undefined') return;
+
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && this._token()) {
+        if (this.isTokenExpired(this._token())) {
+          this.handleSessionExpired(true);
+        }
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      if (this._token() && this.isTokenExpired(this._token())) {
+        this.handleSessionExpired(true);
+      }
+    });
+
+    window.addEventListener('auth:expired', () => {
+      this.handleSessionExpired(true);
+    });
   }
 
   register(payload: { name: string; email: string; password: string }): Observable<AuthResponse> {
@@ -68,14 +93,77 @@ export class AuthService {
 
   logout(options: { navigate?: boolean; toast?: boolean } = {}): void {
     const { navigate = true, toast = true } = options;
+    this.clearTimer();
     this.dataSync.resetLocal();
     this.clearSession();
     if (toast) this.toast.info('Signed out');
     if (navigate) void this.router.navigateByUrl('/');
   }
 
+  handleSessionExpired(showToast = true): void {
+    if (this.isHandlingExpiry) return;
+    this.isHandlingExpiry = true;
+
+    this.clearTimer();
+    this.dataSync.resetLocal();
+    this.clearSession();
+
+    if (showToast) {
+      this.toast.warning('Your session has expired (24h limit). Please log in again.');
+    }
+    void this.router.navigateByUrl('/login').finally(() => {
+      setTimeout(() => {
+        this.isHandlingExpiry = false;
+      }, 1000);
+    });
+  }
+
   getToken(): string | null {
-    return this.isJwt(this._token()) ? this._token() : null;
+    const tok = this._token();
+    return this.isJwt(tok) && !this.isTokenExpired(tok) ? tok : null;
+  }
+
+  getTokenExpiration(token: string | null): number | null {
+    if (!token) return null;
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    try {
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(base64));
+      return typeof payload.exp === 'number' ? payload.exp : null;
+    } catch {
+      return null;
+    }
+  }
+
+  isTokenExpired(token: string | null): boolean {
+    if (!token) return true;
+    const exp = this.getTokenExpiration(token);
+    if (!exp) return false;
+    return Date.now() >= exp * 1000;
+  }
+
+  private scheduleExpiration(token: string): void {
+    this.clearTimer();
+    const exp = this.getTokenExpiration(token);
+    if (!exp) return;
+
+    const remainingMs = exp * 1000 - Date.now();
+    if (remainingMs <= 0) {
+      this.handleSessionExpired(true);
+      return;
+    }
+
+    this.expirationTimer = setTimeout(() => {
+      this.handleSessionExpired(true);
+    }, remainingMs);
+  }
+
+  private clearTimer(): void {
+    if (this.expirationTimer) {
+      clearTimeout(this.expirationTimer);
+      this.expirationTimer = null;
+    }
   }
 
   private isJwt(token: string | null): boolean {
@@ -88,9 +176,14 @@ export class AuthService {
       if (!raw) return;
       const parsed = JSON.parse(raw) as StoredSession;
       if (parsed?.token && parsed?.user && this.isJwt(parsed.token)) {
+        if (this.isTokenExpired(parsed.token)) {
+          this.handleSessionExpired(true);
+          return;
+        }
         this._token.set(parsed.token);
         this._user.set(parsed.user);
         this.syncDisplayName(parsed.user.name);
+        this.scheduleExpiration(parsed.token);
       } else {
         localStorage.removeItem(STORAGE_KEYS.auth);
       }
@@ -104,6 +197,7 @@ export class AuthService {
     this._user.set(res.user);
     this.writeStorage({ token: res.token, user: res.user });
     this.syncDisplayName(res.user.name);
+    this.scheduleExpiration(res.token);
     this.dataSync.hydrate().subscribe();
   }
 
@@ -112,6 +206,7 @@ export class AuthService {
   }
 
   private clearSession(): void {
+    this.clearTimer();
     this._token.set(null);
     this._user.set(null);
     localStorage.removeItem(STORAGE_KEYS.auth);

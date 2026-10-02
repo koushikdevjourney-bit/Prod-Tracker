@@ -1,4 +1,4 @@
-﻿# Backend
+# Backend
 
 Express + MongoDB API for Pulse Productivity Tracker.
 
@@ -30,7 +30,7 @@ API defaults to `http://localhost:5000`.
 |-----|---------|
 | `MONGODB_URI` | your Atlas connection string |
 | `JWT_SECRET` | long random string (required) |
-| `JWT_EXPIRES_IN` | `7d` |
+| `JWT_EXPIRES_IN` | `24h` |
 | `NODE_ENV` | `production` |
 | `CLIENT_ORIGIN` | your Vercel frontend URL(s), comma-separated |
 
