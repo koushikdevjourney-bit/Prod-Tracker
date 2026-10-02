@@ -453,6 +453,12 @@
   padding: 0.45rem 0.75rem;
 }
 
+.ft-sort-select {
+  font-weight: 650;
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+
 .ft-accordion-all-btn {
   font-size: 0.82rem;
   font-weight: 600;
@@ -666,6 +672,60 @@
   background: color-mix(in srgb, var(--surface-2) 90%, var(--border));
   color: var(--text-muted);
   border: 1px solid var(--border);
+}
+
+.ft-priority-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ft-badge--select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 0.18rem 1.45rem 0.18rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  transition: all 0.18s ease;
+  line-height: 1.35;
+  outline: none;
+}
+
+.ft-badge--select:hover {
+  filter: brightness(0.95);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.ft-badge--select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.ft-priority-select-wrap::after {
+  content: '';
+  position: absolute;
+  right: 0.52rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 3.5px solid transparent;
+  border-right: 3.5px solid transparent;
+  border-top: 4px solid currentColor;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.ft-badge--select option {
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.35rem 0.5rem;
 }
 
 .ft-badge--urgent {

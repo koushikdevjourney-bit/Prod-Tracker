@@ -316,6 +316,21 @@
           }
         </select>
 
+        <!-- Sort / Order Dropdown -->
+        <select
+          class="input select ft-filter-select ft-sort-select"
+          [ngModel]="sortBy()"
+          (ngModelChange)="setSortBy($event)"
+          aria-label="Order tasks by priority or custom"
+          title="Order tasks by priority, due date, or manual arrangement"
+        >
+          <option value="priority-desc">⚡ Order: Priority (High → Low)</option>
+          <option value="priority-asc">⚡ Order: Priority (Low → High)</option>
+          <option value="default">📋 Order: Custom / Manual</option>
+          <option value="due-date">⏰ Order: Due Date</option>
+          <option value="title">🔤 Order: Alphabetical (A → Z)</option>
+        </select>
+
         @if (filteredTodos().length > 0) {
           <button
             type="button"
@@ -484,15 +499,21 @@
 
                       <!-- Badges -->
                       <div class="ft-badges">
-                        <!-- Priority Badge -->
-                        <span class="ft-badge ft-badge--{{ todo.priority }}">
-                          @switch (todo.priority) {
-                            @case ('urgent') { 🔥 Urgent }
-                            @case ('high') { 🟠 High }
-                            @case ('medium') { 🔵 Medium }
-                            @case ('low') { ⚪ Low }
-                          }
-                        </span>
+                        <!-- Priority Dropdown Pill -->
+                        <div class="ft-priority-select-wrap" (click)="$event.stopPropagation()">
+                          <select
+                            class="ft-badge ft-badge--select ft-badge--{{ todo.priority }}"
+                            [ngModel]="todo.priority"
+                            (ngModelChange)="setTodoPriority(todo.id, $event)"
+                            [attr.aria-label]="'Change priority for ' + todo.title"
+                            title="Click to change priority"
+                          >
+                            <option value="urgent">🔥 Urgent</option>
+                            <option value="high">🟠 High</option>
+                            <option value="medium">🔵 Medium</option>
+                            <option value="low">⚪ Low</option>
+                          </select>
+                        </div>
 
                         <!-- Category Badge -->
                         <span class="ft-badge ft-badge--cat">{{ todo.category }}</span>

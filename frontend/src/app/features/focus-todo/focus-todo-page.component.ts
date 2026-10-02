@@ -13,6 +13,7 @@ import { ToastService } from '../../core/services/toast.service';
 import {
   FocusFilterTab,
   FocusPriority,
+  FocusSortOrder,
   FocusStatus,
   FocusTodoItem,
 } from '../../core/models';
@@ -40,6 +41,9 @@ export class FocusTodoPageComponent implements OnDestroy {
   readonly searchQuery = signal<string>('');
   readonly selectedPriority = signal<string>('all');
   readonly selectedCategory = signal<string>('all');
+  readonly sortBy = signal<FocusSortOrder>(
+    (localStorage.getItem('focus_todo_sort') as FocusSortOrder) || 'priority-desc'
+  );
   readonly quickAddExpanded = signal<boolean>(false);
   readonly expandedCards = signal<Record<string, boolean>>({});
   readonly editingId = signal<string | null>(null);
@@ -124,7 +128,44 @@ export class FocusTodoPageComponent implements OnDestroy {
       );
     }
 
-    return list;
+    // Sort order
+    const sort = this.sortBy();
+    const priorityWeight: Record<FocusPriority, number> = {
+      urgent: 4,
+      high: 3,
+      medium: 2,
+      low: 1,
+    };
+
+    return [...list].sort((a, b) => {
+      // Pinned items stay at top of active lists
+      if (a.status !== 'completed' && b.status !== 'completed') {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+      }
+
+      if (sort === 'priority-desc') {
+        const diff = priorityWeight[b.priority] - priorityWeight[a.priority];
+        if (diff !== 0) return diff;
+      } else if (sort === 'priority-asc') {
+        const diff = priorityWeight[a.priority] - priorityWeight[b.priority];
+        if (diff !== 0) return diff;
+      } else if (sort === 'due-date') {
+        if (a.dueDate && b.dueDate) {
+          const diff = a.dueDate.localeCompare(b.dueDate);
+          if (diff !== 0) return diff;
+        } else if (a.dueDate && !b.dueDate) {
+          return -1;
+        } else if (!a.dueDate && b.dueDate) {
+          return 1;
+        }
+      } else if (sort === 'title') {
+        const diff = a.title.localeCompare(b.title);
+        if (diff !== 0) return diff;
+      }
+
+      return a.position - b.position;
+    });
   });
 
   readonly tabCounts = computed(() => {
@@ -382,6 +423,20 @@ export class FocusTodoPageComponent implements OnDestroy {
     this.toast.success(`Logged "${todo.title}" (${duration}m) to Activity log!`);
   }
 
+  setSortBy(order: FocusSortOrder): void {
+    this.sortBy.set(order);
+    try {
+      localStorage.setItem('focus_todo_sort', order);
+    } catch {
+      // ignore
+    }
+  }
+
+  setTodoPriority(todoId: string, priority: FocusPriority): void {
+    this.focus.update(todoId, { priority });
+    this.toast.info(`Priority updated to ${priority.toUpperCase()}`);
+  }
+
   // --- Drag and Drop Reordering ---
   onDragStart(id: string, event: DragEvent): void {
     this.draggingId.set(id);
@@ -392,7 +447,13 @@ export class FocusTodoPageComponent implements OnDestroy {
   onDrop(overId: string, event: DragEvent): void {
     event.preventDefault();
     const dragged = this.draggingId();
-    if (dragged) this.focus.reorder(dragged, overId);
+    if (dragged) {
+      if (this.sortBy() !== 'default') {
+        this.setSortBy('default');
+        this.toast.info('Switched to Custom Order for manual arrangement');
+      }
+      this.focus.reorder(dragged, overId);
+    }
     this.draggingId.set(null);
   }
 
