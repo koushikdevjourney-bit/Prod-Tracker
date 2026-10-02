@@ -681,18 +681,34 @@
                           </svg>
                           Checklist Breakdown
                         </div>
-                        @if (todo.subtasks.length > 0) {
-                          <span
-                            class="ft-accordion-progress-badge"
-                            [class.ft-accordion-progress-badge--complete]="subtasksProgress(todo).percent === 100"
-                          >
-                            @if (subtasksProgress(todo).percent === 100) {
-                              ✓ All {{ subtasksProgress(todo).total }} completed!
-                            } @else {
-                              {{ subtasksProgress(todo).done }} of {{ subtasksProgress(todo).total }} completed ({{ subtasksProgress(todo).percent }}%)
-                            }
-                          </span>
-                        }
+                        <div class="ft-accordion-checklist-head-right">
+                          @if (todo.subtasks.length > 1) {
+                            <div class="ft-subtasks-sort-wrap" title="Quick sort checklist steps">
+                              <select
+                                class="ft-subtasks-sort-select"
+                                (change)="sortSubtasks(todo.id, $any($event.target).value); $any($event.target).value = ''"
+                                aria-label="Sort checklist steps"
+                              >
+                                <option value="" disabled selected>⇅ Order ▾</option>
+                                <option value="incomplete-first">To Do First</option>
+                                <option value="completed-first">Completed First</option>
+                                <option value="reverse">Invert / Reverse Order</option>
+                              </select>
+                            </div>
+                          }
+                          @if (todo.subtasks.length > 0) {
+                            <span
+                              class="ft-accordion-progress-badge"
+                              [class.ft-accordion-progress-badge--complete]="subtasksProgress(todo).percent === 100"
+                            >
+                              @if (subtasksProgress(todo).percent === 100) {
+                                ✓ All {{ subtasksProgress(todo).total }} completed!
+                              } @else {
+                                {{ subtasksProgress(todo).done }} of {{ subtasksProgress(todo).total }} completed ({{ subtasksProgress(todo).percent }}%)
+                              }
+                            </span>
+                          }
+                        </div>
                       </div>
 
                       @if (todo.subtasks.length > 0) {
@@ -708,8 +724,33 @@
                       <!-- Subtasks List -->
                       @if (todo.subtasks.length > 0) {
                         <ul class="ft-subtasks-list">
-                          @for (st of todo.subtasks; track st.id; let idx = $index) {
-                            <li class="ft-subtask-row" [class.ft-subtask-row--done]="st.done">
+                          @for (st of todo.subtasks; track st.id; let sIdx = $index) {
+                            <li
+                              class="ft-subtask-row"
+                              [class.ft-subtask-row--done]="st.done"
+                              [class.ft-subtask-row--dragging]="draggingSubtaskId() === st.id"
+                              draggable="true"
+                              (dragstart)="onSubtaskDragStart(st.id, $event)"
+                              (dragover)="onSubtaskDragOver($event)"
+                              (drop)="onSubtaskDrop(todo.id, st.id, $event)"
+                            >
+                              <!-- 6-dot Drag Handle -->
+                              <span
+                                class="ft-subtask-drag-handle"
+                                title="Drag to reorder checklist step"
+                                aria-hidden="true"
+                              >
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                                  <circle cx="9" cy="6" r="1.5" />
+                                  <circle cx="15" cy="6" r="1.5" />
+                                  <circle cx="9" cy="12" r="1.5" />
+                                  <circle cx="15" cy="12" r="1.5" />
+                                  <circle cx="9" cy="18" r="1.5" />
+                                  <circle cx="15" cy="18" r="1.5" />
+                                </svg>
+                              </span>
+
+                              <!-- Checkbox -->
                               <label class="ft-subtask-checkbox-label">
                                 <input
                                   type="checkbox"
@@ -722,21 +763,70 @@
                                     <polyline points="1.5 5 4.5 8 10.5 2" />
                                   </svg>
                                 </span>
-                                <span class="ft-subtask-index">{{ idx + 1 }}.</span>
-                                <span class="ft-subtask-title" [class.ft-subtask-title--done]="st.done">{{ st.title }}</span>
                               </label>
-                              <button
-                                type="button"
-                                class="btn ft-subtask-del"
-                                (click)="focus.deleteSubtask(todo.id, st.id)"
-                                title="Delete step"
-                                aria-label="Delete step"
+
+                              <!-- Position / Order Dropdown Selector -->
+                              <div
+                                class="ft-subtask-order-dropdown"
+                                (click)="$event.stopPropagation()"
+                                title="Click to move step to another position"
                               >
-                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                  <line x1="18" y1="6" x2="6" y2="18" />
-                                  <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                              </button>
+                                <select
+                                  class="ft-subtask-order-select"
+                                  [value]="sIdx"
+                                  (change)="moveSubtaskTo(todo.id, sIdx, +$any($event.target).value)"
+                                  [attr.aria-label]="'Move step ' + (sIdx + 1) + ' to position'"
+                                >
+                                  @for (s of todo.subtasks; track s.id; let optIdx = $index) {
+                                    <option [value]="optIdx">Position #{{ optIdx + 1 }}</option>
+                                  }
+                                </select>
+                                <span class="ft-subtask-index">{{ sIdx + 1 }}.</span>
+                                <span class="ft-subtask-dropdown-caret">▾</span>
+                              </div>
+
+                              <!-- Step Title -->
+                              <span
+                                class="ft-subtask-title"
+                                [class.ft-subtask-title--done]="st.done"
+                                (click)="focus.toggleSubtask(todo.id, st.id)"
+                              >{{ st.title }}</span>
+
+                              <!-- Move Up / Down Buttons & Delete -->
+                              <div class="ft-subtask-ops">
+                                <button
+                                  type="button"
+                                  class="btn btn--ghost btn--icon-sm ft-subtask-move-btn"
+                                  (click)="$event.stopPropagation(); moveSubtask(todo.id, st.id, -1)"
+                                  [disabled]="sIdx === 0"
+                                  title="Move step up"
+                                  aria-label="Move step up"
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  type="button"
+                                  class="btn btn--ghost btn--icon-sm ft-subtask-move-btn"
+                                  (click)="$event.stopPropagation(); moveSubtask(todo.id, st.id, 1)"
+                                  [disabled]="sIdx === todo.subtasks.length - 1"
+                                  title="Move step down"
+                                  aria-label="Move step down"
+                                >
+                                  ↓
+                                </button>
+                                <button
+                                  type="button"
+                                  class="btn ft-subtask-del"
+                                  (click)="$event.stopPropagation(); focus.deleteSubtask(todo.id, st.id)"
+                                  title="Delete step"
+                                  aria-label="Delete step"
+                                >
+                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                  </svg>
+                                </button>
+                              </div>
                             </li>
                           }
                         </ul>
@@ -797,17 +887,19 @@
                         </button>
                         <button
                           type="button"
-                          class="btn btn--ghost btn--icon-sm"
-                          (click)="focus.move(todo.id, -1)"
-                          title="Move up"
+                          class="btn btn--ghost btn--icon-sm ft-move-btn"
+                          (click)="moveTodo(todo.id, -1)"
+                          [disabled]="idx === 0"
+                          title="Move task up"
                         >
                           ↑
                         </button>
                         <button
                           type="button"
-                          class="btn btn--ghost btn--icon-sm"
-                          (click)="focus.move(todo.id, 1)"
-                          title="Move down"
+                          class="btn btn--ghost btn--icon-sm ft-move-btn"
+                          (click)="moveTodo(todo.id, 1)"
+                          [disabled]="idx === filteredTodos().length - 1"
+                          title="Move task down"
                         >
                           ↓
                         </button>

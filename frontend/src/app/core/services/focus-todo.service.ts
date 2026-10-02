@@ -286,6 +286,68 @@ export class FocusTodoService {
     );
   }
 
+  moveSubtask(todoId: string, subtaskId: string, direction: -1 | 1): void {
+    this.patch((todos) =>
+      todos.map((item) => {
+        if (item.id !== todoId) return item;
+        const subtasks = [...item.subtasks];
+        const idx = subtasks.findIndex((s) => s.id === subtaskId);
+        const nextIdx = idx + direction;
+        if (idx < 0 || nextIdx < 0 || nextIdx >= subtasks.length) return item;
+        const [moved] = subtasks.splice(idx, 1);
+        subtasks.splice(nextIdx, 0, moved);
+        return { ...item, subtasks };
+      })
+    );
+  }
+
+  moveSubtaskTo(todoId: string, fromIdx: number, toIdx: number): void {
+    if (fromIdx === toIdx) return;
+    this.patch((todos) =>
+      todos.map((item) => {
+        if (item.id !== todoId) return item;
+        const subtasks = [...item.subtasks];
+        if (fromIdx < 0 || fromIdx >= subtasks.length || toIdx < 0 || toIdx >= subtasks.length) return item;
+        const [moved] = subtasks.splice(fromIdx, 1);
+        subtasks.splice(toIdx, 0, moved);
+        return { ...item, subtasks };
+      })
+    );
+  }
+
+  reorderSubtasks(todoId: string, draggedSubtaskId: string, overSubtaskId: string): void {
+    if (draggedSubtaskId === overSubtaskId) return;
+    this.patch((todos) =>
+      todos.map((item) => {
+        if (item.id !== todoId) return item;
+        const subtasks = [...item.subtasks];
+        const from = subtasks.findIndex((s) => s.id === draggedSubtaskId);
+        const to = subtasks.findIndex((s) => s.id === overSubtaskId);
+        if (from < 0 || to < 0) return item;
+        const [moved] = subtasks.splice(from, 1);
+        subtasks.splice(to, 0, moved);
+        return { ...item, subtasks };
+      })
+    );
+  }
+
+  sortSubtasks(todoId: string, mode: 'reverse' | 'incomplete-first' | 'completed-first'): void {
+    this.patch((todos) =>
+      todos.map((item) => {
+        if (item.id !== todoId) return item;
+        const subtasks = [...item.subtasks];
+        if (mode === 'reverse') {
+          subtasks.reverse();
+        } else if (mode === 'incomplete-first') {
+          subtasks.sort((a, b) => Number(a.done) - Number(b.done));
+        } else if (mode === 'completed-first') {
+          subtasks.sort((a, b) => Number(b.done) - Number(a.done));
+        }
+        return { ...item, subtasks };
+      })
+    );
+  }
+
   move(id: string, direction: -1 | 1): void {
     this.patch((todos) => {
       const active = todos.filter((t) => t.status !== 'completed');

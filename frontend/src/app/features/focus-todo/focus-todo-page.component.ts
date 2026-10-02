@@ -48,6 +48,7 @@ export class FocusTodoPageComponent implements OnDestroy {
   readonly expandedCards = signal<Record<string, boolean>>({});
   readonly editingId = signal<string | null>(null);
   readonly draggingId = signal<string | null>(null);
+  readonly draggingSubtaskId = signal<string | null>(null);
 
   // Timer state
   readonly activeTimerTodoId = signal<string | null>(null);
@@ -467,5 +468,40 @@ export class FocusTodoPageComponent implements OnDestroy {
 
   allowDrop(event: DragEvent): void {
     event.preventDefault();
+  }
+
+  // --- Subtask Drag, Drop & Reordering ---
+  moveSubtask(todoId: string, subtaskId: string, direction: -1 | 1): void {
+    this.focus.moveSubtask(todoId, subtaskId, direction);
+  }
+
+  moveSubtaskTo(todoId: string, fromIdx: number, toIdx: number): void {
+    this.focus.moveSubtaskTo(todoId, fromIdx, toIdx);
+  }
+
+  sortSubtasks(todoId: string, mode: 'reverse' | 'incomplete-first' | 'completed-first'): void {
+    this.focus.sortSubtasks(todoId, mode);
+  }
+
+  onSubtaskDragStart(subtaskId: string, event: DragEvent): void {
+    event.stopPropagation();
+    this.draggingSubtaskId.set(subtaskId);
+    event.dataTransfer?.setData('text/plain', subtaskId);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  onSubtaskDrop(todoId: string, overSubtaskId: string, event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const dragged = this.draggingSubtaskId();
+    if (dragged) {
+      this.focus.reorderSubtasks(todoId, dragged, overSubtaskId);
+    }
+    this.draggingSubtaskId.set(null);
+  }
+
+  onSubtaskDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
   }
 }
