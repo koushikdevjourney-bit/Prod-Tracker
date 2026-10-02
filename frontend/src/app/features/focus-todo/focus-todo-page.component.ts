@@ -437,6 +437,14 @@ export class FocusTodoPageComponent implements OnDestroy {
     this.toast.info(`Priority updated to ${priority.toUpperCase()}`);
   }
 
+  moveTodo(id: string, direction: -1 | 1): void {
+    if (this.sortBy() !== 'default') {
+      this.setSortBy('default');
+      this.toast.info('Switched to Custom Order for manual arrangement');
+    }
+    this.focus.move(id, direction);
+  }
+
   // --- Drag and Drop Reordering ---
   onDragStart(id: string, event: DragEvent): void {
     this.draggingId.set(id);

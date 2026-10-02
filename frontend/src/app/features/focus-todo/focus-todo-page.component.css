@@ -577,6 +577,31 @@
   background: color-mix(in srgb, var(--accent) 4%, var(--surface));
 }
 
+/* Drag Grip Handle (6 dots) */
+.ft-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  padding: 0.25rem 0.2rem;
+  border-radius: 0.35rem;
+  transition: all 0.15s ease;
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+.ft-drag-handle:hover {
+  opacity: 1;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.ft-drag-handle:active,
+.ft-item--dragging .ft-drag-handle {
+  cursor: grabbing;
+}
+
 /* Checkbox */
 .ft-checkbox {
   width: 1.45rem;
@@ -852,6 +877,38 @@
 
 .ft-accordion-chevron--rotated {
   transform: rotate(180deg);
+}
+
+/* Move Up / Down Buttons */
+.ft-move-btns {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.ft-move-btn {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 0;
+  height: 1.7rem;
+  line-height: 1;
+  border: 0;
+  color: var(--text-muted);
+}
+
+.ft-move-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+.ft-move-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
 }
 
 .btn--icon-sm {

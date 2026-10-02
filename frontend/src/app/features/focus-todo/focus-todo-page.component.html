@@ -463,6 +463,22 @@
               } @else {
                 <!-- Standard Item View -->
                 <div class="ft-item-row" (click)="toggleCard(todo.id)">
+                  <!-- Drag Grip Handle (6 dots) -->
+                  <div
+                    class="ft-drag-handle"
+                    title="Drag to reorder up or down"
+                    aria-label="Drag handle to reorder"
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="20" fill="currentColor" aria-hidden="true">
+                      <circle cx="8" cy="5" r="2" />
+                      <circle cx="16" cy="5" r="2" />
+                      <circle cx="8" cy="12" r="2" />
+                      <circle cx="16" cy="12" r="2" />
+                      <circle cx="8" cy="19" r="2" />
+                      <circle cx="16" cy="19" r="2" />
+                    </svg>
+                  </div>
+
                   <!-- Checkbox -->
                   <button
                     type="button"
@@ -586,6 +602,30 @@
                         <polyline points="6 9 12 15 18 9" />
                       </svg>
                     </button>
+
+                    <!-- Move Up / Down Buttons -->
+                    <div class="ft-move-btns">
+                      <button
+                        type="button"
+                        class="btn btn--ghost btn--icon-sm ft-move-btn"
+                        (click)="$event.stopPropagation(); moveTodo(todo.id, -1)"
+                        [disabled]="idx === 0"
+                        title="Move up"
+                        aria-label="Move up"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn--ghost btn--icon-sm ft-move-btn"
+                        (click)="$event.stopPropagation(); moveTodo(todo.id, 1)"
+                        [disabled]="idx === filteredTodos().length - 1"
+                        title="Move down"
+                        aria-label="Move down"
+                      >
+                        ↓
+                      </button>
+                    </div>
 
                     <!-- Edit Item -->
                     <button
