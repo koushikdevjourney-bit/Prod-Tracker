@@ -60,7 +60,7 @@ export class ActivitiesPageComponent {
   readonly sortDir = signal<'asc' | 'desc'>('desc');
   readonly page = signal(1);
   readonly pageSize = 12;
-  readonly collapsedDays = signal<Set<string>>(new Set());
+  readonly expandedDays = signal<Set<string>>(new Set());
 
   /** All raw activities for count pill */
   readonly allActivities = computed(() => this.activities.activities());
@@ -246,6 +246,9 @@ export class ActivitiesPageComponent {
   // Filter actions
   setDateFilter(date: string): void {
     this.dateFilter.set(date);
+    if (date) {
+      this.expandedDays.update((set) => new Set([...set, date]));
+    }
     this.page.set(1);
   }
 
@@ -276,11 +279,11 @@ export class ActivitiesPageComponent {
   }
 
   isDayCollapsed(date: string): boolean {
-    return this.collapsedDays().has(date);
+    return !this.expandedDays().has(date);
   }
 
   toggleDayCollapse(date: string): void {
-    this.collapsedDays.update((set) => {
+    this.expandedDays.update((set) => {
       const next = new Set(set);
       if (next.has(date)) {
         next.delete(date);
@@ -292,17 +295,20 @@ export class ActivitiesPageComponent {
   }
 
   expandAllDays(): void {
-    this.collapsedDays.set(new Set());
+    const all = new Set(this.dayGroups().map((g) => g.date));
+    this.expandedDays.set(all);
   }
 
   collapseAllDays(): void {
-    const all = new Set(this.dayGroups().map((g) => g.date));
-    this.collapsedDays.set(all);
+    this.expandedDays.set(new Set());
   }
 
   // CRUD actions
   add(forDate?: string): void {
     const targetDate = forDate || this.dateFilter() || this.todayStr;
+    if (targetDate) {
+      this.expandedDays.update((set) => new Set([...set, targetDate]));
+    }
     const slot = this.activities.nextSlot(targetDate);
     this.modal.openCreate({
       date: targetDate,
