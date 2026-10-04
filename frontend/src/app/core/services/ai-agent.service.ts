@@ -657,7 +657,7 @@ ${habitsList}
 
   private buildAcademicsReport(ctx: AggregatedLogsContext): string {
     const techStudy = ctx.topCategories
-      .filter((c) => ['Coding', 'DSA', 'AI/ML', 'Development', 'College', 'Study'].includes(c.name))
+      .filter((c) => ['Coding', 'DSA', 'AI/ML', 'Development', 'Internship', 'Interview / GRIT Prep', 'College', 'Study'].includes(c.name))
       .reduce((sum, c) => sum + c.minutes, 0);
 
     return `## 📚 Academic & Technical Skill Audit
@@ -665,7 +665,7 @@ ${habitsList}
 ### 💻 Technical & Study Hours Logged
 - **Total Technical Study Time**: **${formatDuration(techStudy)}** (${ctx.rangeLabel})
 ${ctx.topCategories
-  .filter((c) => ['Coding', 'DSA', 'AI/ML', 'Development', 'College', 'Study'].includes(c.name))
+  .filter((c) => ['Coding', 'DSA', 'AI/ML', 'Development', 'Internship', 'Interview / GRIT Prep', 'College', 'Study'].includes(c.name))
   .map((c) => `- **${c.name}**: ${formatDuration(c.minutes)}`)
   .join('\n') || '- *No technical categories logged yet.*'
 }

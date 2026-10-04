@@ -320,11 +320,35 @@ export function calculateGoalProgress(goal: Goal, activities: Activity[]): numbe
 }
 
 export function getCategoryColor(name: string): string {
-  return CATEGORIES.find((c) => c.name === name)?.color ?? '#6b7280';
+  const match = CATEGORIES.find((c) => c.name.toLowerCase() === name.toLowerCase());
+  if (match) return match.color;
+
+  const lower = name.toLowerCase();
+  if (/dsa/i.test(lower)) return '#0d9488';
+  if (/dev/i.test(lower)) return '#0284c7';
+  if (/ai|ml/i.test(lower)) return '#6366f1';
+  if (/intern/i.test(lower)) return '#2563eb';
+  if (/grit|interview/i.test(lower)) return '#0e7490';
+  if (/fresh|personal|routine/i.test(lower)) return '#78716c';
+  if (/travel/i.test(lower)) return '#a16207';
+  if (/sleep/i.test(lower)) return '#64748b';
+  if (/break/i.test(lower)) return '#94a3b8';
+  if (/social/i.test(lower)) return '#db2777';
+
+  return '#6b7280';
 }
 
 export function getCategoryDefaultType(name: string): ActivityType {
-  return CATEGORIES.find((c) => c.name === name)?.defaultType ?? 'neutral';
+  const match = CATEGORIES.find((c) => c.name.toLowerCase() === name.toLowerCase());
+  if (match) return match.defaultType;
+
+  const lower = name.toLowerCase();
+  if (/sleep/i.test(lower)) return 'sleep';
+  if (/social|entertain|youtube|gaming|game|unproductive/i.test(lower)) return 'unproductive';
+  if (/travel|break|fresh|routine|groom|bath|meal|lunch|dinner|breakfast|personal/i.test(lower)) return 'neutral';
+  if (/dsa|dev|code|coding|ai|ml|intern|prep|grit|interview|study|college|project|assign|work|exercise/i.test(lower)) return 'productive';
+
+  return 'neutral';
 }
 
 export function calculateDailyStats(activities: Activity[], date: string): DailyStats {

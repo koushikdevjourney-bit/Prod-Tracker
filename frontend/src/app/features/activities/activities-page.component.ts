@@ -7,7 +7,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 import { DurationPipe } from '../../shared/pipes/format.pipes';
 import { CATEGORIES } from '../../core/constants/categories';
 import { Activity, ActivityType } from '../../core/models';
-import { addDays, parseTimeToMinutes, todayKey } from '../../core/utils/stats.utils';
+import { addDays, getCategoryColor, getCategoryDefaultType, parseTimeToMinutes, todayKey } from '../../core/utils/stats.utils';
 
 type SortKey = 'date' | 'duration' | 'name' | 'category';
 type ViewMode = 'grouped' | 'table';
@@ -45,6 +45,18 @@ export class ActivitiesPageComponent {
   private readonly modal = inject(ActivityModalService);
 
   readonly categories = CATEGORIES;
+
+  readonly availableCategories = computed(() => {
+    const list = [...CATEGORIES];
+    const existing = new Set(this.allActivities().map((a) => a.category));
+    for (const cat of existing) {
+      if (cat && !list.some((c) => c.name.toLowerCase() === cat.toLowerCase())) {
+        list.push({ name: cat, defaultType: getCategoryDefaultType(cat), color: getCategoryColor(cat) });
+      }
+    }
+    return list;
+  });
+
   readonly todayStr = todayKey();
   readonly yesterdayStr = addDays(this.todayStr, -1);
 

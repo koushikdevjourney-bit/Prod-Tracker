@@ -1,12 +1,13 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CATEGORIES } from '../../../core/constants/categories';
-import { ActivityType } from '../../../core/models';
+import { ActivityType, CategoryDef } from '../../../core/models';
 import { ActivityService } from '../../../core/services/activity.service';
 import { ToastService } from '../../../core/services/toast.service';
 import {
   calculateDuration,
   detectOverlappingActivities,
+  getCategoryColor,
   getCategoryDefaultType,
 } from '../../../core/utils/stats.utils';
 import { ActivityModalService } from './activity-modal.service';
@@ -34,7 +35,7 @@ import { DurationPipe } from '../../pipes/format.pipes';
           <label class="field">
             <span>Category</span>
             <select class="input" [(ngModel)]="category" name="category" (ngModelChange)="onCategoryChange($event)">
-              @for (c of categories; track c.name) {
+              @for (c of allModalCategories; track c.name) {
                 <option [value]="c.name">{{ c.name }}</option>
               }
             </select>
@@ -103,8 +104,22 @@ export class ActivityModalComponent {
 
   readonly categories = CATEGORIES;
 
+  get allModalCategories(): CategoryDef[] {
+    if (this.category && !this.categories.some((c) => c.name.toLowerCase() === this.category.toLowerCase())) {
+      return [
+        ...this.categories,
+        {
+          name: this.category,
+          defaultType: getCategoryDefaultType(this.category),
+          color: getCategoryColor(this.category),
+        },
+      ];
+    }
+    return this.categories;
+  }
+
   name = '';
-  category = 'Coding';
+  category = 'DSA';
   date = '';
   startTime = '09:00';
   endTime = '10:00';
@@ -132,8 +147,8 @@ export class ActivityModalComponent {
         this.continueFrom = '';
       } else {
         const d = s.defaults ?? {};
-        this.name = d.name ?? d.category ?? '';
-        this.category = d.category ?? 'Coding';
+        this.category = d.category ?? 'DSA';
+        this.name = d.name ?? (this.category !== 'DSA' ? this.category : 'DSA');
         this.date = d.date ?? new Date().toISOString().slice(0, 10);
         const slot =
           d.startTime && d.endTime
@@ -166,7 +181,9 @@ export class ActivityModalComponent {
 
   onCategoryChange(cat: string): void {
     this.type = getCategoryDefaultType(cat);
-    if (!this.name.trim()) this.name = cat;
+    if (!this.name.trim() || this.categories.some((c) => c.name.toLowerCase() === this.name.trim().toLowerCase())) {
+      this.name = cat;
+    }
   }
 
   syncMeta(): void {

@@ -118,7 +118,7 @@
 
     <select class="input" [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event); page.set(1)">
       <option value="">All categories</option>
-      @for (c of categories; track c.name) {
+      @for (c of availableCategories(); track c.name) {
         <option [value]="c.name">{{ c.name }}</option>
       }
     </select>
