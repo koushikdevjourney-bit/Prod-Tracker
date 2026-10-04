@@ -7,6 +7,7 @@ export const CATEGORIES: CategoryDef[] = [
   { name: 'Internship', defaultType: 'productive', color: '#2563eb' },
   { name: 'Interview / GRIT Prep', defaultType: 'productive', color: '#0e7490' },
   { name: 'Freshen Up / Personal Care', defaultType: 'neutral', color: '#78716c' },
+  { name: 'Breakfast / Lunch / Dinner', defaultType: 'neutral', color: '#ca8a04' },
   { name: 'Travel', defaultType: 'neutral', color: '#a16207' },
   { name: 'Sleep', defaultType: 'sleep', color: '#64748b' },
   { name: 'Break', defaultType: 'neutral', color: '#94a3b8' },
@@ -18,6 +19,7 @@ export const QUICK_ADD_PRESETS = [
   { label: 'Development', category: 'Development', type: 'productive' as const },
   { label: 'AI/ML', category: 'AI/ML', type: 'productive' as const },
   { label: 'GRIT Prep', category: 'Interview / GRIT Prep', type: 'productive' as const },
+  { label: 'Meals', category: 'Breakfast / Lunch / Dinner', type: 'neutral' as const },
   { label: 'Break', category: 'Break', type: 'neutral' as const },
   { label: 'Sleep', category: 'Sleep', type: 'sleep' as const },
 ];

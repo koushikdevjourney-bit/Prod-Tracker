@@ -330,6 +330,7 @@ export function getCategoryColor(name: string): string {
   if (/intern/i.test(lower)) return '#2563eb';
   if (/grit|interview/i.test(lower)) return '#0e7490';
   if (/fresh|personal|routine/i.test(lower)) return '#78716c';
+  if (/breakfast|lunch|dinner|meal/i.test(lower)) return '#ca8a04';
   if (/travel/i.test(lower)) return '#a16207';
   if (/sleep/i.test(lower)) return '#64748b';
   if (/break/i.test(lower)) return '#94a3b8';
