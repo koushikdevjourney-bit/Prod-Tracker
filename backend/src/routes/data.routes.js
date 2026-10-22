@@ -41,4 +41,7 @@ router.put('/progress', ctrl.saveProgress);
 router.get('/focus-todos', ctrl.getFocusTodos);
 router.put('/focus-todos', ctrl.saveFocusTodos);
 
+router.get('/cards', ctrl.getUserCards);
+router.put('/cards', ctrl.saveUserCards);
+
 module.exports = router;

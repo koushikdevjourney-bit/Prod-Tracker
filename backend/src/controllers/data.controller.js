@@ -218,6 +218,23 @@ async function saveFocusTodos(req, res, next) {
   }
 }
 
+async function getUserCards(req, res, next) {
+  try {
+    res.json({ cards: await data.getUserCards(userId(req)) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function saveUserCards(req, res, next) {
+  try {
+    const cards = Array.isArray(req.body) ? req.body : req.body?.cards;
+    res.json({ cards: await data.saveUserCards(userId(req), cards) });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   snapshot,
   clearAll,
@@ -245,4 +262,6 @@ module.exports = {
   saveProgress,
   getFocusTodos,
   saveFocusTodos,
+  getUserCards,
+  saveUserCards,
 };

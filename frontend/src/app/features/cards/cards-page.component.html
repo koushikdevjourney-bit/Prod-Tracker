@@ -1,0 +1,941 @@
+<div class="vault-page">
+  <!-- Top Vault Header -->
+  <header class="vault-header">
+    <div class="vault-header__left">
+      <a class="vault-back" routerLink="/home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+        <span>Back to Tracker</span>
+      </a>
+
+      <div class="vault-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        <span>Direct Stealth Vault</span>
+      </div>
+    </div>
+
+    <div class="vault-header__actions">
+      <!-- Privacy Mask Toggle -->
+      <button
+        type="button"
+        class="vault-btn vault-btn--ghost"
+        [class.vault-btn--active]="cardService.maskSensitives()"
+        (click)="toggleGlobalPrivacy()"
+        [title]="cardService.maskSensitives() ? 'Sensitive info is masked. Click to reveal all' : 'Sensitive info is visible. Click to mask all'"
+      >
+        @if (cardService.maskSensitives()) {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+            <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+            <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+            <line x1="2" x2="22" y1="2" y2="22" />
+          </svg>
+          <span>Privacy: Masked</span>
+        } @else {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          <span>Privacy: Visible</span>
+        }
+      </button>
+
+      <!-- Add Card Button -->
+      <button type="button" class="vault-btn vault-btn--primary" (click)="openAddModal('personal', 'credit')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 8v8" />
+          <path d="M8 12h8" />
+        </svg>
+        <span>Add Card</span>
+      </button>
+
+      <!-- Theme Toggle -->
+      <button
+        type="button"
+        class="vault-btn vault-btn--icon"
+        (click)="theme.toggleLightDark()"
+        aria-label="Toggle theme"
+      >
+        {{ theme.resolved() === 'dark' ? '☀' : '☾' }}
+      </button>
+    </div>
+  </header>
+
+  <main class="vault-container">
+    <!-- Hero / Headline -->
+    <section class="vault-hero">
+      <div class="vault-hero__copy">
+        <div class="vault-hero__tag">Private Cards Vault • Personal & Others</div>
+        <h1>Cards & Payment Vault</h1>
+        <p class="vault-hero__lede">
+          Securely organize your <strong>Personal Cards</strong> and <strong>Others' Cards</strong> (family, friends, or work), with credit and debit cards kept cleanly separated in their own dedicated zones.
+        </p>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="vault-stats">
+        <div class="vault-stat-item">
+          <span class="vault-stat-item__num">{{ cardService.stats().total }}</span>
+          <span class="vault-stat-item__label">Total Cards</span>
+        </div>
+        <div class="vault-stat-item vault-stat-item--personal">
+          <span class="vault-stat-item__num text-personal">{{ cardService.stats().personalTotal }}</span>
+          <span class="vault-stat-item__label">Personal Cards ({{ cardService.stats().personalCredit }} C / {{ cardService.stats().personalDebit }} D)</span>
+        </div>
+        <div class="vault-stat-item vault-stat-item--others">
+          <span class="vault-stat-item__num text-others">{{ cardService.stats().othersTotal }}</span>
+          <span class="vault-stat-item__label">Others' Cards ({{ cardService.stats().othersCredit }} C / {{ cardService.stats().othersDebit }} D)</span>
+        </div>
+        <div class="vault-stat-item">
+          <span class="vault-stat-item__num text-fav">★ {{ cardService.stats().favoritesCount }}</span>
+          <span class="vault-stat-item__label">Favorites</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toolbar: Search & Filter Tabs -->
+    <section class="vault-toolbar">
+      <div class="vault-tabs">
+        <button
+          type="button"
+          class="vault-tab"
+          [class.vault-tab--active]="cardService.filterTab() === 'all'"
+          (click)="cardService.setFilterTab('all')"
+        >
+          All Cards ({{ cardService.stats().total }})
+        </button>
+        <button
+          type="button"
+          class="vault-tab"
+          [class.vault-tab--active]="cardService.filterTab() === 'personal'"
+          (click)="cardService.setFilterTab('personal')"
+        >
+          👤 Personal ({{ cardService.stats().personalTotal }})
+        </button>
+        <button
+          type="button"
+          class="vault-tab"
+          [class.vault-tab--active]="cardService.filterTab() === 'others'"
+          (click)="cardService.setFilterTab('others')"
+        >
+          👥 Others ({{ cardService.stats().othersTotal }})
+        </button>
+        <button
+          type="button"
+          class="vault-tab"
+          [class.vault-tab--active]="cardService.filterTab() === 'credit'"
+          (click)="cardService.setFilterTab('credit')"
+        >
+          💳 Credit ({{ cardService.stats().creditCount }})
+        </button>
+        <button
+          type="button"
+          class="vault-tab"
+          [class.vault-tab--active]="cardService.filterTab() === 'debit'"
+          (click)="cardService.setFilterTab('debit')"
+        >
+          🏦 Debit ({{ cardService.stats().debitCount }})
+        </button>
+        <button
+          type="button"
+          class="vault-tab"
+          [class.vault-tab--active]="cardService.filterTab() === 'favorites'"
+          (click)="cardService.setFilterTab('favorites')"
+        >
+          ★ Favorites ({{ cardService.stats().favoritesCount }})
+        </button>
+      </div>
+
+      <div class="vault-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search bank, nickname, owner, last 4..."
+          [value]="cardService.searchQuery()"
+          (input)="cardService.setSearchQuery($any($event.target).value)"
+        />
+        @if (cardService.searchQuery()) {
+          <button type="button" class="vault-search__clear" (click)="cardService.setSearchQuery('')" title="Clear">
+            ✕
+          </button>
+        }
+      </div>
+    </section>
+
+    <!-- MAIN CARDS SECTIONS -->
+    @if (cardService.filteredCards().length > 0) {
+
+      <!-- ================= SECTION 1: PERSONAL CARDS ================= -->
+      @if (cardService.filterTab() === 'all' || cardService.filterTab() === 'personal' || ((cardService.filterTab() === 'credit' || cardService.filterTab() === 'debit' || cardService.filterTab() === 'favorites') && (cardService.personalCreditCards().length > 0 || cardService.personalDebitCards().length > 0))) {
+        <section class="vault-domain-section vault-domain-section--personal">
+          <div class="vault-domain-header">
+            <div class="vault-domain-title">
+              <span class="vault-domain-icon">👤</span>
+              <div>
+                <h2>Personal Cards</h2>
+                <span class="vault-domain-subtitle">Your personal credit & debit accounts</span>
+              </div>
+            </div>
+            <div class="vault-domain-actions">
+              <span class="vault-domain-count">{{ cardService.personalCreditCards().length + cardService.personalDebitCards().length }} Cards</span>
+              <button type="button" class="vault-btn vault-btn--ghost btn--sm" (click)="openAddModal('personal', 'credit')">
+                + Add Personal Card
+              </button>
+            </div>
+          </div>
+
+          <!-- Subsection: Personal Credit Cards -->
+          @if (cardService.filterTab() !== 'debit') {
+            <div class="vault-subgroup">
+              <div class="vault-subgroup-header">
+                <div class="vault-subgroup-title">
+                  <span class="subgroup-badge subgroup-badge--credit">💳 Credit Cards</span>
+                  <span class="subgroup-count">({{ cardService.personalCreditCards().length }})</span>
+                </div>
+                <button type="button" class="subgroup-add-btn" (click)="openAddModal('personal', 'credit')">
+                  + Add Credit
+                </button>
+              </div>
+
+              @if (cardService.personalCreditCards().length > 0) {
+                <div class="vault-grid">
+                  @for (card of cardService.personalCreditCards(); track card.id) {
+                    <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
+                  }
+                </div>
+              } @else {
+                <div class="subgroup-empty">
+                  <span>No personal credit cards added yet.</span>
+                  <button type="button" class="subgroup-empty-btn" (click)="openAddModal('personal', 'credit')">
+                    + Add Personal Credit Card
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Subsection: Personal Debit Cards -->
+          @if (cardService.filterTab() !== 'credit') {
+            <div class="vault-subgroup">
+              <div class="vault-subgroup-header">
+                <div class="vault-subgroup-title">
+                  <span class="subgroup-badge subgroup-badge--debit">🏦 Debit Cards</span>
+                  <span class="subgroup-count">({{ cardService.personalDebitCards().length }})</span>
+                </div>
+                <button type="button" class="subgroup-add-btn" (click)="openAddModal('personal', 'debit')">
+                  + Add Debit
+                </button>
+              </div>
+
+              @if (cardService.personalDebitCards().length > 0) {
+                <div class="vault-grid">
+                  @for (card of cardService.personalDebitCards(); track card.id) {
+                    <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
+                  }
+                </div>
+              } @else {
+                <div class="subgroup-empty">
+                  <span>No personal debit cards added yet.</span>
+                  <button type="button" class="subgroup-empty-btn" (click)="openAddModal('personal', 'debit')">
+                    + Add Personal Debit Card
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      <!-- ================= SECTION 2: OTHERS' CARDS ================= -->
+      @if (cardService.filterTab() === 'all' || cardService.filterTab() === 'others' || ((cardService.filterTab() === 'credit' || cardService.filterTab() === 'debit' || cardService.filterTab() === 'favorites') && (cardService.othersCreditCards().length > 0 || cardService.othersDebitCards().length > 0))) {
+        <section class="vault-domain-section vault-domain-section--others">
+          <div class="vault-domain-header">
+            <div class="vault-domain-title">
+              <span class="vault-domain-icon">👥</span>
+              <div>
+                <h2>Others' Cards</h2>
+                <span class="vault-domain-subtitle">Cards belonging to family, parents, friends, or work</span>
+              </div>
+            </div>
+            <div class="vault-domain-actions">
+              <span class="vault-domain-count vault-domain-count--others">{{ cardService.othersCreditCards().length + cardService.othersDebitCards().length }} Cards</span>
+              <button type="button" class="vault-btn vault-btn--ghost btn--sm" (click)="openAddModal('others', 'credit')">
+                + Add Others' Card
+              </button>
+            </div>
+          </div>
+
+          <!-- Subsection: Others' Credit Cards -->
+          @if (cardService.filterTab() !== 'debit') {
+            <div class="vault-subgroup">
+              <div class="vault-subgroup-header">
+                <div class="vault-subgroup-title">
+                  <span class="subgroup-badge subgroup-badge--credit">💳 Others' Credit Cards</span>
+                  <span class="subgroup-count">({{ cardService.othersCreditCards().length }})</span>
+                </div>
+                <button type="button" class="subgroup-add-btn" (click)="openAddModal('others', 'credit')">
+                  + Add Credit
+                </button>
+              </div>
+
+              @if (cardService.othersCreditCards().length > 0) {
+                <div class="vault-grid">
+                  @for (card of cardService.othersCreditCards(); track card.id) {
+                    <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
+                  }
+                </div>
+              } @else {
+                <div class="subgroup-empty">
+                  <span>No others' credit cards added yet.</span>
+                  <button type="button" class="subgroup-empty-btn" (click)="openAddModal('others', 'credit')">
+                    + Add Others' Credit Card
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Subsection: Others' Debit Cards -->
+          @if (cardService.filterTab() !== 'credit') {
+            <div class="vault-subgroup">
+              <div class="vault-subgroup-header">
+                <div class="vault-subgroup-title">
+                  <span class="subgroup-badge subgroup-badge--debit">🏦 Others' Debit Cards</span>
+                  <span class="subgroup-count">({{ cardService.othersDebitCards().length }})</span>
+                </div>
+                <button type="button" class="subgroup-add-btn" (click)="openAddModal('others', 'debit')">
+                  + Add Debit
+                </button>
+              </div>
+
+              @if (cardService.othersDebitCards().length > 0) {
+                <div class="vault-grid">
+                  @for (card of cardService.othersDebitCards(); track card.id) {
+                    <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
+                  }
+                </div>
+              } @else {
+                <div class="subgroup-empty">
+                  <span>No others' debit cards added yet.</span>
+                  <button type="button" class="subgroup-empty-btn" (click)="openAddModal('others', 'debit')">
+                    + Add Others' Debit Card
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+
+    } @else {
+      <!-- Empty State -->
+      <section class="vault-empty">
+        <div class="vault-empty__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="14" x="2" y="5" rx="2" />
+            <line x1="2" x2="22" y1="10" y2="10" />
+            <circle cx="6" cy="15" r="1" />
+            <circle cx="10" cy="15" r="1" />
+          </svg>
+        </div>
+        @if (cardService.searchQuery() || cardService.filterTab() !== 'all') {
+          <h3>No matching cards found</h3>
+          <p>No cards matched your search "{{ cardService.searchQuery() }}" or current filter. Try resetting filters.</p>
+          <button type="button" class="vault-btn vault-btn--ghost" (click)="cardService.setFilterTab('all'); cardService.setSearchQuery('')">
+            Reset Filters
+          </button>
+        } @else {
+          <h3>Your Private Card Vault is Empty</h3>
+          <p>Add your <strong>Personal Cards</strong> and <strong>Others' Cards</strong> here. Keep credit and debit cards organized with instant copying and privacy masking.</p>
+          <div class="empty-btn-group">
+            <button type="button" class="vault-btn vault-btn--primary" (click)="openAddModal('personal', 'credit')">
+              + Add Personal Card
+            </button>
+            <button type="button" class="vault-btn vault-btn--ghost" (click)="openAddModal('others', 'credit')">
+              + Add Others' Card
+            </button>
+          </div>
+        }
+      </section>
+    }
+  </main>
+
+  <!-- REUSABLE CARD TEMPLATE -->
+  <ng-template #cardCardTpl let-card>
+    <article class="card-wrapper">
+      <!-- Realistic Card Surface -->
+      <div
+        class="real-card"
+        [style.background]="getThemeDef(card.theme).gradient"
+        [style.color]="getThemeDef(card.theme).textColor"
+      >
+        <div class="real-card__sheen"></div>
+
+        <!-- Top Row: Bank, Nickname & Badges -->
+        <div class="real-card__top">
+          <div class="real-card__issuer">
+            <span class="real-card__bank">{{ card.bankName }}</span>
+            @if (card.nickname) {
+              <span class="real-card__nick">{{ card.nickname }}</span>
+            }
+          </div>
+
+          <div class="real-card__badges">
+            @if (card.cardCategory === 'others' && card.belongsTo) {
+              <span class="card-pill card-pill--owner" title="Card Owner">
+                👤 {{ card.belongsTo }}
+              </span>
+            }
+            <span class="card-pill" [class.card-pill--credit]="card.cardType === 'credit'" [class.card-pill--debit]="card.cardType === 'debit'">
+              {{ card.cardType | uppercase }}
+            </span>
+            <button
+              type="button"
+              class="real-card__fav-btn"
+              [class.real-card__fav-btn--active]="card.isFavorite"
+              (click)="cardService.toggleFavorite(card.id)"
+              title="Toggle Favorite"
+            >
+              ★
+            </button>
+          </div>
+        </div>
+
+        <!-- Chip & Contactless Icons -->
+        <div class="real-card__hardware">
+          <div class="emv-chip">
+            <div class="emv-chip__line emv-chip__line--h1"></div>
+            <div class="emv-chip__line emv-chip__line--h2"></div>
+            <div class="emv-chip__line emv-chip__line--v"></div>
+          </div>
+
+          <svg class="contactless-wave" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M8.5 16.5a5 5 0 0 1 0-7" />
+            <path d="M12 19a8.5 8.5 0 0 0 0-14" />
+            <path d="M15.5 21.5a12 12 0 0 0 0-19" />
+          </svg>
+
+          <div class="card-network-badge" [attr.data-network]="card.network">
+            {{ card.network | uppercase }}
+          </div>
+        </div>
+
+        <!-- 16-Digit Card Number with Reveal & Copy -->
+        <div class="real-card__number-row">
+          <span class="real-card__digits">
+            {{ formatDisplayNumber(card.cardNumber, isNumberRevealed(card.id)) }}
+          </span>
+
+          <div class="real-card__quick-actions">
+            <!-- Reveal toggle -->
+            <button
+              type="button"
+              class="card-icon-btn"
+              (click)="toggleCardNumberReveal(card.id)"
+              [title]="isNumberRevealed(card.id) ? 'Hide card number' : 'Reveal card number'"
+            >
+              @if (isNumberRevealed(card.id)) {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                  <line x1="2" x2="22" y1="2" y2="22" />
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              }
+            </button>
+
+            <!-- Copy Card Number -->
+            <button
+              type="button"
+              class="card-icon-btn"
+              (click)="copyToClipboard(card.cardNumber, 'Card number', 'num-' + card.id)"
+              title="Copy card number"
+            >
+              @if (copiedKey() === 'num-' + card.id) {
+                <span class="copied-indicator">✓</span>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                </svg>
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- Card Bottom Details -->
+        <div class="real-card__bottom">
+          <div class="real-card__meta-group">
+            <span class="meta-label">CARD HOLDER</span>
+            <span class="meta-value">{{ card.cardholderName || 'VALUED CUSTOMER' }}</span>
+          </div>
+
+          <div class="real-card__meta-group">
+            <span class="meta-label">EXPIRES</span>
+            <div class="meta-value-row">
+              <span class="meta-value">{{ formatExpiry(card.expiryMonth, card.expiryYear) }}</span>
+              <button
+                type="button"
+                class="card-micro-btn"
+                (click)="copyToClipboard(formatExpiry(card.expiryMonth, card.expiryYear), 'Expiry', 'exp-' + card.id)"
+                title="Copy Expiry"
+              >
+                @if (copiedKey() === 'exp-' + card.id) {
+                  ✓
+                } @else {
+                  ⧉
+                }
+              </button>
+            </div>
+          </div>
+
+          <div class="real-card__meta-group">
+            <span class="meta-label">CVV</span>
+            <div class="meta-value-row">
+              <span class="meta-value cvv-text">
+                {{ isCvvRevealed(card.id) ? (card.cvv || '•••') : '•••' }}
+              </span>
+              <button
+                type="button"
+                class="card-micro-btn"
+                (click)="toggleCvvReveal(card.id)"
+                [title]="isCvvRevealed(card.id) ? 'Hide CVV' : 'Reveal CVV'"
+              >
+                {{ isCvvRevealed(card.id) ? 'Hide' : 'Show' }}
+              </button>
+              @if (card.cvv) {
+                <button
+                  type="button"
+                  class="card-micro-btn"
+                  (click)="copyToClipboard(card.cvv, 'CVV', 'cvv-' + card.id)"
+                  title="Copy CVV"
+                >
+                  @if (copiedKey() === 'cvv-' + card.id) {
+                    ✓
+                  } @else {
+                    ⧉
+                  }
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auxiliary Info Panel -->
+      <div class="card-details-panel">
+        <div class="card-details-row">
+          @if (card.cardCategory === 'others' && card.belongsTo) {
+            <div class="detail-pill detail-pill--owner">
+              <span><strong>Owner:</strong> {{ card.belongsTo }}</span>
+            </div>
+          }
+
+          @if (card.dueDate) {
+            <div class="detail-pill detail-pill--due">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                <line x1="16" x2="16" y1="2" y2="6" />
+                <line x1="8" x2="8" y1="2" y2="6" />
+                <line x1="3" x2="21" y1="10" y2="10" />
+              </svg>
+              <span><strong>Due:</strong> {{ card.dueDate }}</span>
+            </div>
+          }
+
+          @if (card.billingDate) {
+            <div class="detail-pill">
+              <span><strong>Cycle:</strong> {{ card.billingDate }}</span>
+            </div>
+          }
+
+          @if (card.creditLimit) {
+            <div class="detail-pill detail-pill--limit">
+              <span><strong>Limit:</strong> ₹{{ card.creditLimit }}</span>
+            </div>
+          }
+        </div>
+
+        @if (card.notes) {
+          <div class="card-notes-box">
+            <span class="notes-tag">Notes / Perks:</span>
+            <p class="notes-text">{{ card.notes }}</p>
+          </div>
+        }
+
+        <!-- Actions -->
+        <div class="card-panel-actions">
+          <button type="button" class="panel-btn panel-btn--edit" (click)="openEditModal(card)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <path d="m15 5 4 4" />
+            </svg>
+            <span>Edit</span>
+          </button>
+          <button type="button" class="panel-btn panel-btn--delete" (click)="deleteCard(card)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18" />
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+            <span>Delete</span>
+          </button>
+        </div>
+      </div>
+    </article>
+  </ng-template>
+
+  <!-- Add / Edit Modal Drawer -->
+  @if (isModalOpen()) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <div>
+            <h2>{{ editingCardId() ? 'Edit Card Details' : 'Add New Card to Vault' }}</h2>
+            <p class="modal-sub">Choose whether this is your Personal Card or belongs to Others.</p>
+          </div>
+          <button type="button" class="modal-close" (click)="closeModal()">✕</button>
+        </div>
+
+        <div class="modal-body-split">
+          <!-- Left: Real-time Live Preview -->
+          <div class="modal-preview-col">
+            <span class="preview-label">LIVE CARD PREVIEW</span>
+
+            <div
+              class="real-card real-card--preview"
+              [style.background]="selectedThemeDef().gradient"
+              [style.color]="selectedThemeDef().textColor"
+            >
+              <div class="real-card__sheen"></div>
+
+              <div class="real-card__top">
+                <div class="real-card__issuer">
+                  <span class="real-card__bank">{{ draft().bankName || 'BANK NAME' }}</span>
+                  <span class="real-card__nick">{{ draft().nickname || 'Card Nickname' }}</span>
+                </div>
+                <div class="real-card__badges">
+                  @if (draft().cardCategory === 'others' && draft().belongsTo) {
+                    <span class="card-pill card-pill--owner">
+                      👤 {{ draft().belongsTo }}
+                    </span>
+                  }
+                  <span class="card-pill" [class.card-pill--credit]="draft().cardType === 'credit'" [class.card-pill--debit]="draft().cardType === 'debit'">
+                    {{ draft().cardType | uppercase }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="real-card__hardware">
+                <div class="emv-chip">
+                  <div class="emv-chip__line emv-chip__line--h1"></div>
+                  <div class="emv-chip__line emv-chip__line--h2"></div>
+                  <div class="emv-chip__line emv-chip__line--v"></div>
+                </div>
+                <svg class="contactless-wave" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M8.5 16.5a5 5 0 0 1 0-7" />
+                  <path d="M12 19a8.5 8.5 0 0 0 0-14" />
+                  <path d="M15.5 21.5a12 12 0 0 0 0-19" />
+                </svg>
+                <div class="card-network-badge" [attr.data-network]="draft().network">
+                  {{ draft().network | uppercase }}
+                </div>
+              </div>
+
+              <div class="real-card__number-row">
+                <span class="real-card__digits">
+                  {{ formattedDraftNumber() || '•••• •••• •••• ••••' }}
+                </span>
+              </div>
+
+              <div class="real-card__bottom">
+                <div class="real-card__meta-group">
+                  <span class="meta-label">CARD HOLDER</span>
+                  <span class="meta-value">{{ draft().cardholderName || 'YOUR NAME' }}</span>
+                </div>
+
+                <div class="real-card__meta-group">
+                  <span class="meta-label">EXPIRES</span>
+                  <span class="meta-value">{{ formatExpiry(draft().expiryMonth, draft().expiryYear) }}</span>
+                </div>
+
+                <div class="real-card__meta-group">
+                  <span class="meta-label">CVV</span>
+                  <span class="meta-value cvv-text">{{ draft().cvv || '•••' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Theme Picker -->
+            <div class="theme-picker-section">
+              <label class="form-label">Card Finish & Gradient</label>
+              <div class="theme-swatches">
+                @for (th of themes; track th.id) {
+                  <button
+                    type="button"
+                    class="theme-swatch"
+                    [class.theme-swatch--active]="draft().theme === th.id"
+                    [style.background]="th.gradient"
+                    (click)="setDraftTheme(th.id)"
+                    [title]="th.name"
+                  ></button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Form Controls -->
+          <div class="modal-form-col">
+            <!-- 1. Section / Ownership: Personal vs Others -->
+            <div class="form-group">
+              <label class="form-label">Card Ownership / Category *</label>
+              <div class="type-segmented">
+                <button
+                  type="button"
+                  class="type-btn"
+                  [class.type-btn--active]="draft().cardCategory === 'personal'"
+                  (click)="setDraftCategory('personal')"
+                >
+                  👤 Personal Card
+                </button>
+                <button
+                  type="button"
+                  class="type-btn"
+                  [class.type-btn--active]="draft().cardCategory === 'others'"
+                  (click)="setDraftCategory('others')"
+                >
+                  👥 Others' Card
+                </button>
+              </div>
+            </div>
+
+            <!-- If Others: Who does it belong to? -->
+            @if (draft().cardCategory === 'others') {
+              <div class="form-group highlight-box">
+                <label class="form-label" for="cardOwner">Whose Card Is This? (Owner / Relation) *</label>
+                <input
+                  id="cardOwner"
+                  type="text"
+                  class="form-control"
+                  placeholder="e.g. Dad, Mom, Brother, Office / Company, Friend"
+                  list="belongsToSuggestions"
+                  [(ngModel)]="draft().belongsTo"
+                />
+                <datalist id="belongsToSuggestions">
+                  @for (rel of belongsToSuggestions; track rel) {
+                    <option [value]="rel"></option>
+                  }
+                </datalist>
+                <span class="field-hint">e.g. Dad, Mom, Office, Priya</span>
+              </div>
+            }
+
+            <!-- 2. Type: Credit vs Debit -->
+            <div class="form-group">
+              <label class="form-label">Card Type *</label>
+              <div class="type-segmented">
+                <button
+                  type="button"
+                  class="type-btn"
+                  [class.type-btn--active]="draft().cardType === 'credit'"
+                  (click)="setDraftType('credit')"
+                >
+                  💳 Credit Card
+                </button>
+                <button
+                  type="button"
+                  class="type-btn"
+                  [class.type-btn--active]="draft().cardType === 'debit'"
+                  (click)="setDraftType('debit')"
+                >
+                  🏦 Debit Card
+                </button>
+              </div>
+            </div>
+
+            <!-- Bank & Nickname -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label class="form-label" for="cardBank">Bank / Issuer *</label>
+                <input
+                  id="cardBank"
+                  type="text"
+                  class="form-control"
+                  placeholder="e.g. HDFC Bank, ICICI, SBI"
+                  list="bankSuggestions"
+                  [(ngModel)]="draft().bankName"
+                />
+                <datalist id="bankSuggestions">
+                  @for (bank of popularBanks; track bank) {
+                    <option [value]="bank"></option>
+                  }
+                </datalist>
+              </div>
+
+              <div class="form-group flex-1">
+                <label class="form-label" for="cardNick">Nickname / Label</label>
+                <input
+                  id="cardNick"
+                  type="text"
+                  class="form-control"
+                  placeholder="e.g. Regalia Gold, Salary Card"
+                  [(ngModel)]="draft().nickname"
+                />
+              </div>
+            </div>
+
+            <!-- Cardholder Name -->
+            <div class="form-group">
+              <label class="form-label" for="cardHolder">Cardholder Name (as on card)</label>
+              <input
+                id="cardHolder"
+                type="text"
+                class="form-control text-uppercase"
+                placeholder="e.g. JOHN DOE"
+                [(ngModel)]="draft().cardholderName"
+              />
+            </div>
+
+            <!-- Card Number & Network -->
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label class="form-label" for="cardNumber">Card Number (16 Digits) *</label>
+                <input
+                  id="cardNumber"
+                  type="text"
+                  class="form-control font-mono"
+                  placeholder="1234 5678 9012 3456"
+                  maxlength="23"
+                  [ngModel]="formattedDraftNumber()"
+                  (ngModelChange)="onDraftNumberChange($event)"
+                />
+              </div>
+
+              <div class="form-group flex-1">
+                <label class="form-label" for="cardNetwork">Network</label>
+                <select id="cardNetwork" class="form-control" [(ngModel)]="draft().network">
+                  <option value="visa">Visa</option>
+                  <option value="mastercard">Mastercard</option>
+                  <option value="rupay">RuPay</option>
+                  <option value="amex">Amex</option>
+                  <option value="discover">Discover</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Expiry & CVV -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label class="form-label" for="cardExpiry">Expiry Date (MM/YY) *</label>
+                <input
+                  id="cardExpiry"
+                  type="text"
+                  class="form-control font-mono"
+                  placeholder="MM/YY"
+                  maxlength="5"
+                  [value]="draft().expiryMonth && draft().expiryYear ? draft().expiryMonth + '/' + draft().expiryYear : ''"
+                  (input)="onDraftExpiryInput($event)"
+                />
+              </div>
+
+              <div class="form-group flex-1">
+                <label class="form-label" for="cardCvv">CVV / CVC (3-4 digits)</label>
+                <input
+                  id="cardCvv"
+                  type="password"
+                  class="form-control font-mono"
+                  placeholder="•••"
+                  maxlength="4"
+                  [(ngModel)]="draft().cvv"
+                />
+              </div>
+            </div>
+
+            <!-- Billing & Due Dates -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label class="form-label" for="cardBilling">Billing Cycle Date</label>
+                <input
+                  id="cardBilling"
+                  type="text"
+                  class="form-control"
+                  placeholder="e.g. 15th of month"
+                  [(ngModel)]="draft().billingDate"
+                />
+              </div>
+
+              <div class="form-group flex-1">
+                <label class="form-label" for="cardDue">Payment Due Date</label>
+                <input
+                  id="cardDue"
+                  type="text"
+                  class="form-control"
+                  placeholder="e.g. 5th of next month"
+                  [(ngModel)]="draft().dueDate"
+                />
+              </div>
+            </div>
+
+            <!-- Credit Limit & Favorite Toggle -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label class="form-label" for="cardLimit">Credit / Spending Limit</label>
+                <input
+                  id="cardLimit"
+                  type="text"
+                  class="form-control"
+                  placeholder="e.g. 1,50,000"
+                  [(ngModel)]="draft().creditLimit"
+                />
+              </div>
+
+              <div class="form-group flex-1 checkbox-center">
+                <label class="checkbox-label">
+                  <input type="checkbox" [(ngModel)]="draft().isFavorite" />
+                  <span>Mark as Favorite Card ★</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Notes & Perks -->
+            <div class="form-group">
+              <label class="form-label" for="cardNotes">Private Notes & Perks</label>
+              <textarea
+                id="cardNotes"
+                rows="2"
+                class="form-control"
+                placeholder="e.g. Lounge access terminal 2, cashback rewards, PIN hint..."
+                [(ngModel)]="draft().notes"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer">
+          <button type="button" class="vault-btn vault-btn--ghost" (click)="closeModal()">
+            Cancel
+          </button>
+          <button type="button" class="vault-btn vault-btn--primary" (click)="saveCard()">
+            {{ editingCardId() ? 'Update Card' : 'Save Card to Vault' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

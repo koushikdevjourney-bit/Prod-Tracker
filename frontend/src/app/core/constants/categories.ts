@@ -37,6 +37,7 @@ export const STORAGE_KEYS = {
   academicPacks: 'pt.academic_packs',
   progress: 'pt.progress',
   focusTodos: 'pt.focusTodos',
+  cards: 'pt.cards',
   aiSettings: 'pt.aiSettings',
   aiChatHistory: 'pt.aiChatHistory',
   aiChatSessions: 'pt.aiChatSessions',

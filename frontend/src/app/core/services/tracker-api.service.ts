@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Activity, ActivityType, AppSettings, FocusTodoItem, Goal, GoalPeriod, Habit } from '../models';
+import { Activity, ActivityType, AppSettings, CardItem, FocusTodoItem, Goal, GoalPeriod, Habit } from '../models';
 import { GritProgress } from '../data/grit-catalog';
 import { AcademicTrack } from '../data/academic-catalog';
 import { ProgressState } from '../data/progress-catalog';
@@ -46,6 +46,7 @@ export interface TrackerSnapshot {
   academics: AcademicTrack[];
   progress: ProgressState;
   focusTodos?: FocusTodoItem[];
+  cards?: CardItem[];
 }
 
 export interface ImportPayload {
@@ -57,6 +58,7 @@ export interface ImportPayload {
   academics?: AcademicTrack[];
   progress?: ProgressState;
   focusTodos?: FocusTodoItem[];
+  cards?: CardItem[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -140,6 +142,18 @@ export class TrackerApiService {
     return this.http
       .put<{ todos: FocusTodoItem[] }>(`${this.base}/focus-todos`, { todos })
       .pipe(map((res) => res.todos ?? todos));
+  }
+
+  getCards(): Observable<CardItem[]> {
+    return this.http
+      .get<{ cards: CardItem[] }>(`${this.base}/cards`)
+      .pipe(map((res) => res.cards ?? []));
+  }
+
+  saveCards(cards: CardItem[]): Observable<CardItem[]> {
+    return this.http
+      .put<{ cards: CardItem[] }>(`${this.base}/cards`, { cards })
+      .pipe(map((res) => res.cards ?? cards));
   }
 
   sendTestReminder(email?: string, name?: string): Observable<{ success: boolean; message: string }> {

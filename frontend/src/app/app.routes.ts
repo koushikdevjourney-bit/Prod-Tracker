@@ -58,6 +58,22 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'cards',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/cards/cards-page.component').then((m) => m.CardsPageComponent),
+  },
+  {
+    path: 'cards-vault',
+    redirectTo: 'cards',
+    pathMatch: 'full',
+  },
+  {
+    path: 'wallet',
+    redirectTo: 'cards',
+    pathMatch: 'full',
+  },
+  {
     path: '',
     component: ShellComponent,
     canActivate: [authGuard],

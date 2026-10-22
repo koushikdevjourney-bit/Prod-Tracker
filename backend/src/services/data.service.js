@@ -6,6 +6,7 @@ const UserGrit = require('../models/UserGrit');
 const UserAcademics = require('../models/UserAcademics');
 const UserProgress = require('../models/UserProgress');
 const UserFocusTodo = require('../models/UserFocusTodo');
+const UserCard = require('../models/UserCard');
 const { ACTIVITY_TYPES } = require('../models/Activity');
 const { GOAL_PERIODS } = require('../models/Goal');
 const { THEMES } = require('../models/UserSettings');
@@ -412,8 +413,96 @@ async function saveFocusTodos(userId, todos) {
   }));
 }
 
+function sanitizeUserCards(raw) {
+  if (!Array.isArray(raw)) return [];
+  const validNetworks = ['visa', 'mastercard', 'rupay', 'amex', 'discover', 'other'];
+  return raw.map((item) => {
+    const cardCategory = item?.cardCategory === 'others' ? 'others' : 'personal';
+    const cardType = item?.cardType === 'debit' ? 'debit' : 'credit';
+    const network = validNetworks.includes(String(item?.network).toLowerCase())
+      ? String(item.network).toLowerCase()
+      : 'visa';
+    return {
+      id: String(item?.id || Date.now().toString()).slice(0, 80),
+      cardCategory,
+      cardType,
+      belongsTo: String(item?.belongsTo || '').trim().slice(0, 100),
+      cardholderName: String(item?.cardholderName || '').trim().slice(0, 100),
+      bankName: String(item?.bankName || '').trim().slice(0, 100),
+      nickname: String(item?.nickname || '').trim().slice(0, 100),
+      cardNumber: String(item?.cardNumber || '').trim().slice(0, 30),
+      expiryMonth: String(item?.expiryMonth || '').trim().slice(0, 2),
+      expiryYear: String(item?.expiryYear || '').trim().slice(0, 4),
+      cvv: String(item?.cvv || '').trim().slice(0, 6),
+      network,
+      theme: String(item?.theme || 'midnight').trim().slice(0, 50),
+      billingDate: String(item?.billingDate || '').trim().slice(0, 50),
+      dueDate: String(item?.dueDate || '').trim().slice(0, 50),
+      creditLimit: String(item?.creditLimit || '').trim().slice(0, 50),
+      notes: String(item?.notes || '').trim().slice(0, 1000),
+      isFavorite: Boolean(item?.isFavorite),
+      createdAt: item?.createdAt ? String(item.createdAt).slice(0, 40) : new Date().toISOString(),
+    };
+  });
+}
+
+async function getUserCards(userId) {
+  const doc = await UserCard.findOne({ user: userId });
+  return doc?.cards
+    ? doc.cards.map((c) => ({
+        id: c.id,
+        cardCategory: c.cardCategory || 'personal',
+        cardType: c.cardType,
+        belongsTo: c.belongsTo || '',
+        cardholderName: c.cardholderName || '',
+        bankName: c.bankName || '',
+        nickname: c.nickname || '',
+        cardNumber: c.cardNumber || '',
+        expiryMonth: c.expiryMonth || '',
+        expiryYear: c.expiryYear || '',
+        cvv: c.cvv || '',
+        network: c.network || 'visa',
+        theme: c.theme || 'midnight',
+        billingDate: c.billingDate || '',
+        dueDate: c.dueDate || '',
+        creditLimit: c.creditLimit || '',
+        notes: c.notes || '',
+        isFavorite: Boolean(c.isFavorite),
+        createdAt: c.createdAt || '',
+      }))
+    : [];
+}
+
+async function saveUserCards(userId, cards) {
+  const cleaned = sanitizeUserCards(cards);
+  const doc = await UserCard.findOneAndUpdate(
+    { user: userId },
+    { user: userId, cards: cleaned },
+    { new: true, upsert: true, setDefaultsOnInsert: true },
+  );
+  return doc.cards.map((c) => ({
+    id: c.id,
+    cardType: c.cardType,
+    cardholderName: c.cardholderName || '',
+    bankName: c.bankName || '',
+    nickname: c.nickname || '',
+    cardNumber: c.cardNumber || '',
+    expiryMonth: c.expiryMonth || '',
+    expiryYear: c.expiryYear || '',
+    cvv: c.cvv || '',
+    network: c.network || 'visa',
+    theme: c.theme || 'midnight',
+    billingDate: c.billingDate || '',
+    dueDate: c.dueDate || '',
+    creditLimit: c.creditLimit || '',
+    notes: c.notes || '',
+    isFavorite: Boolean(c.isFavorite),
+    createdAt: c.createdAt || '',
+  }));
+}
+
 async function getSnapshot(userId) {
-  const [activities, goals, habits, settingsDoc, grit, academics, progress, focusTodos] = await Promise.all([
+  const [activities, goals, habits, settingsDoc, grit, academics, progress, focusTodos, cards] = await Promise.all([
     Activity.find({ user: userId }).sort({ date: -1, startTime: 1 }),
     Goal.find({ user: userId }).sort({ date: -1 }),
     Habit.find({ user: userId }).sort({ createdAt: 1 }),
@@ -422,6 +511,7 @@ async function getSnapshot(userId) {
     getAcademics(userId),
     getProgress(userId),
     getFocusTodos(userId),
+    getUserCards(userId),
   ]);
 
   return {
@@ -433,6 +523,7 @@ async function getSnapshot(userId) {
     academics,
     progress,
     focusTodos,
+    cards,
   };
 }
 
@@ -445,6 +536,7 @@ async function clearAll(userId) {
     UserAcademics.deleteMany({ user: userId }),
     UserProgress.deleteMany({ user: userId }),
     UserFocusTodo.deleteMany({ user: userId }),
+    UserCard.deleteMany({ user: userId }),
   ]);
 }
 
@@ -674,4 +766,6 @@ module.exports = {
   saveProgress,
   getFocusTodos,
   saveFocusTodos,
+  getUserCards,
+  saveUserCards,
 };
