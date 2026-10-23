@@ -609,10 +609,15 @@
           </div>
         </div>
 
-        <!-- 16-Digit Card Number with Reveal & Copy -->
+        <!-- 16-Digit Card Number with Direct Click-to-Copy & Actions -->
         <div class="real-card__number-row">
-          <span class="real-card__digits">
+          <span
+            class="real-card__digits real-card__clickable-field"
+            (click)="copyCardNumber(card)"
+            title="Click to copy raw 16-digit card number"
+          >
             {{ formatDisplayNumber(card.cardNumber, isNumberRevealed(card.id)) }}
+            <span class="inline-copy-hint">📋</span>
           </span>
 
           <div class="real-card__quick-actions">
@@ -638,12 +643,12 @@
               }
             </button>
 
-            <!-- Copy Card Number -->
+            <!-- Quick copy button on card -->
             <button
               type="button"
               class="card-icon-btn"
-              (click)="copyToClipboard(card.cardNumber, 'Card number', 'num-' + card.id)"
-              title="Copy card number"
+              (click)="copyCardNumber(card)"
+              title="Copy 16-digit card number"
             >
               @if (copiedKey() === 'num-' + card.id) {
                 <span class="copied-indicator">✓</span>
@@ -659,20 +664,35 @@
 
         <!-- Card Bottom Details -->
         <div class="real-card__bottom">
-          <div class="real-card__meta-group">
+          <!-- Cardholder Name (Click to copy) -->
+          <div
+            class="real-card__meta-group real-card__clickable-field"
+            (click)="copyCardholder(card)"
+            title="Click to copy cardholder name"
+          >
             <span class="meta-label">CARD HOLDER</span>
-            <span class="meta-value">{{ card.cardholderName || 'VALUED CUSTOMER' }}</span>
+            <span class="meta-value">
+              {{ card.cardholderName || 'VALUED CUSTOMER' }}
+              <span class="micro-copy-icon">📋</span>
+            </span>
           </div>
 
+          <!-- Expiry Date (Click to copy) -->
           <div class="real-card__meta-group">
             <span class="meta-label">EXPIRES</span>
             <div class="meta-value-row">
-              <span class="meta-value">{{ formatExpiry(card.expiryMonth, card.expiryYear) }}</span>
+              <span
+                class="meta-value real-card__clickable-field"
+                (click)="copyExpiry(card)"
+                title="Click to copy Expiry (MM/YY)"
+              >
+                {{ formatExpiry(card.expiryMonth, card.expiryYear) }}
+              </span>
               <button
                 type="button"
                 class="card-micro-btn"
-                (click)="copyToClipboard(formatExpiry(card.expiryMonth, card.expiryYear), 'Expiry', 'exp-' + card.id)"
-                title="Copy Expiry"
+                (click)="copyExpiry(card)"
+                title="Copy Expiry date (MM/YY)"
               >
                 @if (copiedKey() === 'exp-' + card.id) {
                   ✓
@@ -680,13 +700,34 @@
                   ⧉
                 }
               </button>
+              <button
+                type="button"
+                class="card-micro-btn card-micro-btn--sub"
+                (click)="copyExpiryMonth(card)"
+                title="Copy Month only (MM)"
+              >
+                M
+              </button>
+              <button
+                type="button"
+                class="card-micro-btn card-micro-btn--sub"
+                (click)="copyExpiryYear(card)"
+                title="Copy Year only (YY)"
+              >
+                Y
+              </button>
             </div>
           </div>
 
+          <!-- CVV Code (Click to copy) -->
           <div class="real-card__meta-group">
             <span class="meta-label">CVV</span>
             <div class="meta-value-row">
-              <span class="meta-value cvv-text">
+              <span
+                class="meta-value cvv-text real-card__clickable-field"
+                (click)="copyCvv(card)"
+                title="Click to copy CVV"
+              >
                 {{ isCvvRevealed(card.id) ? (card.cvv || '•••') : '•••' }}
               </span>
               <button
@@ -701,8 +742,8 @@
                 <button
                   type="button"
                   class="card-micro-btn"
-                  (click)="copyToClipboard(card.cvv, 'CVV', 'cvv-' + card.id)"
-                  title="Copy CVV"
+                  (click)="copyCvv(card)"
+                  title="Copy CVV code"
                 >
                   @if (copiedKey() === 'cvv-' + card.id) {
                     ✓
@@ -714,6 +755,79 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Quick One-Click Copy Toolbar -->
+      <div class="card-quick-copy-bar">
+        <button
+          type="button"
+          class="copy-pill-btn"
+          (click)="copyCardNumber(card)"
+          [class.copy-pill-btn--copied]="copiedKey() === 'num-' + card.id"
+          title="Copy unspaced 16-digit card number"
+        >
+          @if (copiedKey() === 'num-' + card.id) {
+            <span class="copy-check">✓</span> <span>Copied Number!</span>
+          } @else {
+            <span class="copy-icon">💳</span> <span>Copy Number</span>
+          }
+        </button>
+
+        <button
+          type="button"
+          class="copy-pill-btn"
+          (click)="copyExpiry(card)"
+          [class.copy-pill-btn--copied]="copiedKey() === 'exp-' + card.id"
+          title="Copy Expiry Date (MM/YY)"
+        >
+          @if (copiedKey() === 'exp-' + card.id) {
+            <span class="copy-check">✓</span> <span>Copied Expiry!</span>
+          } @else {
+            <span class="copy-icon">📅</span> <span>Copy {{ formatExpiry(card.expiryMonth, card.expiryYear) }}</span>
+          }
+        </button>
+
+        <button
+          type="button"
+          class="copy-pill-btn"
+          (click)="copyCvv(card)"
+          [class.copy-pill-btn--copied]="copiedKey() === 'cvv-' + card.id"
+          title="Copy CVV security code"
+        >
+          @if (copiedKey() === 'cvv-' + card.id) {
+            <span class="copy-check">✓</span> <span>Copied CVV!</span>
+          } @else {
+            <span class="copy-icon">🔒</span> <span>Copy CVV</span>
+          }
+        </button>
+
+        <button
+          type="button"
+          class="copy-pill-btn"
+          (click)="copyCardholder(card)"
+          [class.copy-pill-btn--copied]="copiedKey() === 'name-' + card.id"
+          title="Copy Cardholder Name"
+        >
+          @if (copiedKey() === 'name-' + card.id) {
+            <span class="copy-check">✓</span> <span>Copied Name!</span>
+          } @else {
+            <span class="copy-icon">👤</span> <span>Copy Name</span>
+          }
+        </button>
+
+        <button
+          type="button"
+          class="copy-pill-btn copy-pill-btn--all"
+          (click)="copyAllDetails(card)"
+          [class.copy-pill-btn--copied]="copiedKey() === 'all-' + card.id"
+          title="Copy all card details formatted together"
+        >
+          @if (copiedKey() === 'all-' + card.id) {
+            <span class="copy-check">✓</span> <span>Copied All!</span>
+          } @else {
+            <span class="copy-icon">⚡</span> <span>Copy All</span>
+          }
+        </button>
       </div>
 
       <!-- Auxiliary Info Panel -->
@@ -748,6 +862,16 @@
               <span><strong>Limit:</strong> ₹{{ card.creditLimit }}</span>
             </div>
           }
+
+          <!-- Option to copy number with spaces -->
+          <button
+            type="button"
+            class="detail-pill detail-pill--link"
+            (click)="copyCardNumber(card, true)"
+            title="Copy 16-digit card number with 4-digit spaces"
+          >
+            <span>📋 Copy with spaces</span>
+          </button>
         </div>
 
         @if (card.notes) {
@@ -852,6 +976,33 @@
             </p>
           </div>
           <button type="button" class="modal-close" (click)="closeModal()">✕</button>
+        </div>
+
+        <!-- Smart Paste / Quick-Fill Collapsible Tool -->
+        <div class="smart-paste-strip">
+          <div class="smart-paste-header" (click)="showSmartPaste.set(!showSmartPaste())">
+            <span class="smart-paste-tag">⚡ Smart Paste</span>
+            <span class="smart-paste-text">Have card text, an SMS, or message? Click to auto-fill</span>
+            <span class="smart-paste-chevron">{{ showSmartPaste() ? '▲ Close' : '▼ Paste Here' }}</span>
+          </div>
+
+          @if (showSmartPaste()) {
+            <div class="smart-paste-content">
+              <textarea
+                class="form-control font-mono smart-paste-area"
+                rows="2"
+                placeholder="Paste card details here, e.g.:&#10;4111 2222 3333 4444 12/28 123 HDFC Bank"
+                [value]="quickPasteText()"
+                (input)="quickPasteText.set($any($event.target).value)"
+              ></textarea>
+              <div class="smart-paste-buttons">
+                <button type="button" class="vault-btn vault-btn--primary btn--sm" (click)="parseAndApplyQuickPaste()">
+                  ⚡ Auto-Fill Form
+                </button>
+                <span class="smart-paste-tip">Instantly extracts card number, expiry, CVV & bank</span>
+              </div>
+            </div>
+          }
         </div>
 
         <div class="modal-body-split">

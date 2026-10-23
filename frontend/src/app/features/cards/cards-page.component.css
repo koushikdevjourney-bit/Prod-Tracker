@@ -1575,3 +1575,178 @@
     min-width: 100%;
   }
 }
+
+/* ================= FRICTIONLESS COPY & PASTE STYLING ================= */
+.real-card__clickable-field {
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.real-card__clickable-field:hover {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18);
+}
+
+.inline-copy-hint,
+.micro-copy-icon {
+  font-size: 0.75rem;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+
+.real-card__clickable-field:hover .inline-copy-hint,
+.real-card__clickable-field:hover .micro-copy-icon {
+  opacity: 1;
+}
+
+.card-micro-btn--sub {
+  font-size: 0.6rem;
+  padding: 0.05rem 0.3rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  font-weight: 700;
+}
+
+/* Quick Copy Toolbar Bar below card */
+.card-quick-copy-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.copy-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.copy-pill-btn:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.copy-pill-btn--copied {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: #10b981 !important;
+  color: #34d399 !important;
+  font-weight: 700;
+}
+
+.copy-pill-btn--all {
+  margin-left: auto;
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+  color: var(--accent-2);
+}
+
+.copy-pill-btn--all:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: var(--accent-2);
+}
+
+.copy-icon {
+  font-size: 0.82rem;
+}
+
+.copy-check {
+  font-weight: 800;
+  color: #34d399;
+}
+
+.detail-pill--link {
+  background: transparent;
+  border: 1px dashed var(--border);
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+
+.detail-pill--link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface-2);
+}
+
+/* Smart Paste Accordion in Modal */
+.smart-paste-strip {
+  background: rgba(56, 189, 248, 0.05);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+}
+
+.smart-paste-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.smart-paste-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--accent-2);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.smart-paste-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.smart-paste-chevron {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-2);
+}
+
+.smart-paste-content {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.smart-paste-area {
+  font-size: 0.82rem;
+  resize: vertical;
+}
+
+.smart-paste-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.smart-paste-tip {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+

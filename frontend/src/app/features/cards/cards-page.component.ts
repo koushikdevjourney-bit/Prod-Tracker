@@ -109,6 +109,10 @@ export class CardsPageComponent {
   readonly editingCardId = signal<string | null>(null);
   readonly draft = signal<DraftForm>({ ...DEFAULT_DRAFT });
 
+  // Smart Paste in modal
+  readonly quickPasteText = signal('');
+  readonly showSmartPaste = signal(false);
+
   // Add person modal
   readonly isAddPersonModalOpen = signal(false);
   readonly newPersonName = signal('');
@@ -192,6 +196,8 @@ export class CardsPageComponent {
   // --- Add / Edit Card Modal ---
   openAddModal(presetCategory: CardCategory = 'personal', presetType: CardType = 'credit', presetOwner: string = ''): void {
     this.editingCardId.set(null);
+    this.quickPasteText.set('');
+    this.showSmartPaste.set(false);
     this.draft.set({
       ...DEFAULT_DRAFT,
       cardCategory: presetCategory,
@@ -212,6 +218,8 @@ export class CardsPageComponent {
 
   openEditModal(card: CardItem): void {
     this.editingCardId.set(card.id);
+    this.quickPasteText.set('');
+    this.showSmartPaste.set(false);
     this.draft.set({
       cardCategory: card.cardCategory || 'personal',
       cardType: card.cardType,
@@ -237,6 +245,7 @@ export class CardsPageComponent {
   closeModal(): void {
     this.isModalOpen.set(false);
     this.editingCardId.set(null);
+    this.quickPasteText.set('');
   }
 
   // --- Add Person Modal ---
@@ -309,6 +318,83 @@ export class CardsPageComponent {
     this.draft.update((d) => ({ ...d, theme: themeId }));
   }
 
+  // --- Smart Quick-Paste Parser ---
+  parseAndApplyQuickPaste(): void {
+    const text = this.quickPasteText().trim();
+    if (!text) {
+      this.toast.error('Please paste card text to auto-fill');
+      return;
+    }
+
+    let detectedNumber = '';
+    let detectedMonth = '';
+    let detectedYear = '';
+    let detectedCvv = '';
+    let detectedBank = '';
+    let detectedName = '';
+
+    // Match card number: 13 to 19 digits with optional spaces or dashes
+    const cardNumMatch = text.match(/(?:\d[ -]?){13,19}/);
+    if (cardNumMatch) {
+      detectedNumber = cardNumMatch[0].replace(/\D/g, '');
+    }
+
+    // Match Expiry Date: e.g. 05/28 or 05-28 or 05/2028 or "exp 05 28"
+    const expMatch = text.match(/\b(0[1-9]|1[0-2])[\/\-\s](\d{2}|\d{4})\b/i);
+    if (expMatch) {
+      detectedMonth = expMatch[1];
+      detectedYear = expMatch[2].slice(-2);
+    }
+
+    // Match CVV: e.g. "cvv 123" or "cvc 123" or 3-4 isolated digits
+    const cvvMatch = text.match(/\b(?:cvv|cvc|security code)[\s:]*([0-9]{3,4})\b/i);
+    if (cvvMatch) {
+      detectedCvv = cvvMatch[1];
+    } else {
+      // Look for 3 digit number after expiry
+      const threeDigits = text.match(/\b\d{3}\b/);
+      if (threeDigits && threeDigits[0] !== detectedNumber.slice(-3)) {
+        detectedCvv = threeDigits[0];
+      }
+    }
+
+    // Match bank name
+    for (const b of this.popularBanks) {
+      const simple = b.split(' ')[0].toLowerCase();
+      if (text.toLowerCase().includes(simple)) {
+        detectedBank = b;
+        break;
+      }
+    }
+
+    // Match cardholder name if preceded by "name" or in all-caps
+    const nameMatch = text.match(/(?:name|holder|cardholder)[\s:]*([a-zA-Z\s]{3,30})/i);
+    if (nameMatch) {
+      detectedName = nameMatch[1].trim().toUpperCase();
+    }
+
+    if (!detectedNumber && !detectedMonth && !detectedCvv && !detectedBank) {
+      this.toast.error('Could not detect card details from pasted text. Please check format.');
+      return;
+    }
+
+    const detectedNet = detectedNumber ? detectCardNetwork(detectedNumber) : this.draft().network;
+
+    this.draft.update((d) => ({
+      ...d,
+      cardNumber: detectedNumber || d.cardNumber,
+      network: detectedNet !== 'other' ? detectedNet : d.network,
+      expiryMonth: detectedMonth || d.expiryMonth,
+      expiryYear: detectedYear || d.expiryYear,
+      cvv: detectedCvv || d.cvv,
+      bankName: detectedBank || d.bankName,
+      cardholderName: detectedName || d.cardholderName,
+    }));
+
+    this.toast.success('Card details auto-filled from pasted text!');
+    this.showSmartPaste.set(false);
+  }
+
   saveCard(): void {
     const d = this.draft();
     const digits = d.cardNumber.replace(/\D/g, '');
@@ -379,17 +465,72 @@ export class CardsPageComponent {
     }
   }
 
+  // --- Frictionless Copy Helpers ---
+
+  copyCardNumber(card: CardItem, withSpaces = false): void {
+    const digits = card.cardNumber.replace(/\D/g, '');
+    const toCopy = withSpaces ? formatCardNumber(digits) : digits;
+    const label = withSpaces ? 'Card number (with spaces)' : '16-digit card number';
+    this.copyToClipboard(toCopy, label, 'num-' + card.id);
+  }
+
+  copyExpiry(card: CardItem): void {
+    const text = this.formatExpiry(card.expiryMonth, card.expiryYear);
+    this.copyToClipboard(text, 'Expiry date (MM/YY)', 'exp-' + card.id);
+  }
+
+  copyExpiryMonth(card: CardItem): void {
+    const m = (card.expiryMonth || '').padStart(2, '0');
+    this.copyToClipboard(m, 'Expiry Month (MM)', 'exp-m-' + card.id);
+  }
+
+  copyExpiryYear(card: CardItem): void {
+    let y = card.expiryYear || '';
+    if (y.length === 4) y = y.slice(2);
+    this.copyToClipboard(y, 'Expiry Year (YY)', 'exp-y-' + card.id);
+  }
+
+  copyCvv(card: CardItem): void {
+    if (!card.cvv) {
+      this.toast.error('No CVV stored for this card');
+      return;
+    }
+    this.copyToClipboard(card.cvv, 'CVV code', 'cvv-' + card.id);
+  }
+
+  copyCardholder(card: CardItem): void {
+    const name = card.cardholderName || 'VALUED CUSTOMER';
+    this.copyToClipboard(name, 'Cardholder name', 'name-' + card.id);
+  }
+
+  copyAllDetails(card: CardItem): void {
+    const lines = [
+      `Bank: ${card.bankName}${card.nickname ? ' (' + card.nickname + ')' : ''}`,
+      `Type: ${card.cardType.toUpperCase()} (${card.network.toUpperCase()})`,
+      card.cardCategory === 'others' && card.belongsTo ? `Owner: ${card.belongsTo}` : '',
+      `Cardholder: ${card.cardholderName || 'VALUED CUSTOMER'}`,
+      `Card Number: ${card.cardNumber.replace(/\D/g, '')}`,
+      `Expiry: ${this.formatExpiry(card.expiryMonth, card.expiryYear)}`,
+      `CVV: ${card.cvv || 'N/A'}`,
+      card.dueDate ? `Payment Due: ${card.dueDate}` : '',
+      card.creditLimit ? `Limit: ₹${card.creditLimit}` : '',
+      card.notes ? `Notes: ${card.notes}` : '',
+    ].filter(Boolean);
+
+    this.copyToClipboard(lines.join('\n'), 'All card details', 'all-' + card.id);
+  }
+
   copyToClipboard(text: string, label: string, key: string): void {
     if (!text) return;
     navigator.clipboard.writeText(text).then(
       () => {
         this.copiedKey.set(key);
-        this.toast.success(`${label} copied to clipboard`);
+        this.toast.success(`${label} copied! Ready to paste.`);
         setTimeout(() => {
           if (this.copiedKey() === key) {
             this.copiedKey.set(null);
           }
-        }, 1500);
+        }, 1800);
       },
       () => {
         this.toast.error('Failed to copy to clipboard');
