@@ -5,7 +5,6 @@ import { RouterLink } from '@angular/router';
 import { ThemeService } from '../../core/services/theme.service';
 import { ToastService } from '../../core/services/toast.service';
 import {
-  CardFilterTab,
   CardService,
   detectCardNetwork,
   formatCardNumber,
@@ -110,6 +109,10 @@ export class CardsPageComponent {
   readonly editingCardId = signal<string | null>(null);
   readonly draft = signal<DraftForm>({ ...DEFAULT_DRAFT });
 
+  // Add person modal
+  readonly isAddPersonModalOpen = signal(false);
+  readonly newPersonName = signal('');
+
   // Privacy toggles per card
   readonly revealedNumbers = signal<Record<string, boolean>>({});
   readonly revealedCvvs = signal<Record<string, boolean>>({});
@@ -186,15 +189,25 @@ export class CardsPageComponent {
     return `${m}/${y}`;
   }
 
-  openAddModal(presetCategory: CardCategory = 'personal', presetType: CardType = 'credit'): void {
+  // --- Add / Edit Card Modal ---
+  openAddModal(presetCategory: CardCategory = 'personal', presetType: CardType = 'credit', presetOwner: string = ''): void {
     this.editingCardId.set(null);
     this.draft.set({
       ...DEFAULT_DRAFT,
       cardCategory: presetCategory,
       cardType: presetType,
+      belongsTo: presetOwner,
       theme: 'midnight',
     });
     this.isModalOpen.set(true);
+  }
+
+  openAddPersonalCard(type: CardType = 'credit'): void {
+    this.openAddModal('personal', type, '');
+  }
+
+  openAddCardForPerson(person: string, type: CardType = 'credit'): void {
+    this.openAddModal('others', type, person);
   }
 
   openEditModal(card: CardItem): void {
@@ -224,6 +237,36 @@ export class CardsPageComponent {
   closeModal(): void {
     this.isModalOpen.set(false);
     this.editingCardId.set(null);
+  }
+
+  // --- Add Person Modal ---
+  openAddPersonModal(): void {
+    this.newPersonName.set('');
+    this.isAddPersonModalOpen.set(true);
+  }
+
+  closeAddPersonModal(): void {
+    this.isAddPersonModalOpen.set(false);
+    this.newPersonName.set('');
+  }
+
+  submitAddPerson(): void {
+    const name = this.newPersonName().trim();
+    if (!name) {
+      this.toast.error('Please enter a person name or label');
+      return;
+    }
+    const ok = this.cardService.addPerson(name);
+    if (ok) {
+      this.cardService.setSelectedPerson(name);
+      this.closeAddPersonModal();
+    }
+  }
+
+  confirmDeletePerson(person: string): void {
+    if (confirm(`Are you sure you want to remove "${person}" and all their cards from Others?`)) {
+      this.cardService.deletePerson(person);
+    }
   }
 
   onDraftNumberChange(value: string): void {
@@ -276,6 +319,10 @@ export class CardsPageComponent {
     }
     if (!d.bankName.trim()) {
       this.toast.error('Please enter the Bank or Issuer name');
+      return;
+    }
+    if (d.cardCategory === 'others' && !d.belongsTo.trim()) {
+      this.toast.error('Please specify whose card this is (Person Name)');
       return;
     }
 

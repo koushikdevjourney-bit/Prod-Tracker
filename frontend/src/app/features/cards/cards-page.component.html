@@ -14,7 +14,7 @@
           <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
-        <span>Direct Stealth Vault</span>
+        <span>Stealth Vault</span>
       </div>
     </div>
 
@@ -44,15 +44,27 @@
         }
       </button>
 
-      <!-- Add Card Button -->
-      <button type="button" class="vault-btn vault-btn--primary" (click)="openAddModal('personal', 'credit')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 8v8" />
-          <path d="M8 12h8" />
-        </svg>
-        <span>Add Card</span>
-      </button>
+      <!-- Primary Add Button depending on active view -->
+      @if (cardService.mainView() === 'personal') {
+        <button type="button" class="vault-btn vault-btn--primary" (click)="openAddPersonalCard('credit')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v8" />
+            <path d="M8 12h8" />
+          </svg>
+          <span>Add Personal Card</span>
+        </button>
+      } @else {
+        <button type="button" class="vault-btn vault-btn--others-primary" (click)="openAddPersonModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <line x1="19" x2="19" y1="8" y2="14" />
+            <line x1="22" x2="16" y1="11" y2="11" />
+          </svg>
+          <span>Add Person</span>
+        </button>
+      }
 
       <!-- Theme Toggle -->
       <button
@@ -70,87 +82,80 @@
     <!-- Hero / Headline -->
     <section class="vault-hero">
       <div class="vault-hero__copy">
-        <div class="vault-hero__tag">Private Cards Vault • Personal & Others</div>
+        <div class="vault-hero__tag">Private Cards Vault</div>
         <h1>Cards & Payment Vault</h1>
         <p class="vault-hero__lede">
-          Securely organize your <strong>Personal Cards</strong> and <strong>Others' Cards</strong> (family, friends, or work), with credit and debit cards kept cleanly separated in their own dedicated zones.
+          Switch between your <strong>Personal Cards</strong> and <strong>Others' Cards</strong>. Inside personal, toggle Credit and Debit cards. Under others, add specific persons and manage their credit & debit cards.
         </p>
       </div>
 
-      <!-- Quick Stats -->
+      <!-- Quick Metrics -->
       <div class="vault-stats">
+        <div
+          class="vault-stat-item vault-stat-item--clickable"
+          [class.vault-stat-item--active]="cardService.mainView() === 'personal'"
+          (click)="cardService.setMainView('personal')"
+        >
+          <div class="vault-stat-item__header">
+            <span class="vault-stat-item__num text-personal">{{ cardService.stats().personalTotal }}</span>
+            <span class="vault-stat-badge">👤 Personal</span>
+          </div>
+          <span class="vault-stat-item__label">
+            {{ cardService.stats().personalCredit }} Credit • {{ cardService.stats().personalDebit }} Debit
+          </span>
+        </div>
+
+        <div
+          class="vault-stat-item vault-stat-item--clickable"
+          [class.vault-stat-item--active]="cardService.mainView() === 'others'"
+          (click)="cardService.setMainView('others')"
+        >
+          <div class="vault-stat-item__header">
+            <span class="vault-stat-item__num text-others">{{ cardService.stats().othersTotal }}</span>
+            <span class="vault-stat-badge vault-stat-badge--others">👥 Others</span>
+          </div>
+          <span class="vault-stat-item__label">
+            {{ cardService.stats().personsCount }} People • {{ cardService.stats().othersCredit }} Credit • {{ cardService.stats().othersDebit }} Debit
+          </span>
+        </div>
+
         <div class="vault-stat-item">
-          <span class="vault-stat-item__num">{{ cardService.stats().total }}</span>
-          <span class="vault-stat-item__label">Total Cards</span>
-        </div>
-        <div class="vault-stat-item vault-stat-item--personal">
-          <span class="vault-stat-item__num text-personal">{{ cardService.stats().personalTotal }}</span>
-          <span class="vault-stat-item__label">Personal Cards ({{ cardService.stats().personalCredit }} C / {{ cardService.stats().personalDebit }} D)</span>
-        </div>
-        <div class="vault-stat-item vault-stat-item--others">
-          <span class="vault-stat-item__num text-others">{{ cardService.stats().othersTotal }}</span>
-          <span class="vault-stat-item__label">Others' Cards ({{ cardService.stats().othersCredit }} C / {{ cardService.stats().othersDebit }} D)</span>
-        </div>
-        <div class="vault-stat-item">
-          <span class="vault-stat-item__num text-fav">★ {{ cardService.stats().favoritesCount }}</span>
-          <span class="vault-stat-item__label">Favorites</span>
+          <div class="vault-stat-item__header">
+            <span class="vault-stat-item__num text-fav">★ {{ cardService.stats().favoritesCount }}</span>
+            <span class="vault-stat-badge">Pinned</span>
+          </div>
+          <span class="vault-stat-item__label">Starred Cards</span>
         </div>
       </div>
     </section>
 
-    <!-- Toolbar: Search & Filter Tabs -->
-    <section class="vault-toolbar">
-      <div class="vault-tabs">
+    <!-- MAIN SEGMENTED NAVIGATION: PERSONAL vs OTHERS -->
+    <section class="vault-main-nav">
+      <div class="view-segmented">
         <button
           type="button"
-          class="vault-tab"
-          [class.vault-tab--active]="cardService.filterTab() === 'all'"
-          (click)="cardService.setFilterTab('all')"
+          class="view-segment-btn"
+          [class.view-segment-btn--active]="cardService.mainView() === 'personal'"
+          (click)="cardService.setMainView('personal')"
         >
-          All Cards ({{ cardService.stats().total }})
+          <span class="segment-icon">👤</span>
+          <span class="segment-text">Personal Cards</span>
+          <span class="segment-badge">{{ cardService.stats().personalTotal }}</span>
         </button>
+
         <button
           type="button"
-          class="vault-tab"
-          [class.vault-tab--active]="cardService.filterTab() === 'personal'"
-          (click)="cardService.setFilterTab('personal')"
+          class="view-segment-btn view-segment-btn--others"
+          [class.view-segment-btn--active]="cardService.mainView() === 'others'"
+          (click)="cardService.setMainView('others')"
         >
-          👤 Personal ({{ cardService.stats().personalTotal }})
-        </button>
-        <button
-          type="button"
-          class="vault-tab"
-          [class.vault-tab--active]="cardService.filterTab() === 'others'"
-          (click)="cardService.setFilterTab('others')"
-        >
-          👥 Others ({{ cardService.stats().othersTotal }})
-        </button>
-        <button
-          type="button"
-          class="vault-tab"
-          [class.vault-tab--active]="cardService.filterTab() === 'credit'"
-          (click)="cardService.setFilterTab('credit')"
-        >
-          💳 Credit ({{ cardService.stats().creditCount }})
-        </button>
-        <button
-          type="button"
-          class="vault-tab"
-          [class.vault-tab--active]="cardService.filterTab() === 'debit'"
-          (click)="cardService.setFilterTab('debit')"
-        >
-          🏦 Debit ({{ cardService.stats().debitCount }})
-        </button>
-        <button
-          type="button"
-          class="vault-tab"
-          [class.vault-tab--active]="cardService.filterTab() === 'favorites'"
-          (click)="cardService.setFilterTab('favorites')"
-        >
-          ★ Favorites ({{ cardService.stats().favoritesCount }})
+          <span class="segment-icon">👥</span>
+          <span class="segment-text">Others' Cards</span>
+          <span class="segment-badge segment-badge--others">{{ cardService.stats().othersTotal }}</span>
         </button>
       </div>
 
+      <!-- Quick Search -->
       <div class="vault-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8" />
@@ -158,7 +163,7 @@
         </svg>
         <input
           type="text"
-          placeholder="Search bank, nickname, owner, last 4..."
+          placeholder="Search bank, nickname, person, last 4 digits..."
           [value]="cardService.searchQuery()"
           (input)="cardService.setSearchQuery($any($event.target).value)"
         />
@@ -170,205 +175,381 @@
       </div>
     </section>
 
-    <!-- MAIN CARDS SECTIONS -->
-    @if (cardService.filteredCards().length > 0) {
-
-      <!-- ================= SECTION 1: PERSONAL CARDS ================= -->
-      @if (cardService.filterTab() === 'all' || cardService.filterTab() === 'personal' || ((cardService.filterTab() === 'credit' || cardService.filterTab() === 'debit' || cardService.filterTab() === 'favorites') && (cardService.personalCreditCards().length > 0 || cardService.personalDebitCards().length > 0))) {
-        <section class="vault-domain-section vault-domain-section--personal">
-          <div class="vault-domain-header">
-            <div class="vault-domain-title">
-              <span class="vault-domain-icon">👤</span>
-              <div>
-                <h2>Personal Cards</h2>
-                <span class="vault-domain-subtitle">Your personal credit & debit accounts</span>
-              </div>
-            </div>
-            <div class="vault-domain-actions">
-              <span class="vault-domain-count">{{ cardService.personalCreditCards().length + cardService.personalDebitCards().length }} Cards</span>
-              <button type="button" class="vault-btn vault-btn--ghost btn--sm" (click)="openAddModal('personal', 'credit')">
-                + Add Personal Card
-              </button>
-            </div>
-          </div>
-
-          <!-- Subsection: Personal Credit Cards -->
-          @if (cardService.filterTab() !== 'debit') {
-            <div class="vault-subgroup">
-              <div class="vault-subgroup-header">
-                <div class="vault-subgroup-title">
-                  <span class="subgroup-badge subgroup-badge--credit">💳 Credit Cards</span>
-                  <span class="subgroup-count">({{ cardService.personalCreditCards().length }})</span>
-                </div>
-                <button type="button" class="subgroup-add-btn" (click)="openAddModal('personal', 'credit')">
-                  + Add Credit
-                </button>
-              </div>
-
-              @if (cardService.personalCreditCards().length > 0) {
-                <div class="vault-grid">
-                  @for (card of cardService.personalCreditCards(); track card.id) {
-                    <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
-                  }
-                </div>
-              } @else {
-                <div class="subgroup-empty">
-                  <span>No personal credit cards added yet.</span>
-                  <button type="button" class="subgroup-empty-btn" (click)="openAddModal('personal', 'credit')">
-                    + Add Personal Credit Card
-                  </button>
-                </div>
-              }
-            </div>
-          }
-
-          <!-- Subsection: Personal Debit Cards -->
-          @if (cardService.filterTab() !== 'credit') {
-            <div class="vault-subgroup">
-              <div class="vault-subgroup-header">
-                <div class="vault-subgroup-title">
-                  <span class="subgroup-badge subgroup-badge--debit">🏦 Debit Cards</span>
-                  <span class="subgroup-count">({{ cardService.personalDebitCards().length }})</span>
-                </div>
-                <button type="button" class="subgroup-add-btn" (click)="openAddModal('personal', 'debit')">
-                  + Add Debit
-                </button>
-              </div>
-
-              @if (cardService.personalDebitCards().length > 0) {
-                <div class="vault-grid">
-                  @for (card of cardService.personalDebitCards(); track card.id) {
-                    <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
-                  }
-                </div>
-              } @else {
-                <div class="subgroup-empty">
-                  <span>No personal debit cards added yet.</span>
-                  <button type="button" class="subgroup-empty-btn" (click)="openAddModal('personal', 'debit')">
-                    + Add Personal Debit Card
-                  </button>
-                </div>
-              }
-            </div>
-          }
-        </section>
-      }
-
-      <!-- ================= SECTION 2: OTHERS' CARDS ================= -->
-      @if (cardService.filterTab() === 'all' || cardService.filterTab() === 'others' || ((cardService.filterTab() === 'credit' || cardService.filterTab() === 'debit' || cardService.filterTab() === 'favorites') && (cardService.othersCreditCards().length > 0 || cardService.othersDebitCards().length > 0))) {
-        <section class="vault-domain-section vault-domain-section--others">
-          <div class="vault-domain-header">
-            <div class="vault-domain-title">
-              <span class="vault-domain-icon">👥</span>
-              <div>
-                <h2>Others' Cards</h2>
-                <span class="vault-domain-subtitle">Cards belonging to family, parents, friends, or work</span>
-              </div>
-            </div>
-            <div class="vault-domain-actions">
-              <span class="vault-domain-count vault-domain-count--others">{{ cardService.othersCreditCards().length + cardService.othersDebitCards().length }} Cards</span>
-              <button type="button" class="vault-btn vault-btn--ghost btn--sm" (click)="openAddModal('others', 'credit')">
-                + Add Others' Card
-              </button>
-            </div>
-          </div>
-
-          <!-- Subsection: Others' Credit Cards -->
-          @if (cardService.filterTab() !== 'debit') {
-            <div class="vault-subgroup">
-              <div class="vault-subgroup-header">
-                <div class="vault-subgroup-title">
-                  <span class="subgroup-badge subgroup-badge--credit">💳 Others' Credit Cards</span>
-                  <span class="subgroup-count">({{ cardService.othersCreditCards().length }})</span>
-                </div>
-                <button type="button" class="subgroup-add-btn" (click)="openAddModal('others', 'credit')">
-                  + Add Credit
-                </button>
-              </div>
-
-              @if (cardService.othersCreditCards().length > 0) {
-                <div class="vault-grid">
-                  @for (card of cardService.othersCreditCards(); track card.id) {
-                    <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
-                  }
-                </div>
-              } @else {
-                <div class="subgroup-empty">
-                  <span>No others' credit cards added yet.</span>
-                  <button type="button" class="subgroup-empty-btn" (click)="openAddModal('others', 'credit')">
-                    + Add Others' Credit Card
-                  </button>
-                </div>
-              }
-            </div>
-          }
-
-          <!-- Subsection: Others' Debit Cards -->
-          @if (cardService.filterTab() !== 'credit') {
-            <div class="vault-subgroup">
-              <div class="vault-subgroup-header">
-                <div class="vault-subgroup-title">
-                  <span class="subgroup-badge subgroup-badge--debit">🏦 Others' Debit Cards</span>
-                  <span class="subgroup-count">({{ cardService.othersDebitCards().length }})</span>
-                </div>
-                <button type="button" class="subgroup-add-btn" (click)="openAddModal('others', 'debit')">
-                  + Add Debit
-                </button>
-              </div>
-
-              @if (cardService.othersDebitCards().length > 0) {
-                <div class="vault-grid">
-                  @for (card of cardService.othersDebitCards(); track card.id) {
-                    <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
-                  }
-                </div>
-              } @else {
-                <div class="subgroup-empty">
-                  <span>No others' debit cards added yet.</span>
-                  <button type="button" class="subgroup-empty-btn" (click)="openAddModal('others', 'debit')">
-                    + Add Others' Debit Card
-                  </button>
-                </div>
-              }
-            </div>
-          }
-        </section>
-      }
-
-    } @else {
-      <!-- Empty State -->
-      <section class="vault-empty">
-        <div class="vault-empty__icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="20" height="14" x="2" y="5" rx="2" />
-            <line x1="2" x2="22" y1="10" y2="10" />
-            <circle cx="6" cy="15" r="1" />
-            <circle cx="10" cy="15" r="1" />
-          </svg>
-        </div>
-        @if (cardService.searchQuery() || cardService.filterTab() !== 'all') {
-          <h3>No matching cards found</h3>
-          <p>No cards matched your search "{{ cardService.searchQuery() }}" or current filter. Try resetting filters.</p>
-          <button type="button" class="vault-btn vault-btn--ghost" (click)="cardService.setFilterTab('all'); cardService.setSearchQuery('')">
-            Reset Filters
-          </button>
-        } @else {
-          <h3>Your Private Card Vault is Empty</h3>
-          <p>Add your <strong>Personal Cards</strong> and <strong>Others' Cards</strong> here. Keep credit and debit cards organized with instant copying and privacy masking.</p>
-          <div class="empty-btn-group">
-            <button type="button" class="vault-btn vault-btn--primary" (click)="openAddModal('personal', 'credit')">
-              + Add Personal Card
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: PERSONAL CARDS                                                    -->
+    <!-- ========================================================================= -->
+    @if (cardService.mainView() === 'personal') {
+      <div class="section-container">
+        <!-- Sub-tabs bar: All | Credit | Debit -->
+        <div class="subtabs-bar">
+          <div class="subtabs-group">
+            <button
+              type="button"
+              class="subtab-btn"
+              [class.subtab-btn--active]="cardService.personalSubTab() === 'all'"
+              (click)="cardService.setPersonalSubTab('all')"
+            >
+              All Personal ({{ cardService.stats().personalTotal }})
             </button>
-            <button type="button" class="vault-btn vault-btn--ghost" (click)="openAddModal('others', 'credit')">
-              + Add Others' Card
+            <button
+              type="button"
+              class="subtab-btn subtab-btn--credit"
+              [class.subtab-btn--active]="cardService.personalSubTab() === 'credit'"
+              (click)="cardService.setPersonalSubTab('credit')"
+            >
+              💳 Credit Cards ({{ cardService.stats().personalCredit }})
+            </button>
+            <button
+              type="button"
+              class="subtab-btn subtab-btn--debit"
+              [class.subtab-btn--active]="cardService.personalSubTab() === 'debit'"
+              (click)="cardService.setPersonalSubTab('debit')"
+            >
+              🏦 Debit Cards ({{ cardService.stats().personalDebit }})
+            </button>
+          </div>
+
+          <div class="subtabs-actions">
+            <button type="button" class="action-pill-btn" (click)="openAddPersonalCard('credit')">
+              + Add Credit Card
+            </button>
+            <button type="button" class="action-pill-btn" (click)="openAddPersonalCard('debit')">
+              + Add Debit Card
+            </button>
+          </div>
+        </div>
+
+        <!-- If 'All Personal' is selected: show separate Credit & Debit groups -->
+        @if (cardService.personalSubTab() === 'all') {
+          <!-- Credit Group -->
+          <div class="category-block">
+            <div class="category-block__header">
+              <div class="category-block__title">
+                <span class="badge-chip badge-chip--credit">💳 Credit Cards</span>
+                <span class="badge-chip-count">({{ cardService.personalCreditCards().length }})</span>
+              </div>
+              <button type="button" class="micro-add-btn" (click)="openAddPersonalCard('credit')">
+                + Add Credit Card
+              </button>
+            </div>
+
+            @if (cardService.personalCreditCards().length > 0) {
+              <div class="vault-grid">
+                @for (card of cardService.personalCreditCards(); track card.id) {
+                  <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
+                }
+              </div>
+            } @else {
+              <div class="empty-inline-card">
+                <p>No personal credit cards added yet.</p>
+                <button type="button" class="vault-btn vault-btn--ghost btn--sm" (click)="openAddPersonalCard('credit')">
+                  + Add Personal Credit Card
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Debit Group -->
+          <div class="category-block">
+            <div class="category-block__header">
+              <div class="category-block__title">
+                <span class="badge-chip badge-chip--debit">🏦 Debit Cards</span>
+                <span class="badge-chip-count">({{ cardService.personalDebitCards().length }})</span>
+              </div>
+              <button type="button" class="micro-add-btn" (click)="openAddPersonalCard('debit')">
+                + Add Debit Card
+              </button>
+            </div>
+
+            @if (cardService.personalDebitCards().length > 0) {
+              <div class="vault-grid">
+                @for (card of cardService.personalDebitCards(); track card.id) {
+                  <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
+                }
+              </div>
+            } @else {
+              <div class="empty-inline-card">
+                <p>No personal debit cards added yet.</p>
+                <button type="button" class="vault-btn vault-btn--ghost btn--sm" (click)="openAddPersonalCard('debit')">
+                  + Add Personal Debit Card
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- If 'Credit' only tab selected -->
+        @if (cardService.personalSubTab() === 'credit') {
+          <div class="category-block">
+            @if (cardService.personalCreditCards().length > 0) {
+              <div class="vault-grid">
+                @for (card of cardService.personalCreditCards(); track card.id) {
+                  <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
+                }
+              </div>
+            } @else {
+              <div class="empty-inline-card">
+                <p>No personal credit cards found matching your search.</p>
+                <button type="button" class="vault-btn vault-btn--primary btn--sm" (click)="openAddPersonalCard('credit')">
+                  + Add Personal Credit Card
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- If 'Debit' only tab selected -->
+        @if (cardService.personalSubTab() === 'debit') {
+          <div class="category-block">
+            @if (cardService.personalDebitCards().length > 0) {
+              <div class="vault-grid">
+                @for (card of cardService.personalDebitCards(); track card.id) {
+                  <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
+                }
+              </div>
+            } @else {
+              <div class="empty-inline-card">
+                <p>No personal debit cards found matching your search.</p>
+                <button type="button" class="vault-btn vault-btn--primary btn--sm" (click)="openAddPersonalCard('debit')">
+                  + Add Personal Debit Card
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: OTHERS' CARDS (Grouped by Person with Credit & Debit Tabs)         -->
+    <!-- ========================================================================= -->
+    @if (cardService.mainView() === 'others') {
+      <div class="section-container">
+        <!-- Sub-tabs bar: Filter by Person & Type + Add Person button -->
+        <div class="others-top-bar">
+          <div class="others-top-bar__info">
+            <h3>People & Profiles</h3>
+            <p>Add people (e.g. Dad, Mom, Office, Friend) and manage their credit & debit cards separately.</p>
+          </div>
+
+          <div class="others-top-bar__actions">
+            <!-- Filter by Credit / Debit for Others -->
+            <div class="subtabs-group subtabs-group--compact">
+              <button
+                type="button"
+                class="subtab-btn"
+                [class.subtab-btn--active]="cardService.othersSubTab() === 'all'"
+                (click)="cardService.setOthersSubTab('all')"
+              >
+                All Cards ({{ cardService.stats().othersTotal }})
+              </button>
+              <button
+                type="button"
+                class="subtab-btn subtab-btn--credit"
+                [class.subtab-btn--active]="cardService.othersSubTab() === 'credit'"
+                (click)="cardService.setOthersSubTab('credit')"
+              >
+                💳 Credit ({{ cardService.stats().othersCredit }})
+              </button>
+              <button
+                type="button"
+                class="subtab-btn subtab-btn--debit"
+                [class.subtab-btn--active]="cardService.othersSubTab() === 'debit'"
+                (click)="cardService.setOthersSubTab('debit')"
+              >
+                🏦 Debit ({{ cardService.stats().othersDebit }})
+              </button>
+            </div>
+
+            <!-- Add Person Button -->
+            <button type="button" class="vault-btn vault-btn--others-primary" (click)="openAddPersonModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" x2="19" y1="8" y2="14" />
+                <line x1="22" x2="16" y1="11" y2="11" />
+              </svg>
+              <span>+ Add Person</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Person Filter Selector Bar -->
+        @if (cardService.allPersons().length > 0) {
+          <div class="persons-selector-bar">
+            <span class="selector-label">Filter by Person:</span>
+            <div class="persons-pills">
+              <button
+                type="button"
+                class="person-pill"
+                [class.person-pill--active]="cardService.selectedPerson() === 'all'"
+                (click)="cardService.setSelectedPerson('all')"
+              >
+                All People ({{ cardService.allPersons().length }})
+              </button>
+
+              @for (person of cardService.allPersons(); track person) {
+                <button
+                  type="button"
+                  class="person-pill"
+                  [class.person-pill--active]="cardService.selectedPerson().toLowerCase() === person.toLowerCase()"
+                  (click)="cardService.setSelectedPerson(person)"
+                >
+                  <span class="person-pill__icon">👤</span>
+                  <span>{{ person }}</span>
+                </button>
+              }
+
+              <button type="button" class="person-pill person-pill--add" (click)="openAddPersonModal()">
+                + Add New Person
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Persons List & Cards -->
+        @if (cardService.personsWithCards().length > 0) {
+          <div class="persons-stack">
+            @for (group of cardService.personsWithCards(); track group.name) {
+              <div class="person-card-section">
+                <!-- Person Header -->
+                <div class="person-header">
+                  <div class="person-header__info">
+                    <span class="person-avatar">👤</span>
+                    <div>
+                      <div class="person-header__title-row">
+                        <h4>{{ group.name }}</h4>
+                        <span class="person-card-count">
+                          {{ group.totalCount }} Cards ({{ group.creditCards.length }} Credit • {{ group.debitCards.length }} Debit)
+                        </span>
+                      </div>
+                      <span class="person-header__sub">Dedicated cards for {{ group.name }}</span>
+                    </div>
+                  </div>
+
+                  <div class="person-header__actions">
+                    <button
+                      type="button"
+                      class="person-action-btn person-action-btn--credit"
+                      (click)="openAddCardForPerson(group.name, 'credit')"
+                    >
+                      💳 + Add Credit Card
+                    </button>
+                    <button
+                      type="button"
+                      class="person-action-btn person-action-btn--debit"
+                      (click)="openAddCardForPerson(group.name, 'debit')"
+                    >
+                      🏦 + Add Debit Card
+                    </button>
+                    @if (group.name !== 'General / Unassigned') {
+                      <button
+                        type="button"
+                        class="person-delete-btn"
+                        (click)="confirmDeletePerson(group.name)"
+                        title="Remove {{ group.name }} and cards"
+                      >
+                        ✕ Remove Person
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- Person Cards: Credit & Debit Groups -->
+                <div class="person-body">
+                  <!-- Subsection: Credit Cards for this person -->
+                  @if (cardService.othersSubTab() !== 'debit') {
+                    <div class="person-subgroup">
+                      <div class="person-subgroup-title">
+                        <span class="badge-chip badge-chip--credit">💳 Credit Cards ({{ group.creditCards.length }})</span>
+                        <button
+                          type="button"
+                          class="micro-add-btn"
+                          (click)="openAddCardForPerson(group.name, 'credit')"
+                        >
+                          + Add Credit
+                        </button>
+                      </div>
+
+                      @if (group.creditCards.length > 0) {
+                        <div class="vault-grid">
+                          @for (card of group.creditCards; track card.id) {
+                            <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
+                          }
+                        </div>
+                      } @else {
+                        <div class="empty-inline-card">
+                          <p>No credit cards for {{ group.name }} yet.</p>
+                          <button
+                            type="button"
+                            class="vault-btn vault-btn--ghost btn--sm"
+                            (click)="openAddCardForPerson(group.name, 'credit')"
+                          >
+                            + Add Credit Card for {{ group.name }}
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Subsection: Debit Cards for this person -->
+                  @if (cardService.othersSubTab() !== 'credit') {
+                    <div class="person-subgroup">
+                      <div class="person-subgroup-title">
+                        <span class="badge-chip badge-chip--debit">🏦 Debit Cards ({{ group.debitCards.length }})</span>
+                        <button
+                          type="button"
+                          class="micro-add-btn"
+                          (click)="openAddCardForPerson(group.name, 'debit')"
+                        >
+                          + Add Debit
+                        </button>
+                      </div>
+
+                      @if (group.debitCards.length > 0) {
+                        <div class="vault-grid">
+                          @for (card of group.debitCards; track card.id) {
+                            <ng-container *ngTemplateOutlet="cardCardTpl; context: { $implicit: card }"></ng-container>
+                          }
+                        </div>
+                      } @else {
+                        <div class="empty-inline-card">
+                          <p>No debit cards for {{ group.name }} yet.</p>
+                          <button
+                            type="button"
+                            class="vault-btn vault-btn--ghost btn--sm"
+                            (click)="openAddCardForPerson(group.name, 'debit')"
+                          >
+                            + Add Debit Card for {{ group.name }}
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <!-- Empty State for Others -->
+          <div class="others-empty-state">
+            <div class="others-empty-state__icon">👥</div>
+            <h3>No People Added Under Others Yet</h3>
+            <p>
+              Add a person (e.g. <strong>Dad</strong>, <strong>Mom</strong>, <strong>Brother</strong>, <strong>Office / Company</strong>, or <strong>Friend</strong>) to start storing their credit and debit cards separately.
+            </p>
+            <button type="button" class="vault-btn vault-btn--others-primary" (click)="openAddPersonModal()">
+              + Add First Person (e.g. Dad / Mom / Work)
             </button>
           </div>
         }
-      </section>
+      </div>
     }
   </main>
 
-  <!-- REUSABLE CARD TEMPLATE -->
+  <!-- ========================================================================= -->
+  <!-- REUSABLE CARD TEMPLATE                                                    -->
+  <!-- ========================================================================= -->
   <ng-template #cardCardTpl let-card>
     <article class="card-wrapper">
       <!-- Realistic Card Surface -->
@@ -598,7 +779,67 @@
     </article>
   </ng-template>
 
-  <!-- Add / Edit Modal Drawer -->
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD PERSON                                                         -->
+  <!-- ========================================================================= -->
+  @if (isAddPersonModalOpen()) {
+    <div class="modal-backdrop" (click)="closeAddPersonModal()">
+      <div class="modal-dialog modal-dialog--sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h2>Add Person / Profile</h2>
+            <p class="modal-sub">Create a profile under Others (e.g. Dad, Mom, Office) to store their cards.</p>
+          </div>
+          <button type="button" class="modal-close" (click)="closeAddPersonModal()">✕</button>
+        </div>
+
+        <div class="modal-body-simple">
+          <div class="form-group">
+            <label class="form-label" for="personNameInput">Person Name / Label *</label>
+            <input
+              id="personNameInput"
+              type="text"
+              class="form-control"
+              placeholder="e.g. Dad, Mom, Rahul, Startup LLC"
+              [value]="newPersonName()"
+              (input)="newPersonName.set($any($event.target).value)"
+              (keyup.enter)="submitAddPerson()"
+              autofocus
+            />
+          </div>
+
+          <!-- Quick suggestions pills -->
+          <div class="suggestions-row">
+            <span class="suggestions-label">Suggestions:</span>
+            <div class="suggestions-chips">
+              @for (preset of belongsToSuggestions; track preset) {
+                <button
+                  type="button"
+                  class="suggestion-chip"
+                  (click)="newPersonName.set(preset)"
+                >
+                  {{ preset }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="vault-btn vault-btn--ghost" (click)="closeAddPersonModal()">
+            Cancel
+          </button>
+          <button type="button" class="vault-btn vault-btn--others-primary" (click)="submitAddPerson()">
+            + Add Person
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD / EDIT CARD                                                    -->
+  <!-- ========================================================================= -->
   @if (isModalOpen()) {
     <div class="modal-backdrop" (click)="closeModal()">
       <div class="modal-dialog" (click)="$event.stopPropagation()">
@@ -606,7 +847,9 @@
         <div class="modal-header">
           <div>
             <h2>{{ editingCardId() ? 'Edit Card Details' : 'Add New Card to Vault' }}</h2>
-            <p class="modal-sub">Choose whether this is your Personal Card or belongs to Others.</p>
+            <p class="modal-sub">
+              {{ draft().cardCategory === 'personal' ? 'Adding to Personal Cards' : 'Adding under ' + (draft().belongsTo || 'Others') }}
+            </p>
           </div>
           <button type="button" class="modal-close" (click)="closeModal()">✕</button>
         </div>
@@ -700,9 +943,9 @@
 
           <!-- Right: Form Controls -->
           <div class="modal-form-col">
-            <!-- 1. Section / Ownership: Personal vs Others -->
+            <!-- 1. Section: Personal vs Others -->
             <div class="form-group">
-              <label class="form-label">Card Ownership / Category *</label>
+              <label class="form-label">Category / Section *</label>
               <div class="type-segmented">
                 <button
                   type="button"
@@ -723,24 +966,27 @@
               </div>
             </div>
 
-            <!-- If Others: Who does it belong to? -->
+            <!-- If Others: Person Dropdown / Input -->
             @if (draft().cardCategory === 'others') {
               <div class="form-group highlight-box">
-                <label class="form-label" for="cardOwner">Whose Card Is This? (Owner / Relation) *</label>
+                <label class="form-label" for="cardOwner">Person / Owner *</label>
                 <input
                   id="cardOwner"
                   type="text"
                   class="form-control"
-                  placeholder="e.g. Dad, Mom, Brother, Office / Company, Friend"
+                  placeholder="e.g. Dad, Mom, Office, Rohan"
                   list="belongsToSuggestions"
                   [(ngModel)]="draft().belongsTo"
                 />
                 <datalist id="belongsToSuggestions">
-                  @for (rel of belongsToSuggestions; track rel) {
-                    <option [value]="rel"></option>
+                  @for (person of cardService.allPersons(); track person) {
+                    <option [value]="person"></option>
+                  }
+                  @for (preset of belongsToSuggestions; track preset) {
+                    <option [value]="preset"></option>
                   }
                 </datalist>
-                <span class="field-hint">e.g. Dad, Mom, Office, Priya</span>
+                <span class="field-hint">Select an existing person or type a new name to create one automatically.</span>
               </div>
             }
 
@@ -800,7 +1046,7 @@
 
             <!-- Cardholder Name -->
             <div class="form-group">
-              <label class="form-label" for="cardHolder">Cardholder Name (as on card)</label>
+              <label class="form-label" for="cardHolder">Cardholder Name (as printed on card)</label>
               <input
                 id="cardHolder"
                 type="text"

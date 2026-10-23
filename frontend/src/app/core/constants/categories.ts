@@ -38,6 +38,7 @@ export const STORAGE_KEYS = {
   progress: 'pt.progress',
   focusTodos: 'pt.focusTodos',
   cards: 'pt.cards',
+  cardPersons: 'pt.card_persons',
   aiSettings: 'pt.aiSettings',
   aiChatHistory: 'pt.aiChatHistory',
   aiChatSessions: 'pt.aiChatSessions',
