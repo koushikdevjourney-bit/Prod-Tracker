@@ -316,8 +316,74 @@ html[data-theme='light'] .grit {
 
 .level-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.6rem;
+}
+
+@media (max-width: 720px) {
+  .level-tabs {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.level-tab__icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  display: inline-block;
+  vertical-align: -0.12rem;
+  margin-right: 0.25rem;
+}
+
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.12rem 0.42rem;
+  border-radius: 0.45rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.level-badge[data-level='1'] {
+  background: color-mix(in srgb, #3b82f6 18%, transparent);
+  color: #60a5fa;
+  border-color: color-mix(in srgb, #3b82f6 35%, transparent);
+}
+
+.level-badge[data-level='2'] {
+  background: color-mix(in srgb, #8b5cf6 18%, transparent);
+  color: #a78bfa;
+  border-color: color-mix(in srgb, #8b5cf6 35%, transparent);
+}
+
+.level-badge[data-level='3'] {
+  background: color-mix(in srgb, #10b981 18%, transparent);
+  color: #34d399;
+  border-color: color-mix(in srgb, #10b981 35%, transparent);
+}
+
+html[data-theme='light'] .level-badge[data-level='1'] {
+  color: #1d4ed8;
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+html[data-theme='light'] .level-badge[data-level='2'] {
+  color: #6d28d9;
+  background: #ede9fe;
+  border-color: #ddd6fe;
+}
+
+html[data-theme='light'] .level-badge[data-level='3'] {
+  color: #047857;
+  background: #d1fae5;
+  border-color: #a7f3d0;
 }
 
 .level-tab {
@@ -432,6 +498,33 @@ html[data-theme='light'] .grit {
   border-radius: 0.85rem;
   padding: 0.62rem 1rem;
   white-space: nowrap;
+}
+
+.climb__quick-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.btn--sm {
+  padding: 0.32rem 0.65rem;
+  font-size: 0.74rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.btn--sm:hover:not(:disabled) {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.btn--sm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .climb__empty {
@@ -722,6 +815,40 @@ html[data-theme='light'] .view-tabs button.on .view-tabs__count {
   color: #fff;
 }
 
+.level-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.level-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.level-filter-chip:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--text);
+}
+
+.level-filter-chip--on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--text);
+  font-weight: 700;
+}
+
 .grit-empty {
   margin: 0;
   padding: 1.1rem;
@@ -765,6 +892,13 @@ html[data-theme='light'] .view-tabs button.on .view-tabs__count {
   justify-content: space-between;
   gap: 0.7rem;
   align-items: flex-start;
+}
+
+.subject-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
 }
 
 .subject-card__name {

@@ -116,6 +116,14 @@ export const GRIT_LEVELS: GritLevelDef[] = [
         retry: retry('0% – 89.99%'),
       },
       {
+        subject: 'System Design',
+        format: 'MCQ',
+        minutes: 60,
+        gold: { band: '85% – 100%', miles: 20 },
+        silver: { band: '70% – 84.99%', miles: 18 },
+        retry: retry('0% – 69.99%'),
+      },
+      {
         subject: 'UI Engineering',
         format: 'MCQs + Coding',
         minutes: 90,
@@ -175,6 +183,27 @@ export const GRIT_LEVELS: GritLevelDef[] = [
         gold: { band: '90% – 100%', miles: 40 },
         silver: { band: '80% – 89.99%', miles: 36 },
         retry: retry('0% – 79.99%'),
+      },
+    ],
+  },
+  {
+    level: 3,
+    subjects: [
+      {
+        subject: 'MCQs',
+        format: 'MCQs',
+        minutes: 45,
+        gold: { band: '93.33% – 100%', miles: 200 },
+        silver: { band: '86.66% – 93.32%', miles: 180 },
+        retry: retry('0% – 86.65%'),
+      },
+      {
+        subject: 'Coding',
+        format: 'Coding',
+        minutes: 90,
+        gold: { band: '100%', miles: 200 },
+        silver: { band: '62.5% – 99.99%', miles: 180 },
+        retry: retry('0% – 62.4%'),
       },
     ],
   },

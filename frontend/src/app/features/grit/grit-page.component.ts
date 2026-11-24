@@ -19,6 +19,7 @@ import {
 } from '../../core/data/grit-catalog';
 
 type GritView = 'open' | 'cleared' | 'all';
+export type GritTab = 'overall' | number;
 
 @Component({
   selector: 'app-grit-page',
@@ -42,17 +43,27 @@ export class GritPageComponent {
     { id: 'cleared', label: 'Cleared' },
   ];
 
-  readonly pick: Record<number, string> = { 1: '', 2: '' };
+  readonly pick: Record<number, string> = { 1: '', 2: '', 3: '' };
+  pickOverall = '';
+  readonly activeTab = signal<GritTab>('overall');
+  readonly activeLevel = signal<number>(1);
+  readonly overallLevelFilter = signal<number | 'all'>('all');
   readonly draggingId = signal<string | null>(null);
-  readonly activeLevel = signal(1);
   readonly view = signal<GritView>('open');
   query = '';
 
   readonly ringC = 2 * Math.PI * 18;
 
-  selectLevel(level: number): void {
-    this.activeLevel.set(level);
+  selectTab(tab: GritTab): void {
+    this.activeTab.set(tab);
+    if (typeof tab === 'number') {
+      this.activeLevel.set(tab);
+    }
     this.view.set('open');
+  }
+
+  isOverall(): boolean {
+    return this.activeTab() === 'overall';
   }
 
   toggleTheme(): void {
@@ -80,6 +91,90 @@ export class GritPageComponent {
   ringOffset(): number {
     return this.ringC * (1 - this.grit.totals().percent / 100);
   }
+
+  // --- Overall climb & subjects ---
+
+  overallClimb(): GritProgress[] {
+    return this.grit.overallClimb();
+  }
+
+  nextClimbOverall(): GritProgress | null {
+    return this.overallClimb().find((r) => r.result === 'none') ?? null;
+  }
+
+  availableForOverall(level?: number): Array<GritSubjectDef & { level: number }> {
+    const all = this.grit.availableForOverallClimb();
+    return level ? all.filter((s) => s.level === level) : all;
+  }
+
+  addClimbOverall(): void {
+    if (!this.pickOverall) return;
+    const [levelStr, ...rest] = this.pickOverall.split('::');
+    const level = Number(levelStr);
+    const subject = rest.join('::');
+    if (!level || !subject) return;
+    this.grit.addToClimb(level, subject);
+    this.pickOverall = '';
+    this.toast.info(`Queued L${level} · ${subject}`);
+  }
+
+  moveClimbOverall(row: GritProgress, dir: -1 | 1): void {
+    this.grit.moveOverallClimb(row.id, dir);
+  }
+
+  onDragOverOverall(overId: string, event: DragEvent): void {
+    event.preventDefault();
+    const dragged = this.draggingId();
+    if (dragged) this.grit.reorderOverallClimb(dragged, overId);
+  }
+
+  hasCompletedInOverallClimb(): boolean {
+    return this.overallClimb().some((r) => r.result !== 'none');
+  }
+
+  queueAllRemainingOverall(): void {
+    const count = this.grit.availableForOverallClimb().length;
+    if (count === 0) {
+      this.toast.info('All subjects are already in climb or cleared');
+      return;
+    }
+    this.grit.queueAllRemaining();
+    this.toast.show(`Added ${count} subjects to overall climb`, 'success');
+  }
+
+  clearCompletedOverall(): void {
+    this.grit.clearCompletedFromClimb();
+    this.toast.info('Cleared completed subjects from climb');
+  }
+
+  shownOverall(): Array<GritSubjectDef & { level: number }> {
+    const q = this.query.trim().toLowerCase();
+    const lvlFilter = this.overallLevelFilter();
+
+    let list: Array<GritSubjectDef & { level: number }> = [];
+    if (this.view() === 'open') {
+      list = this.grit.openSubjectsOverall();
+    } else if (this.view() === 'cleared') {
+      list = this.grit.completedSubjectsOverall();
+    } else {
+      list = this.levels.flatMap((lvl) => lvl.subjects.map((s) => ({ ...s, level: lvl.level })));
+    }
+
+    if (lvlFilter !== 'all') {
+      list = list.filter((s) => s.level === lvlFilter);
+    }
+
+    if (!q) return list;
+    return list.filter(
+      (s) =>
+        s.subject.toLowerCase().includes(q) ||
+        s.format.toLowerCase().includes(q) ||
+        `level ${s.level}`.includes(q) ||
+        `l${s.level}`.includes(q),
+    );
+  }
+
+  // --- Level-specific climb & subjects ---
 
   climb(level: number): GritProgress[] {
     return this.grit.climbFor(level);
@@ -113,6 +208,47 @@ export class GritPageComponent {
     return this.climb(level).find((r) => r.result === 'none') ?? null;
   }
 
+  addClimb(level: number): void {
+    const subject = this.pick[level];
+    if (!subject) return;
+    this.grit.addToClimb(level, subject);
+    this.pick[level] = '';
+    this.toast.info(`Queued L${level} · ${subject}`);
+  }
+
+  moveClimb(level: number, row: GritProgress, dir: -1 | 1): void {
+    this.grit.moveClimb(level, row, dir);
+  }
+
+  onDragOver(level: number, overId: string, event: DragEvent): void {
+    event.preventDefault();
+    const dragged = this.draggingId();
+    if (dragged) this.grit.reorderClimb(level, dragged, overId);
+  }
+
+  hasCompletedInLevelClimb(level: number): boolean {
+    return this.climb(level).some((r) => r.result !== 'none');
+  }
+
+  queueAllRemainingLevel(level: number): void {
+    const lvl = this.levels.find((l) => l.level === level);
+    if (!lvl) return;
+    const count = this.available(lvl).length;
+    if (count === 0) {
+      this.toast.info(`All Level ${level} subjects are already queued or cleared`);
+      return;
+    }
+    this.grit.queueAllRemaining(level);
+    this.toast.show(`Added ${count} Level ${level} subjects to climb`, 'success');
+  }
+
+  clearCompletedLevel(level: number): void {
+    this.grit.clearCompletedFromClimb(level);
+    this.toast.info(`Cleared completed Level ${level} subjects from climb`);
+  }
+
+  // --- Common result & action methods ---
+
   result(level: number, subject: string): GritResult {
     return this.grit.resultOf(level, subject);
   }
@@ -133,14 +269,6 @@ export class GritPageComponent {
     return def.retry;
   }
 
-  addClimb(level: number): void {
-    const subject = this.pick[level];
-    if (!subject) return;
-    this.grit.addToClimb(level, subject);
-    this.pick[level] = '';
-    this.toast.info(`Queued ${subject}`);
-  }
-
   setTarget(row: GritProgress, target: GritTarget): void {
     this.grit.setTarget(row.level, row.subject, target);
   }
@@ -152,10 +280,10 @@ export class GritPageComponent {
       this.grit.mark(level, row.subject, targetResult);
       this.progress.removeByTitle(row.subject);
       const miles = def ? milesForResult(def, targetResult) : 0;
-      this.toast.show(`✓ ${this.labels[targetResult]} on ${row.subject} · +${miles} miles`, 'success');
+      this.toast.show(`✓ ${this.labels[targetResult]} on L${level} ${row.subject} · +${miles} miles`, 'success');
     } else {
       this.grit.mark(level, row.subject, row.result);
-      this.toast.info(`${row.subject} reopened`);
+      this.toast.info(`L${level} ${row.subject} reopened`);
     }
   }
 
@@ -164,35 +292,22 @@ export class GritPageComponent {
     this.grit.mark(level, subject, result);
     const after = this.grit.resultOf(level, subject);
     if (after === 'none') {
-      this.toast.info(`${subject} is open again`);
+      this.toast.info(`L${level} ${subject} is open again`);
       return;
     }
     this.progress.removeByTitle(subject);
     const miles = def ? milesForResult(def, after) : 0;
     const kind = after === 'retry' ? 'warning' : 'success';
-    this.toast.show(`${this.labels[after]} on ${subject} · +${miles} miles`, kind);
+    this.toast.show(`${this.labels[after]} on L${level} ${subject} · +${miles} miles`, kind);
   }
 
   reset(level: number, subject: string): void {
     this.grit.mark(level, subject, this.grit.resultOf(level, subject));
-    this.toast.info(`${subject} is open again`);
-  }
-
-  moveClimb(level: number, row: GritProgress, dir: -1 | 1): void {
-    const list = this.climb(level);
-    const i = list.findIndex((r) => r.id === row.id);
-    const over = list[i + dir];
-    if (over) this.grit.reorderClimb(level, row.id, over.id);
+    this.toast.info(`L${level} ${subject} is open again`);
   }
 
   onDragStart(id: string): void {
     this.draggingId.set(id);
-  }
-
-  onDragOver(level: number, overId: string, event: DragEvent): void {
-    event.preventDefault();
-    const dragged = this.draggingId();
-    if (dragged) this.grit.reorderClimb(level, dragged, overId);
   }
 
   onDragEnd(): void {
