@@ -22,7 +22,7 @@ export class GritService {
   private readonly api = inject(TrackerApiService);
   private readonly toast = inject(ToastService);
   private readonly _rows = signal<GritProgress[]>(
-    this.store.get<GritProgress[]>(STORAGE_KEYS.grit, []),
+    this.migrateLegacySubjects(this.store.get<GritProgress[]>(STORAGE_KEYS.grit, [])),
   );
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -51,7 +51,8 @@ export class GritService {
   });
 
   hydrate(rows: GritProgress[]): void {
-    const normalized = this.normalizePositions(rows ?? []);
+    const migrated = this.migrateLegacySubjects(rows ?? []);
+    const normalized = this.normalizePositions(migrated);
     this._rows.set(normalized);
     this.store.set(STORAGE_KEYS.grit, this._rows());
   }
@@ -290,6 +291,20 @@ export class GritService {
       }),
     );
     this.persist();
+  }
+
+  private migrateLegacySubjects(rows: GritProgress[]): GritProgress[] {
+    return (rows ?? []).map((r) => {
+      if (r.level === 3) {
+        if (r.subject === 'MCQs' || r.subject === 'MCQ') {
+          return { ...r, subject: 'Gen AI Level 3' };
+        }
+        if (r.subject === 'Coding') {
+          return { ...r, subject: 'Computational Thinking Level 3' };
+        }
+      }
+      return r;
+    });
   }
 
   private normalizePositions(rows: GritProgress[]): GritProgress[] {

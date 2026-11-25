@@ -190,7 +190,7 @@ export const GRIT_LEVELS: GritLevelDef[] = [
     level: 3,
     subjects: [
       {
-        subject: 'MCQs',
+        subject: 'Gen AI Level 3',
         format: 'MCQs',
         minutes: 45,
         gold: { band: '93.33% – 100%', miles: 200 },
@@ -198,7 +198,7 @@ export const GRIT_LEVELS: GritLevelDef[] = [
         retry: retry('0% – 86.65%'),
       },
       {
-        subject: 'Coding',
+        subject: 'Computational Thinking Level 3',
         format: 'Coding',
         minutes: 90,
         gold: { band: '100%', miles: 200 },
