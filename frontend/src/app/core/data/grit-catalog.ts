@@ -177,6 +177,14 @@ export const GRIT_LEVELS: GritLevelDef[] = [
         retry: retry('0% – 79.99%'),
       },
       {
+        subject: 'SQL Level 2',
+        format: 'MCQs + Coding',
+        minutes: 90,
+        gold: { band: '90% – 100%', miles: 40 },
+        silver: { band: '80% – 89.99%', miles: 36 },
+        retry: retry('0% – 79.99%'),
+      },
+      {
         subject: 'UI Engineering',
         format: 'MCQs + IDE Coding',
         minutes: 90,
@@ -228,5 +236,13 @@ export function milesForResult(def: GritSubjectDef, result: GritResult): number 
 }
 
 export function findGritSubject(level: number, subject: string): GritSubjectDef | undefined {
-  return GRIT_LEVELS.find((l) => l.level === level)?.subjects.find((s) => s.subject === subject);
+  const lvl = GRIT_LEVELS.find((l) => l.level === level);
+  if (!lvl) return undefined;
+  return (
+    lvl.subjects.find((s) => s.subject === subject) ??
+    lvl.subjects.find((s) => s.subject.toLowerCase() === subject.toLowerCase()) ??
+    (level === 2 && subject.toLowerCase() === 'sql'
+      ? lvl.subjects.find((s) => s.subject === 'SQL Level 2')
+      : undefined)
+  );
 }

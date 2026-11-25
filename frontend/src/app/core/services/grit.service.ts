@@ -303,6 +303,9 @@ export class GritService {
           return { ...r, subject: 'Computational Thinking Level 3' };
         }
       }
+      if (r.level === 2 && r.subject.toLowerCase() === 'sql') {
+        return { ...r, subject: 'SQL Level 2' };
+      }
       return r;
     });
   }
