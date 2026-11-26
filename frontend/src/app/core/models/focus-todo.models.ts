@@ -1,6 +1,6 @@
 export type FocusPriority = 'urgent' | 'high' | 'medium' | 'low';
 export type FocusStatus = 'pending' | 'in_progress' | 'completed';
-export type FocusFilterTab = 'all' | 'active' | 'pinned' | 'due' | 'completed';
+export type FocusFilterTab = 'all' | 'active' | 'pinned' | 'queue' | 'due' | 'completed';
 export type FocusSortOrder = 'priority-desc' | 'priority-asc' | 'default' | 'due-date' | 'title';
 
 export interface FocusSubtask {

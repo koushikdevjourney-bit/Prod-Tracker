@@ -27,18 +27,18 @@
       <div class="ft-hero__copy">
         <p class="eyebrow">Priority Focus Zone</p>
         <h1>Current Focused To-Do List</h1>
-        <p class="lede">Lock in what matters right now. Set priority targets, track subtasks, run focus timers, and never miss a beat.</p>
+        <p class="lede">Lock in what matters right now. Organize between immediate Main Focus targets and your upcoming Queue backlog.</p>
       </div>
 
       <!-- Quick Metrics Stats Grid -->
       <div class="ft-stats-grid">
-        <div class="ft-stat-card">
-          <span class="ft-stat-card__val">{{ tabCounts().active }}</span>
-          <span class="ft-stat-card__lbl">Active Focus</span>
+        <div class="ft-stat-card ft-stat-card--main">
+          <span class="ft-stat-card__val">🎯 {{ tabCounts().pinned }}</span>
+          <span class="ft-stat-card__lbl">Main Focus</span>
         </div>
-        <div class="ft-stat-card ft-stat-card--pinned">
-          <span class="ft-stat-card__val">★ {{ tabCounts().pinned }}</span>
-          <span class="ft-stat-card__lbl">Core Focus</span>
+        <div class="ft-stat-card ft-stat-card--queue">
+          <span class="ft-stat-card__val">📋 {{ tabCounts().queue }}</span>
+          <span class="ft-stat-card__lbl">Queue List</span>
         </div>
         <div class="ft-stat-card">
           <span class="ft-stat-card__val">{{ tabCounts().completed }}</span>
@@ -111,13 +111,37 @@
     <!-- Quick Add Section -->
     <section class="ft-add-card">
       <form (submit)="$event.preventDefault(); submitQuickAdd()">
+        <!-- Section Destination Toggle -->
+        <div class="ft-section-picker" role="group" aria-label="Target list section">
+          <button
+            type="button"
+            class="ft-section-picker__btn"
+            [class.ft-section-picker__btn--active]="newTargetSection === 'main'"
+            (click)="newTargetSection = 'main'"
+          >
+            <span class="ft-section-picker__icon">🎯</span>
+            <span class="ft-section-picker__title">Main Focus</span>
+            <span class="ft-section-picker__hint">Locked for today</span>
+          </button>
+          <button
+            type="button"
+            class="ft-section-picker__btn"
+            [class.ft-section-picker__btn--active]="newTargetSection === 'queue'"
+            (click)="newTargetSection = 'queue'"
+          >
+            <span class="ft-section-picker__icon">📋</span>
+            <span class="ft-section-picker__title">Queue List</span>
+            <span class="ft-section-picker__hint">Upcoming backlog</span>
+          </button>
+        </div>
+
         <div class="ft-add-main-row">
           <input
             type="text"
             class="input ft-add-input"
             [(ngModel)]="newTitle"
             name="newTitle"
-            placeholder="Add something you need to focus on... (e.g. Solve 3 Graph Problems, Finish API endpoint)"
+            [placeholder]="newTargetSection === 'main' ? 'Add priority focus task... (e.g. Solve 3 Graph Problems, Finish API endpoint)' : 'Add upcoming task to queue... (e.g. Read docs, review PR, organize files)'"
             autocomplete="off"
             maxlength="250"
           />
@@ -125,7 +149,7 @@
             {{ quickAddExpanded() ? '▲ Simple' : '▼ Details' }}
           </button>
           <button type="submit" class="btn btn--primary ft-add-submit-btn" [disabled]="!newTitle.trim()">
-            + Add Focus
+            {{ newTargetSection === 'main' ? '+ Add to Main Focus' : '+ Add to Queue' }}
           </button>
         </div>
 
@@ -215,8 +239,12 @@
 
             <div class="ft-add-bottom-row">
               <label class="ft-checkbox-label">
-                <input type="checkbox" [(ngModel)]="newIsPinned" name="newIsPinned" />
-                <span>★ Pin to Core Focus (Today's Non-Negotiables)</span>
+                <input
+                  type="checkbox"
+                  [checked]="newTargetSection === 'main'"
+                  (change)="newTargetSection = $any($event.target).checked ? 'main' : 'queue'"
+                />
+                <span>🎯 Lock directly into Main Focused List (Pinned priority)</span>
               </label>
             </div>
           </div>
@@ -234,17 +262,26 @@
           [class.ft-tab--active]="activeTab() === 'active'"
           (click)="activeTab.set('active')"
         >
-          Active
+          All Active
           <span class="ft-tab__badge">{{ tabCounts().active }}</span>
         </button>
         <button
           type="button"
-          class="ft-tab"
+          class="ft-tab ft-tab--main"
           [class.ft-tab--active]="activeTab() === 'pinned'"
           (click)="activeTab.set('pinned')"
         >
-          ★ Core Focus
-          <span class="ft-tab__badge">{{ tabCounts().pinned }}</span>
+          🎯 Main Focus
+          <span class="ft-tab__badge ft-tab__badge--main">{{ tabCounts().pinned }}</span>
+        </button>
+        <button
+          type="button"
+          class="ft-tab ft-tab--queue"
+          [class.ft-tab--active]="activeTab() === 'queue'"
+          (click)="activeTab.set('queue')"
+        >
+          📋 Queue
+          <span class="ft-tab__badge ft-tab__badge--queue">{{ tabCounts().queue }}</span>
         </button>
         <button
           type="button"
@@ -252,7 +289,7 @@
           [class.ft-tab--active]="activeTab() === 'due'"
           (click)="activeTab.set('due')"
         >
-          ⏰ Due Today / Overdue
+          ⏰ Due Today
           <span class="ft-tab__badge" [class.ft-tab__badge--alert]="tabCounts().due > 0">{{ tabCounts().due }}</span>
         </button>
         <button
@@ -344,605 +381,183 @@
       </div>
     </section>
 
-    <!-- Core Focus Highlight Box (Show when in active or all tab and pinned items exist) -->
-    @if ((activeTab() === 'active' || activeTab() === 'all') && focus.pinnedTodos().length > 0 && selectedPriority() === 'all' && selectedCategory() === 'all' && !searchQuery()) {
-      <div class="ft-spotlight">
-        <div class="ft-spotlight__head">
-          <div class="ft-spotlight__title">
-            <span class="ft-spotlight__icon">★</span>
-            <strong>Today’s Core Focus (Non-Negotiables)</strong>
-          </div>
-          <span class="ft-spotlight__badge">{{ focus.pinnedTodos().length }} Pinned</span>
-        </div>
-        <p class="ft-spotlight__lede">High leverage tasks locked for today. Tackle these first before shifting to the queue.</p>
-      </div>
-    }
+    <!-- ================= 2 SECTIONS DISPLAY ================= -->
+    <div class="ft-sections-wrap">
 
-    <!-- Focus To-Do Items List -->
-    <section class="ft-list-section">
-      @if (filteredTodos().length > 0) {
-        <ul class="ft-list">
-          @for (todo of filteredTodos(); track todo.id; let idx = $index) {
-            <li
-              class="ft-item"
-              [class.ft-item--completed]="todo.status === 'completed'"
-              [class.ft-item--pinned]="todo.isPinned"
-              [class.ft-item--urgent]="todo.priority === 'urgent'"
-              [class.ft-item--dragging]="draggingId() === todo.id"
-              draggable="true"
-              (dragstart)="onDragStart(todo.id, $event)"
-              (dragover)="allowDrop($event)"
-              (drop)="onDrop(todo.id, $event)"
-            >
-              <!-- Editing Drawer -->
-              @if (editingId() === todo.id) {
-                <form class="ft-edit-form" (submit)="$event.preventDefault(); saveEdit(todo.id)">
-                  <div class="ft-edit-header">
-                    <strong>Edit Focus Item</strong>
-                    <button type="button" class="btn btn--ghost btn--sm" (click)="cancelEdit()">Cancel</button>
-                  </div>
-
-                  <input
-                    type="text"
-                    class="input"
-                    [(ngModel)]="editTitle"
-                    name="editTitle"
-                    placeholder="Focus item title"
-                    maxlength="250"
-                  />
-
-                  <div class="ft-grid-3">
-                    <label class="ft-field">
-                      <span>Priority</span>
-                      <select class="input select" [(ngModel)]="editPriority" name="editPriority">
-                        <option value="urgent">🔥 Urgent</option>
-                        <option value="high">🟠 High</option>
-                        <option value="medium">🔵 Medium</option>
-                        <option value="low">⚪ Low</option>
-                      </select>
-                    </label>
-
-                    <label class="ft-field">
-                      <span>Category</span>
-                      <select class="input select" [(ngModel)]="editCategory" name="editCategory">
-                        @for (c of categories; track c) {
-                          <option [value]="c">{{ c }}</option>
-                        }
-                      </select>
-                    </label>
-
-                    <label class="ft-field">
-                      <span>Est. Minutes</span>
-                      <input
-                        type="number"
-                        class="input"
-                        [(ngModel)]="editEstimatedMinutes"
-                        name="editEstimatedMinutes"
-                        min="5"
-                        max="480"
-                        step="5"
-                      />
-                    </label>
-                  </div>
-
-                  <div class="ft-grid-2">
-                    <label class="ft-field">
-                      <span>Due Date</span>
-                      <input type="date" class="input" [(ngModel)]="editDueDate" name="editDueDate" />
-                    </label>
-
-                    <label class="ft-field">
-                      <span>Due Time</span>
-                      <input type="time" class="input" [(ngModel)]="editDueTime" name="editDueTime" />
-                    </label>
-                  </div>
-
-                  <label class="ft-field">
-                    <span>Notes & Details</span>
-                    <textarea
-                      class="input"
-                      [(ngModel)]="editNotes"
-                      name="editNotes"
-                      rows="3"
-                      placeholder="Context, links, next steps..."
-                    ></textarea>
-                  </label>
-
-                  <div class="ft-edit-actions">
-                    <label class="ft-checkbox-label">
-                      <input type="checkbox" [(ngModel)]="editIsPinned" name="editIsPinned" />
-                      <span>★ Core Focus (Pinned)</span>
-                    </label>
-
-                    <div class="ft-actions-right">
-                      <button type="button" class="btn btn--ghost" (click)="cancelEdit()">Cancel</button>
-                      <button type="submit" class="btn btn--primary">Save Changes</button>
-                    </div>
-                  </div>
-                </form>
-              } @else {
-                <!-- Standard Item View -->
-                <div class="ft-item-row" (click)="toggleCard(todo.id)">
-                  <!-- Drag Grip Handle (6 dots) -->
-                  <div
-                    class="ft-drag-handle"
-                    title="Drag to reorder up or down"
-                    aria-label="Drag handle to reorder"
-                  >
-                    <svg viewBox="0 0 24 24" width="14" height="20" fill="currentColor" aria-hidden="true">
-                      <circle cx="8" cy="5" r="2" />
-                      <circle cx="16" cy="5" r="2" />
-                      <circle cx="8" cy="12" r="2" />
-                      <circle cx="16" cy="12" r="2" />
-                      <circle cx="8" cy="19" r="2" />
-                      <circle cx="16" cy="19" r="2" />
-                    </svg>
-                  </div>
-
-                  <!-- Checkbox -->
-                  <button
-                    type="button"
-                    class="ft-checkbox"
-                    [class.ft-checkbox--checked]="todo.status === 'completed'"
-                    (click)="$event.stopPropagation(); focus.toggleComplete(todo.id)"
-                    [attr.aria-label]="todo.status === 'completed' ? 'Mark as incomplete' : 'Mark as complete'"
-                  >
-                    @if (todo.status === 'completed') {
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    }
-                  </button>
-
-                  <!-- Pin Toggle Button -->
-                  <button
-                    type="button"
-                    class="ft-pin-btn"
-                    [class.ft-pin-btn--pinned]="todo.isPinned"
-                    (click)="$event.stopPropagation(); focus.togglePin(todo.id)"
-                    [title]="todo.isPinned ? 'Unpin from Core Focus' : 'Pin to Core Focus'"
-                    aria-label="Toggle pin"
-                  >
-                    ★
-                  </button>
-
-                  <!-- Main Content (Clickable Accordion Header) -->
-                  <div class="ft-item-body">
-                    <div class="ft-item-top">
-                      <span class="ft-item-title" [class.ft-item-title--done]="todo.status === 'completed'">
-                        {{ todo.title }}
-                      </span>
-
-                      <!-- Badges -->
-                      <div class="ft-badges">
-                        <!-- Priority Dropdown Pill -->
-                        <div class="ft-priority-select-wrap" (click)="$event.stopPropagation()">
-                          <select
-                            class="ft-badge ft-badge--select ft-badge--{{ todo.priority }}"
-                            [ngModel]="todo.priority"
-                            (ngModelChange)="setTodoPriority(todo.id, $event)"
-                            [attr.aria-label]="'Change priority for ' + todo.title"
-                            title="Click to change priority"
-                          >
-                            <option value="urgent">🔥 Urgent</option>
-                            <option value="high">🟠 High</option>
-                            <option value="medium">🔵 Medium</option>
-                            <option value="low">⚪ Low</option>
-                          </select>
-                        </div>
-
-                        <!-- Category Badge -->
-                        <span class="ft-badge ft-badge--cat">{{ todo.category }}</span>
-
-                        <!-- Due Date Badge -->
-                        @if (todo.dueDate) {
-                          <span
-                            class="ft-badge"
-                            [class.ft-badge--overdue]="isOverdue(todo)"
-                            [class.ft-badge--due-today]="isDueToday(todo)"
-                            [class.ft-badge--due]="!isOverdue(todo) && !isDueToday(todo)"
-                          >
-                            ⏰ {{ dueLabel(todo) }}
-                          </span>
-                        }
-
-                        <!-- Estimated / Logged Minutes Badge -->
-                        <span class="ft-badge ft-badge--time" title="Estimated vs Logged focus time">
-                          ⏱ {{ todo.estimatedMinutes }}m est
-                          @if (todo.loggedMinutes > 0) {
-                            · <strong>{{ todo.loggedMinutes }}m logged</strong>
-                          }
-                        </span>
-
-                        <!-- Subtasks Indicator Badge -->
-                        @if (todo.subtasks.length > 0) {
-                          <span class="ft-badge ft-badge--subtasks" title="Checklist steps">
-                            📋 {{ subtasksProgress(todo).done }}/{{ subtasksProgress(todo).total }} steps ({{ subtasksProgress(todo).percent }}%)
-                          </span>
-                        }
-
-                        <!-- Notes Indicator Badge -->
-                        @if (todo.notes && !isCardExpanded(todo.id)) {
-                          <span class="ft-badge ft-badge--notes-hint" title="Has notes">
-                            📝 Note
-                          </span>
-                        }
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Quick Action Buttons & Accordion Toggle -->
-                  <div class="ft-item-ops">
-                    <!-- Start Focus Timer Button -->
-                    @if (todo.status !== 'completed') {
-                      <button
-                        type="button"
-                        class="btn btn--ghost btn--sm ft-action-btn ft-action-btn--focus"
-                        (click)="$event.stopPropagation(); openTimer(todo, todo.estimatedMinutes || 25)"
-                        title="Start focus timer session for this task"
-                      >
-                        <span class="ft-ops-icon">▶</span>
-                        <span>Focus</span>
-                      </button>
-                    }
-
-                    <!-- Accordion Trigger Button -->
-                    <button
-                      type="button"
-                      class="ft-accordion-toggle-btn"
-                      [class.ft-accordion-toggle-btn--open]="isCardExpanded(todo.id)"
-                      (click)="$event.stopPropagation(); toggleCard(todo.id)"
-                      [attr.aria-expanded]="isCardExpanded(todo.id)"
-                      title="Toggle checklist & details panel"
-                    >
-                      <span class="ft-accordion-toggle-label">
-                        {{ isCardExpanded(todo.id) ? 'Collapse' : (todo.subtasks.length ? 'Checklist (' + subtasksProgress(todo).done + '/' + subtasksProgress(todo).total + ')' : (todo.notes ? 'Details' : '+ Steps')) }}
-                      </span>
-                      <svg class="ft-accordion-chevron" [class.ft-accordion-chevron--rotated]="isCardExpanded(todo.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </button>
-
-                    <!-- Move Up / Down Buttons -->
-                    <div class="ft-move-btns">
-                      <button
-                        type="button"
-                        class="btn btn--ghost btn--icon-sm ft-move-btn"
-                        (click)="$event.stopPropagation(); moveTodo(todo.id, -1)"
-                        [disabled]="idx === 0"
-                        title="Move up"
-                        aria-label="Move up"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn--ghost btn--icon-sm ft-move-btn"
-                        (click)="$event.stopPropagation(); moveTodo(todo.id, 1)"
-                        [disabled]="idx === filteredTodos().length - 1"
-                        title="Move down"
-                        aria-label="Move down"
-                      >
-                        ↓
-                      </button>
-                    </div>
-
-                    <!-- Edit Item -->
-                    <button
-                      type="button"
-                      class="btn btn--ghost btn--icon-sm"
-                      (click)="$event.stopPropagation(); startEdit(todo)"
-                      title="Edit task details"
-                      aria-label="Edit"
-                    >
-                      ✎
-                    </button>
-
-                    <!-- Delete -->
-                    <button
-                      type="button"
-                      class="btn btn--ghost btn--icon-sm ft-delete-btn"
-                      (click)="$event.stopPropagation(); focus.delete(todo.id)"
-                      title="Delete focus item"
-                      aria-label="Delete"
-                    >
-                      ×
-                    </button>
-                  </div>
+      <!-- ================= SECTION 1: 🎯 MAIN FOCUSED LIST ================= -->
+      @if (activeTab() === 'active' || activeTab() === 'pinned' || activeTab() === 'all' || activeTab() === 'due') {
+        <section
+          class="ft-todo-section ft-todo-section--main"
+          (dragover)="allowDrop($event)"
+          (drop)="onDropToSection('main', undefined, $event)"
+          aria-label="Main Focused List"
+        >
+          <!-- Section Header -->
+          <div class="ft-section-head">
+            <div class="ft-section-head__left">
+              <span class="ft-section-icon">🎯</span>
+              <div class="ft-section-head__meta">
+                <div class="ft-section-head__title-row">
+                  <h2 class="ft-section-title">Main Focused List</h2>
+                  <span class="ft-section-pill ft-section-pill--main">
+                    {{ mainFocusTodos().length }} {{ mainFocusTodos().length === 1 ? 'task' : 'tasks' }}
+                  </span>
                 </div>
+                <p class="ft-section-subtitle">
+                  Immediate non-negotiables locked for execution right now. Tackle these first.
+                </p>
+              </div>
+            </div>
 
-                <!-- Accordion Panel (Expanded) -->
-                @if (isCardExpanded(todo.id)) {
-                  <div class="ft-accordion-panel" (click)="$event.stopPropagation()">
-                    <!-- Context & Notes Section -->
-                    @if (todo.notes) {
-                      <div class="ft-accordion-section ft-accordion-section--notes">
-                        <span class="ft-accordion-section-title">
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                            <line x1="16" y1="13" x2="8" y2="13" />
-                            <line x1="16" y1="17" x2="8" y2="17" />
-                            <polyline points="10 9 9 9 8 9" />
-                          </svg>
-                          Context & Notes
-                        </span>
-                        <p class="ft-accordion-notes-body">{{ todo.notes }}</p>
-                      </div>
-                    }
+            <div class="ft-section-head__right">
+              <span class="ft-section-drag-cue">Drop tasks here to prioritize</span>
+            </div>
+          </div>
 
-                    <!-- Checklist Breakdown Section -->
-                    <div class="ft-accordion-section ft-accordion-section--checklist">
-                      <div class="ft-accordion-checklist-head">
-                        <div class="ft-accordion-section-title">
-                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="9 11 12 14 22 4" />
-                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                          </svg>
-                          Checklist Breakdown
-                        </div>
-                        <div class="ft-accordion-checklist-head-right">
-                          @if (todo.subtasks.length > 1) {
-                            <div class="ft-subtasks-sort-wrap" title="Quick sort checklist steps">
-                              <select
-                                class="ft-subtasks-sort-select"
-                                (change)="sortSubtasks(todo.id, $any($event.target).value); $any($event.target).value = ''"
-                                aria-label="Sort checklist steps"
-                              >
-                                <option value="" disabled selected>⇅ Order ▾</option>
-                                <option value="incomplete-first">To Do First</option>
-                                <option value="completed-first">Completed First</option>
-                                <option value="reverse">Invert / Reverse Order</option>
-                              </select>
-                            </div>
-                          }
-                          @if (todo.subtasks.length > 0) {
-                            <span
-                              class="ft-accordion-progress-badge"
-                              [class.ft-accordion-progress-badge--complete]="subtasksProgress(todo).percent === 100"
-                            >
-                              @if (subtasksProgress(todo).percent === 100) {
-                                ✓ All {{ subtasksProgress(todo).total }} completed!
-                              } @else {
-                                {{ subtasksProgress(todo).done }} of {{ subtasksProgress(todo).total }} completed ({{ subtasksProgress(todo).percent }}%)
-                              }
-                            </span>
-                          }
-                        </div>
-                      </div>
-
-                      @if (todo.subtasks.length > 0) {
-                        <div class="ft-accordion-progress-bar">
-                          <div
-                            class="ft-accordion-progress-fill"
-                            [class.ft-accordion-progress-fill--complete]="subtasksProgress(todo).percent === 100"
-                            [style.width.%]="subtasksProgress(todo).percent"
-                          ></div>
-                        </div>
-                      }
-
-                      <!-- Subtasks List -->
-                      @if (todo.subtasks.length > 0) {
-                        <ul class="ft-subtasks-list">
-                          @for (st of todo.subtasks; track st.id; let sIdx = $index) {
-                            <li
-                              class="ft-subtask-row"
-                              [class.ft-subtask-row--done]="st.done"
-                              [class.ft-subtask-row--dragging]="draggingSubtaskId() === st.id"
-                              draggable="true"
-                              (dragstart)="onSubtaskDragStart(st.id, $event)"
-                              (dragover)="onSubtaskDragOver($event)"
-                              (drop)="onSubtaskDrop(todo.id, st.id, $event)"
-                            >
-                              <!-- 6-dot Drag Handle -->
-                              <span
-                                class="ft-subtask-drag-handle"
-                                title="Drag to reorder checklist step"
-                                aria-hidden="true"
-                              >
-                                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-                                  <circle cx="9" cy="6" r="1.5" />
-                                  <circle cx="15" cy="6" r="1.5" />
-                                  <circle cx="9" cy="12" r="1.5" />
-                                  <circle cx="15" cy="12" r="1.5" />
-                                  <circle cx="9" cy="18" r="1.5" />
-                                  <circle cx="15" cy="18" r="1.5" />
-                                </svg>
-                              </span>
-
-                              <!-- Checkbox -->
-                              <label class="ft-subtask-checkbox-label">
-                                <input
-                                  type="checkbox"
-                                  class="ft-subtask-native-check"
-                                  [checked]="st.done"
-                                  (change)="focus.toggleSubtask(todo.id, st.id)"
-                                />
-                                <span class="ft-subtask-custom-check" aria-hidden="true">
-                                  <svg viewBox="0 0 12 10" class="ft-check-svg">
-                                    <polyline points="1.5 5 4.5 8 10.5 2" />
-                                  </svg>
-                                </span>
-                              </label>
-
-                              <!-- Position / Order Dropdown Selector -->
-                              <div
-                                class="ft-subtask-order-dropdown"
-                                (click)="$event.stopPropagation()"
-                                title="Click to move step to another position"
-                              >
-                                <select
-                                  class="ft-subtask-order-select"
-                                  [value]="sIdx"
-                                  (change)="moveSubtaskTo(todo.id, sIdx, +$any($event.target).value)"
-                                  [attr.aria-label]="'Move step ' + (sIdx + 1) + ' to position'"
-                                >
-                                  @for (s of todo.subtasks; track s.id; let optIdx = $index) {
-                                    <option [value]="optIdx">Position #{{ optIdx + 1 }}</option>
-                                  }
-                                </select>
-                                <span class="ft-subtask-index">{{ sIdx + 1 }}.</span>
-                                <span class="ft-subtask-dropdown-caret">▾</span>
-                              </div>
-
-                              <!-- Step Title -->
-                              <span
-                                class="ft-subtask-title"
-                                [class.ft-subtask-title--done]="st.done"
-                                (click)="focus.toggleSubtask(todo.id, st.id)"
-                              >{{ st.title }}</span>
-
-                              <!-- Move Up / Down Buttons & Delete -->
-                              <div class="ft-subtask-ops">
-                                <button
-                                  type="button"
-                                  class="btn btn--ghost btn--icon-sm ft-subtask-move-btn"
-                                  (click)="$event.stopPropagation(); moveSubtask(todo.id, st.id, -1)"
-                                  [disabled]="sIdx === 0"
-                                  title="Move step up"
-                                  aria-label="Move step up"
-                                >
-                                  ↑
-                                </button>
-                                <button
-                                  type="button"
-                                  class="btn btn--ghost btn--icon-sm ft-subtask-move-btn"
-                                  (click)="$event.stopPropagation(); moveSubtask(todo.id, st.id, 1)"
-                                  [disabled]="sIdx === todo.subtasks.length - 1"
-                                  title="Move step down"
-                                  aria-label="Move step down"
-                                >
-                                  ↓
-                                </button>
-                                <button
-                                  type="button"
-                                  class="btn ft-subtask-del"
-                                  (click)="$event.stopPropagation(); focus.deleteSubtask(todo.id, st.id)"
-                                  title="Delete step"
-                                  aria-label="Delete step"
-                                >
-                                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </li>
-                          }
-                        </ul>
-                      }
-
-                      <!-- Add Subtask Inline Input -->
-                      <div class="ft-subtask-add-row">
-                        <div class="ft-subtask-input-wrap">
-                          <span class="ft-subtask-input-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                              <line x1="12" y1="5" x2="12" y2="19" />
-                              <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                          </span>
-                          <input
-                            type="text"
-                            class="input ft-subtask-input"
-                            [(ngModel)]="subtaskDrafts[todo.id]"
-                            (keydown.enter)="$event.preventDefault(); handleAddSubtask(todo.id)"
-                            placeholder="Add next checklist step (e.g. Write edge cases, Push git branch)..."
-                            maxlength="200"
-                          />
-                          <span class="ft-subtask-enter-hint" aria-hidden="true">↵ Enter</span>
-                        </div>
-                        <button
-                          type="button"
-                          class="btn btn--primary btn--sm ft-subtask-add-btn"
-                          (click)="handleAddSubtask(todo.id)"
-                          [disabled]="!subtaskDrafts[todo.id]?.trim()"
-                        >
-                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                          </svg>
-                          Add Step
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Accordion Footer / Quick Actions -->
-                    <div class="ft-accordion-footer">
-                      <div class="ft-accordion-footer__left">
-                        <button
-                          type="button"
-                          class="btn btn--ghost btn--sm"
-                          (click)="logAsActivity(todo)"
-                          title="Log as a completed activity in Pulse activity journal"
-                        >
-                          <span>Log to Activity</span>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn--ghost btn--sm"
-                          (click)="startEdit(todo)"
-                          title="Edit task details"
-                        >
-                          <span>✎ Edit Task</span>
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn--ghost btn--icon-sm ft-move-btn"
-                          (click)="moveTodo(todo.id, -1)"
-                          [disabled]="idx === 0"
-                          title="Move task up"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn--ghost btn--icon-sm ft-move-btn"
-                          (click)="moveTodo(todo.id, 1)"
-                          [disabled]="idx === filteredTodos().length - 1"
-                          title="Move task down"
-                        >
-                          ↓
-                        </button>
-                      </div>
-
-                      <div class="ft-accordion-footer__right">
-                        <button
-                          type="button"
-                          class="btn btn--ghost btn--sm ft-collapse-link"
-                          (click)="toggleCard(todo.id)"
-                        >
-                          <span>▲ Collapse</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                }
+          <!-- Main Focus Items List -->
+          @if (mainFocusTodos().length > 0) {
+            <ul class="ft-list">
+              @for (todo of mainFocusTodos(); track todo.id; let idx = $index) {
+                <ng-container
+                  *ngTemplateOutlet="todoCardTemplate; context: { todo: todo, idx: idx, isMain: true, total: mainFocusTodos().length }"
+                ></ng-container>
               }
-            </li>
+            </ul>
+          } @else {
+            <!-- Empty State for Main Focus Section -->
+            <div
+              class="ft-section-empty ft-section-empty--main"
+              (dragover)="allowDrop($event)"
+              (drop)="onDropToSection('main', undefined, $event)"
+            >
+              <div class="ft-section-empty__icon">🎯</div>
+              <div class="ft-section-empty__body">
+                <h3>No tasks in Main Focus right now</h3>
+                <p>
+                  Promote tasks from your Queue below using <span class="ft-text-badge">🎯 Focus Now</span> or drag & drop them here to lock in your focus.
+                </p>
+              </div>
+            </div>
           }
-        </ul>
-      } @else {
-        <!-- Empty State -->
+        </section>
+      }
+
+      <!-- ================= SECTION 2: 📋 QUEUE LIST ================= -->
+      @if (activeTab() === 'active' || activeTab() === 'queue' || activeTab() === 'all' || activeTab() === 'due') {
+        <section
+          class="ft-todo-section ft-todo-section--queue"
+          (dragover)="allowDrop($event)"
+          (drop)="onDropToSection('queue', undefined, $event)"
+          aria-label="Queue List"
+        >
+          <!-- Section Header -->
+          <div class="ft-section-head">
+            <div class="ft-section-head__left">
+              <span class="ft-section-icon">📋</span>
+              <div class="ft-section-head__meta">
+                <div class="ft-section-head__title-row">
+                  <h2 class="ft-section-title">Queue List</h2>
+                  <span class="ft-section-pill ft-section-pill--queue">
+                    {{ queueTodos().length }} {{ queueTodos().length === 1 ? 'task' : 'tasks' }}
+                  </span>
+                </div>
+                <p class="ft-section-subtitle">
+                  Upcoming tasks waiting in queue. As you finish your main focus, promote next items here.
+                </p>
+              </div>
+            </div>
+
+            <div class="ft-section-head__right">
+              <span class="ft-section-drag-cue">Drop tasks here to queue</span>
+            </div>
+          </div>
+
+          <!-- Queue Items List -->
+          @if (queueTodos().length > 0) {
+            <ul class="ft-list">
+              @for (todo of queueTodos(); track todo.id; let idx = $index) {
+                <ng-container
+                  *ngTemplateOutlet="todoCardTemplate; context: { todo: todo, idx: idx, isMain: false, total: queueTodos().length }"
+                ></ng-container>
+              }
+            </ul>
+          } @else {
+            <!-- Empty State for Queue Section -->
+            <div
+              class="ft-section-empty ft-section-empty--queue"
+              (dragover)="allowDrop($event)"
+              (drop)="onDropToSection('queue', undefined, $event)"
+            >
+              <div class="ft-section-empty__icon">📋</div>
+              <div class="ft-section-empty__body">
+                <h3>Queue is clear</h3>
+                <p>
+                  Add secondary tasks or backlog items to your Queue to keep your Main Focus distraction-free.
+                </p>
+              </div>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- ================= SECTION 3: ✓ CLEARED / COMPLETED ================= -->
+      @if ((activeTab() === 'completed' || activeTab() === 'all') && completedFilteredTodos().length > 0) {
+        <section class="ft-todo-section ft-todo-section--completed" aria-label="Cleared Tasks">
+          <div class="ft-section-head">
+            <div class="ft-section-head__left">
+              <span class="ft-section-icon">✓</span>
+              <div class="ft-section-head__meta">
+                <div class="ft-section-head__title-row">
+                  <h2 class="ft-section-title">Cleared Tasks</h2>
+                  <span class="ft-section-pill ft-section-pill--completed">
+                    {{ completedFilteredTodos().length }}
+                  </span>
+                </div>
+                <p class="ft-section-subtitle">Completed tasks from your focus sessions.</p>
+              </div>
+            </div>
+
+            <div class="ft-section-head__right">
+              <button type="button" class="btn btn--ghost btn--sm" (click)="focus.clearCompleted()">
+                Clear all ({{ completedFilteredTodos().length }})
+              </button>
+            </div>
+          </div>
+
+          <ul class="ft-list">
+            @for (todo of completedFilteredTodos(); track todo.id; let idx = $index) {
+              <ng-container
+                *ngTemplateOutlet="todoCardTemplate; context: { todo: todo, idx: idx, isMain: false, total: completedFilteredTodos().length }"
+              ></ng-container>
+            }
+          </ul>
+        </section>
+      }
+
+      <!-- Global Empty Fallback State (when all filters return zero) -->
+      @if (filteredTodos().length === 0) {
         <div class="ft-empty-state">
           <div class="ft-empty-state__icon">🎯</div>
           <h2>
             @if (searchQuery()) {
               No tasks match "{{ searchQuery() }}"
             } @else if (activeTab() === 'pinned') {
-              No core focus items pinned yet
+              No main focus items locked yet
+            } @else if (activeTab() === 'queue') {
+              No tasks in the queue yet
             } @else if (activeTab() === 'due') {
               Nothing due today or overdue
             } @else if (activeTab() === 'completed') {
               No completed tasks yet
             } @else {
-              Your Focus To-Do List is clear!
+              Your Focus To-Do List is completely clear!
             }
           </h2>
           <p class="ft-empty-state__lede">
             @if (searchQuery()) {
               Try clearing your search keyword or switching filter categories.
             } @else if (activeTab() === 'pinned') {
-              Click the ★ icon on any task to lock it into your Core Focus banner.
+              Click "🎯 Focus Now" on any queue item to promote it to your Main Focus list.
             } @else {
               Add your immediate priorities above so nothing slips through the cracks.
             }
@@ -966,6 +581,620 @@
           }
         </div>
       }
-    </section>
+    </div>
   </main>
 </div>
+
+<!-- ================= REUSABLE TO-DO CARD TEMPLATE ================= -->
+<ng-template #todoCardTemplate let-todo="todo" let-idx="idx" let-isMain="isMain" let-total="total">
+  <li
+    class="ft-item"
+    [class.ft-item--completed]="todo.status === 'completed'"
+    [class.ft-item--pinned]="todo.isPinned"
+    [class.ft-item--urgent]="todo.priority === 'urgent'"
+    [class.ft-item--dragging]="draggingId() === todo.id"
+    draggable="true"
+    (dragstart)="onDragStart(todo.id, $event)"
+    (dragover)="allowDrop($event)"
+    (drop)="onDropToSection(isMain ? 'main' : 'queue', todo.id, $event)"
+  >
+    <!-- Editing Drawer -->
+    @if (editingId() === todo.id) {
+      <form class="ft-edit-form" (submit)="$event.preventDefault(); saveEdit(todo.id)">
+        <div class="ft-edit-header">
+          <strong>Edit Focus Item</strong>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="cancelEdit()">Cancel</button>
+        </div>
+
+        <input
+          type="text"
+          class="input"
+          [(ngModel)]="editTitle"
+          name="editTitle"
+          placeholder="Focus item title"
+          maxlength="250"
+        />
+
+        <div class="ft-grid-3">
+          <label class="ft-field">
+            <span>Priority</span>
+            <select class="input select" [(ngModel)]="editPriority" name="editPriority">
+              <option value="urgent">🔥 Urgent</option>
+              <option value="high">🟠 High</option>
+              <option value="medium">🔵 Medium</option>
+              <option value="low">⚪ Low</option>
+            </select>
+          </label>
+
+          <label class="ft-field">
+            <span>Category</span>
+            <select class="input select" [(ngModel)]="editCategory" name="editCategory">
+              @for (c of categories; track c) {
+                <option [value]="c">{{ c }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="ft-field">
+            <span>Est. Minutes</span>
+            <input
+              type="number"
+              class="input"
+              [(ngModel)]="editEstimatedMinutes"
+              name="editEstimatedMinutes"
+              min="5"
+              max="480"
+              step="5"
+            />
+          </label>
+        </div>
+
+        <div class="ft-grid-2">
+          <label class="ft-field">
+            <span>Due Date</span>
+            <input type="date" class="input" [(ngModel)]="editDueDate" name="editDueDate" />
+          </label>
+
+          <label class="ft-field">
+            <span>Due Time</span>
+            <input type="time" class="input" [(ngModel)]="editDueTime" name="editDueTime" />
+          </label>
+        </div>
+
+        <label class="ft-field">
+          <span>Notes & Details</span>
+          <textarea
+            class="input"
+            [(ngModel)]="editNotes"
+            name="editNotes"
+            rows="3"
+            placeholder="Context, links, next steps..."
+          ></textarea>
+        </label>
+
+        <div class="ft-edit-actions">
+          <label class="ft-checkbox-label">
+            <input type="checkbox" [(ngModel)]="editIsPinned" name="editIsPinned" />
+            <span>🎯 Lock into Main Focus (Pinned)</span>
+          </label>
+
+          <div class="ft-actions-right">
+            <button type="button" class="btn btn--ghost" (click)="cancelEdit()">Cancel</button>
+            <button type="submit" class="btn btn--primary">Save Changes</button>
+          </div>
+        </div>
+      </form>
+    } @else {
+      <!-- Standard Item Row -->
+      <div class="ft-item-row" (click)="toggleCard(todo.id)">
+        <!-- Drag Grip Handle (6 dots) -->
+        <div
+          class="ft-drag-handle"
+          title="Drag to reorder or move across sections"
+          aria-label="Drag handle to reorder"
+        >
+          <svg viewBox="0 0 24 24" width="14" height="20" fill="currentColor" aria-hidden="true">
+            <circle cx="8" cy="5" r="2" />
+            <circle cx="16" cy="5" r="2" />
+            <circle cx="8" cy="12" r="2" />
+            <circle cx="16" cy="12" r="2" />
+            <circle cx="8" cy="19" r="2" />
+            <circle cx="16" cy="19" r="2" />
+          </svg>
+        </div>
+
+        <!-- Checkbox -->
+        <button
+          type="button"
+          class="ft-checkbox"
+          [class.ft-checkbox--checked]="todo.status === 'completed'"
+          (click)="$event.stopPropagation(); focus.toggleComplete(todo.id)"
+          [attr.aria-label]="todo.status === 'completed' ? 'Mark as incomplete' : 'Mark as complete'"
+        >
+          @if (todo.status === 'completed') {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          }
+        </button>
+
+        <!-- Pin / Section Toggle Button -->
+        <button
+          type="button"
+          class="ft-pin-btn"
+          [class.ft-pin-btn--pinned]="todo.isPinned"
+          (click)="$event.stopPropagation(); focus.togglePin(todo.id)"
+          [title]="todo.isPinned ? 'Move to Queue list' : 'Promote to Main Focus list'"
+          aria-label="Toggle Main Focus"
+        >
+          {{ todo.isPinned ? '🎯' : '☆' }}
+        </button>
+
+        <!-- Main Content -->
+        <div class="ft-item-body">
+          <div class="ft-item-top">
+            <span class="ft-item-title" [class.ft-item-title--done]="todo.status === 'completed'">
+              {{ todo.title }}
+            </span>
+
+            <!-- Badges -->
+            <div class="ft-badges">
+              <!-- Priority Dropdown Pill -->
+              <div class="ft-priority-select-wrap" (click)="$event.stopPropagation()">
+                <select
+                  class="ft-badge ft-badge--select ft-badge--{{ todo.priority }}"
+                  [ngModel]="todo.priority"
+                  (ngModelChange)="setTodoPriority(todo.id, $event)"
+                  [attr.aria-label]="'Change priority for ' + todo.title"
+                  title="Click to change priority"
+                >
+                  <option value="urgent">🔥 Urgent</option>
+                  <option value="high">🟠 High</option>
+                  <option value="medium">🔵 Medium</option>
+                  <option value="low">⚪ Low</option>
+                </select>
+              </div>
+
+              <!-- Category Badge -->
+              <span class="ft-badge ft-badge--cat">{{ todo.category }}</span>
+
+              <!-- Section Badge indicator (Main Focus vs Queue) -->
+              <span
+                class="ft-badge"
+                [class.ft-badge--main-tag]="todo.isPinned"
+                [class.ft-badge--queue-tag]="!todo.isPinned"
+                title="Current list section"
+              >
+                {{ todo.isPinned ? '🎯 Main Focus' : '📋 Queue' }}
+              </span>
+
+              <!-- Due Date Badge -->
+              @if (todo.dueDate) {
+                <span
+                  class="ft-badge"
+                  [class.ft-badge--overdue]="isOverdue(todo)"
+                  [class.ft-badge--due-today]="isDueToday(todo)"
+                  [class.ft-badge--due]="!isOverdue(todo) && !isDueToday(todo)"
+                >
+                  ⏰ {{ dueLabel(todo) }}
+                </span>
+              }
+
+              <!-- Estimated / Logged Minutes Badge -->
+              <span class="ft-badge ft-badge--time" title="Estimated vs Logged focus time">
+                ⏱ {{ todo.estimatedMinutes }}m est
+                @if (todo.loggedMinutes > 0) {
+                  · <strong>{{ todo.loggedMinutes }}m logged</strong>
+                }
+              </span>
+
+              <!-- Subtasks Indicator Badge -->
+              @if (todo.subtasks.length > 0) {
+                <span class="ft-badge ft-badge--subtasks" title="Checklist steps">
+                  📋 {{ subtasksProgress(todo).done }}/{{ subtasksProgress(todo).total }} steps ({{ subtasksProgress(todo).percent }}%)
+                </span>
+              }
+
+              <!-- Notes Indicator Badge -->
+              @if (todo.notes && !isCardExpanded(todo.id)) {
+                <span class="ft-badge ft-badge--notes-hint" title="Has notes">
+                  📝 Note
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Action Buttons & Operations -->
+        <div class="ft-item-ops">
+          <!-- Quick Move Section Buttons (Focus Now / Move to Queue) -->
+          @if (todo.status !== 'completed') {
+            @if (!todo.isPinned) {
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm ft-section-shift-btn ft-section-shift-btn--promote"
+                (click)="$event.stopPropagation(); moveToMainFocus(todo.id)"
+                title="Promote to Main Focus list"
+              >
+                <span class="ft-shift-icon">🎯</span>
+                <span>Focus Now</span>
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm ft-section-shift-btn ft-section-shift-btn--demote"
+                (click)="$event.stopPropagation(); moveToQueue(todo.id)"
+                title="Move down to Queue list"
+              >
+                <span class="ft-shift-icon">📋</span>
+                <span>To Queue</span>
+              </button>
+            }
+
+            <!-- Start Focus Timer Button -->
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm ft-action-btn ft-action-btn--focus"
+              (click)="$event.stopPropagation(); openTimer(todo, todo.estimatedMinutes || 25)"
+              title="Start focus timer session for this task"
+            >
+              <span class="ft-ops-icon">▶</span>
+              <span>Focus</span>
+            </button>
+          }
+
+          <!-- Accordion Trigger Button -->
+          <button
+            type="button"
+            class="ft-accordion-toggle-btn"
+            [class.ft-accordion-toggle-btn--open]="isCardExpanded(todo.id)"
+            (click)="$event.stopPropagation(); toggleCard(todo.id)"
+            [attr.aria-expanded]="isCardExpanded(todo.id)"
+            title="Toggle checklist & details panel"
+          >
+            <span class="ft-accordion-toggle-label">
+              {{ isCardExpanded(todo.id) ? 'Collapse' : (todo.subtasks.length ? 'Checklist (' + subtasksProgress(todo).done + '/' + subtasksProgress(todo).total + ')' : (todo.notes ? 'Details' : '+ Steps')) }}
+            </span>
+            <svg class="ft-accordion-chevron" [class.ft-accordion-chevron--rotated]="isCardExpanded(todo.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          <!-- Move Up / Down Buttons -->
+          <div class="ft-move-btns">
+            <button
+              type="button"
+              class="btn btn--ghost btn--icon-sm ft-move-btn"
+              (click)="$event.stopPropagation(); isMain ? moveMainTodo(todo.id, -1) : moveQueueTodo(todo.id, -1)"
+              [disabled]="idx === 0"
+              title="Move up"
+              aria-label="Move up"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              class="btn btn--ghost btn--icon-sm ft-move-btn"
+              (click)="$event.stopPropagation(); isMain ? moveMainTodo(todo.id, 1) : moveQueueTodo(todo.id, 1)"
+              [disabled]="idx === total - 1"
+              title="Move down"
+              aria-label="Move down"
+            >
+              ↓
+            </button>
+          </div>
+
+          <!-- Edit Item -->
+          <button
+            type="button"
+            class="btn btn--ghost btn--icon-sm"
+            (click)="$event.stopPropagation(); startEdit(todo)"
+            title="Edit task details"
+            aria-label="Edit"
+          >
+            ✎
+          </button>
+
+          <!-- Delete -->
+          <button
+            type="button"
+            class="btn btn--ghost btn--icon-sm ft-delete-btn"
+            (click)="$event.stopPropagation(); focus.delete(todo.id)"
+            title="Delete focus item"
+            aria-label="Delete"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      <!-- Accordion Panel (Expanded) -->
+      @if (isCardExpanded(todo.id)) {
+        <div class="ft-accordion-panel" (click)="$event.stopPropagation()">
+          <!-- Context & Notes Section -->
+          @if (todo.notes) {
+            <div class="ft-accordion-section ft-accordion-section--notes">
+              <span class="ft-accordion-section-title">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+                Context & Notes
+              </span>
+              <p class="ft-accordion-notes-body">{{ todo.notes }}</p>
+            </div>
+          }
+
+          <!-- Checklist Breakdown Section -->
+          <div class="ft-accordion-section ft-accordion-section--checklist">
+            <div class="ft-accordion-checklist-head">
+              <div class="ft-accordion-section-title">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 11 12 14 22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+                Checklist Breakdown
+              </div>
+              <div class="ft-accordion-checklist-head-right">
+                @if (todo.subtasks.length > 1) {
+                  <div class="ft-subtasks-sort-wrap" title="Quick sort checklist steps">
+                    <select
+                      class="ft-subtasks-sort-select"
+                      (change)="sortSubtasks(todo.id, $any($event.target).value); $any($event.target).value = ''"
+                      aria-label="Sort checklist steps"
+                    >
+                      <option value="" disabled selected>⇅ Order ▾</option>
+                      <option value="incomplete-first">To Do First</option>
+                      <option value="completed-first">Completed First</option>
+                      <option value="reverse">Invert / Reverse Order</option>
+                    </select>
+                  </div>
+                }
+                @if (todo.subtasks.length > 0) {
+                  <span
+                    class="ft-accordion-progress-badge"
+                    [class.ft-accordion-progress-badge--complete]="subtasksProgress(todo).percent === 100"
+                  >
+                    @if (subtasksProgress(todo).percent === 100) {
+                      ✓ All {{ subtasksProgress(todo).total }} completed!
+                    } @else {
+                      {{ subtasksProgress(todo).done }} of {{ subtasksProgress(todo).total }} completed ({{ subtasksProgress(todo).percent }}%)
+                    }
+                  </span>
+                }
+              </div>
+            </div>
+
+            @if (todo.subtasks.length > 0) {
+              <div class="ft-accordion-progress-bar">
+                <div
+                  class="ft-accordion-progress-fill"
+                  [class.ft-accordion-progress-fill--complete]="subtasksProgress(todo).percent === 100"
+                  [style.width.%]="subtasksProgress(todo).percent"
+                ></div>
+              </div>
+            }
+
+            <!-- Subtasks List -->
+            @if (todo.subtasks.length > 0) {
+              <ul class="ft-subtasks-list">
+                @for (st of todo.subtasks; track st.id; let sIdx = $index) {
+                  <li
+                    class="ft-subtask-row"
+                    [class.ft-subtask-row--done]="st.done"
+                    [class.ft-subtask-row--dragging]="draggingSubtaskId() === st.id"
+                    draggable="true"
+                    (dragstart)="onSubtaskDragStart(st.id, $event)"
+                    (dragover)="onSubtaskDragOver($event)"
+                    (drop)="onSubtaskDrop(todo.id, st.id, $event)"
+                  >
+                    <!-- 6-dot Drag Handle -->
+                    <span
+                      class="ft-subtask-drag-handle"
+                      title="Drag to reorder checklist step"
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                        <circle cx="9" cy="6" r="1.5" />
+                        <circle cx="15" cy="6" r="1.5" />
+                        <circle cx="9" cy="12" r="1.5" />
+                        <circle cx="15" cy="12" r="1.5" />
+                        <circle cx="9" cy="18" r="1.5" />
+                        <circle cx="15" cy="18" r="1.5" />
+                      </svg>
+                    </span>
+
+                    <!-- Checkbox -->
+                    <label class="ft-subtask-checkbox-label">
+                      <input
+                        type="checkbox"
+                        class="ft-subtask-native-check"
+                        [checked]="st.done"
+                        (change)="focus.toggleSubtask(todo.id, st.id)"
+                      />
+                      <span class="ft-subtask-custom-check" aria-hidden="true">
+                        <svg viewBox="0 0 12 10" class="ft-check-svg">
+                          <polyline points="1.5 5 4.5 8 10.5 2" />
+                        </svg>
+                      </span>
+                    </label>
+
+                    <!-- Position / Order Dropdown Selector -->
+                    <div
+                      class="ft-subtask-order-dropdown"
+                      (click)="$event.stopPropagation()"
+                      title="Click to move step to another position"
+                    >
+                      <select
+                        class="ft-subtask-order-select"
+                        [value]="sIdx"
+                        (change)="moveSubtaskTo(todo.id, sIdx, +$any($event.target).value)"
+                        [attr.aria-label]="'Move step ' + (sIdx + 1) + ' to position'"
+                      >
+                        @for (s of todo.subtasks; track s.id; let optIdx = $index) {
+                          <option [value]="optIdx">Position #{{ optIdx + 1 }}</option>
+                        }
+                      </select>
+                      <span class="ft-subtask-index">{{ sIdx + 1 }}.</span>
+                      <span class="ft-subtask-dropdown-caret">▾</span>
+                    </div>
+
+                    <!-- Step Title -->
+                    <span
+                      class="ft-subtask-title"
+                      [class.ft-subtask-title--done]="st.done"
+                      (click)="focus.toggleSubtask(todo.id, st.id)"
+                    >{{ st.title }}</span>
+
+                    <!-- Move Up / Down Buttons & Delete -->
+                    <div class="ft-subtask-ops">
+                      <button
+                        type="button"
+                        class="btn btn--ghost btn--icon-sm ft-subtask-move-btn"
+                        (click)="$event.stopPropagation(); moveSubtask(todo.id, st.id, -1)"
+                        [disabled]="sIdx === 0"
+                        title="Move step up"
+                        aria-label="Move step up"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn--ghost btn--icon-sm ft-subtask-move-btn"
+                        (click)="$event.stopPropagation(); moveSubtask(todo.id, st.id, 1)"
+                        [disabled]="sIdx === todo.subtasks.length - 1"
+                        title="Move step down"
+                        aria-label="Move step down"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        class="btn ft-subtask-del"
+                        (click)="$event.stopPropagation(); focus.deleteSubtask(todo.id, st.id)"
+                        title="Delete step"
+                        aria-label="Delete step"
+                      >
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+
+            <!-- Add Subtask Inline Input -->
+            <div class="ft-subtask-add-row">
+              <div class="ft-subtask-input-wrap">
+                <span class="ft-subtask-input-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  class="input ft-subtask-input"
+                  [(ngModel)]="subtaskDrafts[todo.id]"
+                  (keydown.enter)="$event.preventDefault(); handleAddSubtask(todo.id)"
+                  placeholder="Add next checklist step (e.g. Write edge cases, Push git branch)..."
+                  maxlength="200"
+                />
+                <span class="ft-subtask-enter-hint" aria-hidden="true">↵ Enter</span>
+              </div>
+              <button
+                type="button"
+                class="btn btn--primary btn--sm ft-subtask-add-btn"
+                (click)="handleAddSubtask(todo.id)"
+                [disabled]="!subtaskDrafts[todo.id]?.trim()"
+              >
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Add Step
+              </button>
+            </div>
+          </div>
+
+          <!-- Accordion Footer / Quick Actions -->
+          <div class="ft-accordion-footer">
+            <div class="ft-accordion-footer__left">
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm"
+                (click)="logAsActivity(todo)"
+                title="Log as a completed activity in Pulse activity journal"
+              >
+                <span>Log to Activity</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm"
+                (click)="startEdit(todo)"
+                title="Edit task details"
+              >
+                <span>✎ Edit Task</span>
+              </button>
+              @if (todo.status !== 'completed') {
+                @if (!todo.isPinned) {
+                  <button
+                    type="button"
+                    class="btn btn--ghost btn--sm"
+                    (click)="moveToMainFocus(todo.id)"
+                    title="Promote to Main Focus"
+                  >
+                    <span>🎯 Focus Now</span>
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn btn--ghost btn--sm"
+                    (click)="moveToQueue(todo.id)"
+                    title="Move to Queue"
+                  >
+                    <span>📋 Move to Queue</span>
+                  </button>
+                }
+              }
+              <button
+                type="button"
+                class="btn btn--ghost btn--icon-sm ft-move-btn"
+                (click)="isMain ? moveMainTodo(todo.id, -1) : moveQueueTodo(todo.id, -1)"
+                [disabled]="idx === 0"
+                title="Move task up"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                class="btn btn--ghost btn--icon-sm ft-move-btn"
+                (click)="isMain ? moveMainTodo(todo.id, 1) : moveQueueTodo(todo.id, 1)"
+                [disabled]="idx === total - 1"
+                title="Move task down"
+              >
+                ↓
+              </button>
+            </div>
+
+            <div class="ft-accordion-footer__right">
+              <button
+                type="button"
+                class="btn btn--ghost btn--sm ft-collapse-link"
+                (click)="toggleCard(todo.id)"
+              >
+                <span>▲ Collapse</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </li>
+</ng-template>

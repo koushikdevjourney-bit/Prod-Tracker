@@ -67,6 +67,7 @@ export class FocusTodoPageComponent implements OnDestroy {
   newDueTime = '';
   newNotes = '';
   newIsPinned = false;
+  newTargetSection: 'main' | 'queue' = 'main';
 
   // Edit Form Draft
   editTitle = '';
@@ -100,6 +101,8 @@ export class FocusTodoPageComponent implements OnDestroy {
       list = list.filter((t) => t.status !== 'completed');
     } else if (tab === 'pinned') {
       list = list.filter((t) => t.status !== 'completed' && t.isPinned);
+    } else if (tab === 'queue') {
+      list = list.filter((t) => t.status !== 'completed' && !t.isPinned);
     } else if (tab === 'due') {
       list = list.filter(
         (t) => t.status !== 'completed' && t.dueDate && (t.dueDate <= today)
@@ -169,10 +172,23 @@ export class FocusTodoPageComponent implements OnDestroy {
     });
   });
 
+  readonly mainFocusTodos = computed(() => {
+    return this.filteredTodos().filter((t) => t.isPinned && t.status !== 'completed');
+  });
+
+  readonly queueTodos = computed(() => {
+    return this.filteredTodos().filter((t) => !t.isPinned && t.status !== 'completed');
+  });
+
+  readonly completedFilteredTodos = computed(() => {
+    return this.filteredTodos().filter((t) => t.status === 'completed');
+  });
+
   readonly tabCounts = computed(() => {
     const all = this.focus.todos();
     const active = all.filter((t) => t.status !== 'completed');
     const pinned = active.filter((t) => t.isPinned);
+    const queue = active.filter((t) => !t.isPinned);
     const due = active.filter((t) => t.dueDate && t.dueDate <= this.today);
     const completed = all.filter((t) => t.status === 'completed');
 
@@ -180,6 +196,7 @@ export class FocusTodoPageComponent implements OnDestroy {
       all: all.length,
       active: active.length,
       pinned: pinned.length,
+      queue: queue.length,
       due: due.length,
       completed: completed.length,
     };
@@ -201,6 +218,7 @@ export class FocusTodoPageComponent implements OnDestroy {
   submitQuickAdd(): void {
     if (!this.newTitle.trim()) return;
 
+    const isPinned = this.newTargetSection === 'main' || this.newIsPinned;
     this.focus.add({
       title: this.newTitle,
       priority: this.newPriority,
@@ -209,8 +227,13 @@ export class FocusTodoPageComponent implements OnDestroy {
       dueTime: this.newDueTime,
       estimatedMinutes: this.newEstimatedMinutes,
       notes: this.newNotes,
-      isPinned: this.newIsPinned,
+      isPinned,
     });
+
+    this.toast.show(
+      `Added "${this.newTitle.trim()}" to ${isPinned ? 'Main Focus' : 'Queue List'}`,
+      'success'
+    );
 
     // Reset fields
     this.newTitle = '';
@@ -221,6 +244,65 @@ export class FocusTodoPageComponent implements OnDestroy {
     this.newPriority = 'medium';
     this.newCategory = 'General';
     this.newEstimatedMinutes = 25;
+  }
+
+  moveToMainFocus(id: string): void {
+    const todo = this.focus.todos().find((t) => t.id === id);
+    if (todo && !todo.isPinned) {
+      this.focus.togglePin(id);
+      this.toast.show(`"${todo.title}" promoted to Main Focus`, 'success');
+    }
+  }
+
+  moveToQueue(id: string): void {
+    const todo = this.focus.todos().find((t) => t.id === id);
+    if (todo && todo.isPinned) {
+      this.focus.togglePin(id);
+      this.toast.info(`"${todo.title}" moved to Queue list`);
+    }
+  }
+
+  moveMainTodo(id: string, dir: -1 | 1): void {
+    const list = this.mainFocusTodos();
+    const idx = list.findIndex((t) => t.id === id);
+    if (idx < 0) return;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= list.length) return;
+    this.focus.reorder(list[idx].id, list[targetIdx].id);
+  }
+
+  moveQueueTodo(id: string, dir: -1 | 1): void {
+    const list = this.queueTodos();
+    const idx = list.findIndex((t) => t.id === id);
+    if (idx < 0) return;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= list.length) return;
+    this.focus.reorder(list[idx].id, list[targetIdx].id);
+  }
+
+  onDropToSection(targetSection: 'main' | 'queue', overTodoId?: string, event?: DragEvent): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    const draggedId = this.draggingId();
+    if (!draggedId) return;
+    const todo = this.focus.todos().find((t) => t.id === draggedId);
+    if (!todo) return;
+
+    const shouldBePinned = targetSection === 'main';
+    if (todo.isPinned !== shouldBePinned) {
+      this.focus.togglePin(draggedId);
+      if (shouldBePinned) {
+        this.toast.show(`"${todo.title}" promoted to Main Focus`, 'success');
+      } else {
+        this.toast.info(`"${todo.title}" moved to Queue list`);
+      }
+    }
+    if (overTodoId && overTodoId !== draggedId) {
+      this.focus.reorder(draggedId, overTodoId);
+    }
+    this.draggingId.set(null);
   }
 
   setQuickPreset(category: string, title?: string, priority: FocusPriority = 'medium'): void {
